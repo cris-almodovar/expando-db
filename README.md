@@ -1,2 +1,2 @@
 # postit-db
-A BSON document store with Lucene full-text search
+A simple JSON document store with Lucene full-text search
