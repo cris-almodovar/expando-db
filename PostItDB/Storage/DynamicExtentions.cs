@@ -4,10 +4,6 @@ using System.Collections.Generic;
 using System.Dynamic;
 using System.Globalization;
 using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Xml;
 
 namespace PostItDB.Storage
 {
@@ -178,6 +174,12 @@ namespace PostItDB.Storage
                     }
                 }
             }
+        }
+
+        public static ExpandoObject ToExpando(this string json)
+        {
+            var dictionary = NetJSON.NetJSON.Deserialize<IDictionary<string, object>>(json);
+            return dictionary.ToExpando();
         }
 
         public static ExpandoList ToExpandoList(this IEnumerable<string> jsonResults)

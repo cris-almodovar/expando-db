@@ -1,14 +1,11 @@
-﻿using System;
+﻿using Dapper;
+using System;
 using System.Collections.Generic;
+using System.Data.SQLite;
+using System.Dynamic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using System.Data.SQLite;
-using Dapper;
-using System.Dynamic;
-using Jil;
-using System.Collections.Specialized;
 
 namespace PostItDB.Storage
 {
@@ -127,9 +124,8 @@ namespace PostItDB.Storage
                 var json = result.FirstOrDefault();
                 if (String.IsNullOrWhiteSpace(json))    
                     return null;
-
-                var dictionary = NetJSON.NetJSON.DeserializeObject(json) as Dictionary<string, object>;
-                return dictionary.ToExpando();
+                
+                return json.ToExpando();
             }
         }
 
