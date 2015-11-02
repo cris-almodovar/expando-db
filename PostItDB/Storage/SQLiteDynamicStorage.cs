@@ -22,6 +22,9 @@ namespace PostItDB.Storage
         private readonly string _insertSql;
         private readonly string _selectOneSql;
         private readonly string _selectManySql;
+        private readonly string _selectCountSql;
+        private readonly string _updateSql;
+        private readonly string _deleteOneSql;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SQLiteDynamicStorage"/> class.
@@ -50,6 +53,9 @@ namespace PostItDB.Storage
             _insertSql = String.Format("INSERT INTO [{0}] (id, json) VALUES (@id, @json)", _collectionName);
             _selectOneSql = String.Format("SELECT json FROM [{0}] WHERE id = @id", _collectionName);
             _selectManySql = String.Format("SELECT json FROM [{0}] WHERE id IN @ids", _collectionName);
+            _selectCountSql = String.Format("SELECT COUNT(*) FROM [{0}] WHERE id = @id", _collectionName);
+            _updateSql = String.Format("UPDATE [{0}] SET json = @json WHERE id = @id", _collectionName);
+            _deleteOneSql = String.Format("DELETE FROM [{0}] WHERE id = @id", _collectionName);
 
             EnsureDatabaseExists();
             EnsureCollectionTableExists();
@@ -93,7 +99,10 @@ namespace PostItDB.Storage
         /// <param name="content">The content.</param>
         /// <returns>The unique identifier for the inserted content</returns>
         public async Task<Guid> InsertAsync(ExpandoObject content)
-        {            
+        {
+            if (content == null)
+                throw new ArgumentNullException(nameof(content));
+                       
             using (var conn = GetConnection())
             {
                 var guid = Guid.NewGuid();                
@@ -116,7 +125,10 @@ namespace PostItDB.Storage
         /// <param name="guid">The unique identifier for the content.</param>
         /// <returns></returns>
         public async Task<ExpandoObject> GetAsync(Guid guid)
-        {            
+        {
+            if (guid == Guid.Empty)
+                throw new ArgumentException("guid cannot be empty");
+                    
             using (var conn = GetConnection())
             {                
                 var result = await conn.QueryAsync<string>(_selectOneSql, new { id = guid.ToString()});
@@ -135,7 +147,10 @@ namespace PostItDB.Storage
         /// <param name="guids">A list of GUIDs identifying the contents to be retrieved.</param>
         /// <returns></returns>
         public async Task<IEnumerable<ExpandoObject>> GetAsync(IList<Guid> guids)
-        {            
+        {
+            if (guids == null)
+                throw new ArgumentNullException(nameof(guids));   
+              
             using (var conn = GetConnection())
             {
                 var result = await conn.QueryAsync<string>(_selectManySql, new { ids = guids.Select(g => g.ToString())});
@@ -144,18 +159,54 @@ namespace PostItDB.Storage
         }
 
         /// <summary>
-        /// Updates the asynchronous.
+        /// Updates the dynamic content.
         /// </summary>
         /// <param name="content">The content.</param>
         /// <returns></returns>        /
-        public Task<int> UpdateAsync(ExpandoObject content)
+        public async Task<int> UpdateAsync(ExpandoObject content)
         {
-            throw new NotImplementedException();
+            if (content == null)
+                throw new ArgumentNullException(nameof(content));
+
+            var dictionary = (IDictionary<string, object>)content;
+            if (dictionary == null)
+                throw new Exception("The content cannot be converted to a Dictionary");
+
+            var guid = dictionary.ContainsKey("_id") ? (Guid)dictionary["_id"] : Guid.Empty;
+            if (guid == Guid.Empty)
+                throw new Exception("The content does not have an _id field"); 
+
+            using (var conn = GetConnection())
+            {
+                var count = await conn.ExecuteScalarAsync<int>(_selectCountSql, new { id = guid.ToString() });
+                if (count == 0)
+                    return 0;
+
+                dictionary["_modifiedTimeStamp"] = DateTime.UtcNow;
+                dictionary.ConvertDatesToUtc();
+                var json = NetJSON.NetJSON.Serialize(content);
+
+                count = await conn.ExecuteAsync(_updateSql, new { id = guid.ToString(), json });
+                return count;
+            }
         }
 
-        public Task<int> DeleteAsync(Guid guid)
+        /// <summary>
+        /// Deletes the dynamic content.
+        /// </summary>
+        /// <param name="guid">The unique identifier.</param>
+        /// <returns></returns>
+        public async Task<int> DeleteAsync(Guid guid)
         {
-            throw new NotImplementedException();
+            if (guid == Guid.Empty)
+                throw new ArgumentException("guid cannot be empty");
+
+            using (var conn = GetConnection())
+            {
+                var count = await conn.ExecuteAsync(_deleteOneSql, new { id = guid.ToString() });
+                return count;
+            }
+
         }
     }
 }
