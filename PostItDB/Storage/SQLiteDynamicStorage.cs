@@ -168,7 +168,7 @@ namespace PostItDB.Storage
             if (content == null)
                 throw new ArgumentNullException(nameof(content));
 
-            var dictionary = (IDictionary<string, object>)content;
+            var dictionary = content as IDictionary<string, object>;
             if (dictionary == null)
                 throw new Exception("The content cannot be converted to a Dictionary");
 
