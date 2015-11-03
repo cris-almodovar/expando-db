@@ -30,12 +30,7 @@ namespace PostItDB.Storage
         /// Initializes a new instance of the <see cref="SQLiteDynamicStorage"/> class.
         /// </summary>
         /// <param name="dbFilePath">The database file path.</param>
-        /// <param name="collectionName">Name of the collection.</param>
-        /// <exception cref="ArgumentException">
-        /// dbFilePath is null or blank
-        /// or
-        /// collectionName is null or blank
-        /// </exception>
+        /// <param name="collectionName">Name of the collection.</param>        
         public SQLiteDynamicStorage(string dbFilePath, string collectionName)
         {
             if (String.IsNullOrWhiteSpace(dbFilePath))

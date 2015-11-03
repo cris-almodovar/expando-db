@@ -7,6 +7,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PostItDB.Storage;
 using System.Collections.Generic;
 using System.Linq;
+using PostItDB.Index;
 
 namespace PostItDB.Tests
 {
