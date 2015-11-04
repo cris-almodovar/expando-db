@@ -5,6 +5,9 @@ using System.Dynamic;
 
 namespace PostItDB.Storage
 {
+    /// <summary>
+    /// Represents a list of Expando objects
+    /// </summary>
     public class ExpandoList : IEnumerable<ExpandoObject>
     {
         private IEnumerable<string> _jsonResults;

@@ -6,17 +6,14 @@ using FlexLucene.Analysis.Tokenattributes;
 using java.util.regex;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace PostItDB.Index
+namespace PostItDB.Search
 {
     /// <summary>
-    /// Analyzer that splits text into tokens using a list of separator chars, and stems the tokens using
+    /// Lucene analyzer that splits text into tokens using a list of separator chars, and stems the tokens using
     /// the Porter stemming algorithm.
     /// </summary>
-    public class CustomAnalyzer : Analyzer
+    public class FullTextAnalyzer : Analyzer
     {
         public const string DEFAULT_SEPARATOR_CHARS = @"[\s,:;.()?!@#%^&*|/\\+÷°±{}\[\]<>\-`~'""$£€¢¥©®™•§†‡–—¶]";
         private string _separatorChars;
@@ -24,13 +21,13 @@ namespace PostItDB.Index
         private bool _ignoreCase;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CustomAnalyzer" /> class.
+        /// Initializes a new instance of the <see cref="FullTextAnalyzer" /> class.
         /// </summary>
         /// <param name="enableStemming">if set to <c>true</c>, the FullTextIndex will stem 
         /// the tokens that make up the texts, using the Porter stemming algorithm.</param>
         /// <param name="ignoreCase">if set to <c>true</c>, character casing is ignored.</param>
         /// <param name="separatorChars">A string whose component characters will be used to split the texts into tokens.</param>   
-        public CustomAnalyzer(bool enableStemming = true, bool ignoreCase = true, string separatorChars = DEFAULT_SEPARATOR_CHARS)
+        public FullTextAnalyzer(bool enableStemming = true, bool ignoreCase = true, string separatorChars = DEFAULT_SEPARATOR_CHARS)
         {
             if (String.IsNullOrWhiteSpace(separatorChars))
                 separatorChars = DEFAULT_SEPARATOR_CHARS;
@@ -45,7 +42,7 @@ namespace PostItDB.Index
         /// <param name="fieldName">Name of the field.</param>
         /// <returns></returns>
         protected override TokenStreamComponents createComponents(string fieldName)
-        {            
+        {
             var pattern = Pattern.compile(_separatorChars);
             var tokenizer = new PatternTokenizer(pattern, -1);
             var stream = _ignoreCase ? new LowerCaseFilter(tokenizer) as TokenStream : tokenizer as TokenStream;
@@ -67,7 +64,7 @@ namespace PostItDB.Index
         /// <returns></returns>
         public static IEnumerable<string> Tokenize(string text, bool enableStemming = true, bool ignoreCase = true, string separatorChars = DEFAULT_SEPARATOR_CHARS)
         {
-            using (var analyzer = new CustomAnalyzer(enableStemming, ignoreCase, separatorChars))
+            using (var analyzer = new FullTextAnalyzer(enableStemming, ignoreCase, separatorChars))
             {
                 using (var stream = analyzer.TokenStream("text", text))
                 {
