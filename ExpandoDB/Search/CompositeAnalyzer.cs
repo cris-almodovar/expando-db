@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PostItDB.Search
+namespace ExpandoDB.Search
 {
     /// <summary>
     /// 
@@ -15,8 +15,8 @@ namespace PostItDB.Search
     public class CompositeAnalyzer : AnalyzerWrapper
     {
         private readonly ConcurrentDictionary<string, Analyzer> _perFieldAnalyzers;        
-        private readonly Analyzer _defaultTextAnalyzer;
-        private readonly Analyzer _defaultKeywordAnalyzer;
+        private readonly Analyzer _textAnalyzer;
+        private readonly Analyzer _keywordAnalyzer;
         private readonly Func<IndexSchema> _getIndexSchema;
 
         /// <summary>
@@ -29,8 +29,8 @@ namespace PostItDB.Search
             if (getIndexSchema == null)
                 throw new ArgumentNullException("getIndexSchema");
                    
-            _defaultTextAnalyzer = new FullTextAnalyzer();
-            _defaultKeywordAnalyzer = new KeywordAnalyzer();
+            _textAnalyzer = new FullTextAnalyzer();
+            _keywordAnalyzer = new KeywordAnalyzer();
             _getIndexSchema = getIndexSchema;
 
             _perFieldAnalyzers = new ConcurrentDictionary<string, Analyzer>();
@@ -40,27 +40,26 @@ namespace PostItDB.Search
         private void InitializePerFieldAnalyzers()
         {
             var schema = _getIndexSchema();
-            // TODO: Iterate through the schema fields
-            //foreach (var field in schema.Fields)
-            //        {
-            //            Field.Index indexOption = Field.Index.NO;
-            //            if (field.IsIndexed && field.IsTokenized == true)
-            //                indexOption = Field.Index.ANALYZED;
-            //            else if (field.IsIndexed)
-            //                indexOption = Field.Index.NOT_ANALYZED;
-
-            //            var luceneFieldName = String.Format("{0}.{1}", schema.Name, field.Name);
-
-            //            if (indexOption != Field.Index.NO && !analyzerWrapper.PerFieldAnalyzers.ContainsKey(luceneFieldName))
-            //            {
-            //                if (indexOption == Field.Index.ANALYZED)
-            //                    analyzerWrapper.PerFieldAnalyzers[luceneFieldName] = _porterStemAnalyzer;
-            //                else if (indexOption == Field.Index.NOT_ANALYZED)
-            //                    analyzerWrapper.PerFieldAnalyzers[luceneFieldName] = _keywordAnalyzer;
-            //            }
-            //        }
-
-            _perFieldAnalyzers["_id"] = _defaultKeywordAnalyzer;
+            if (schema == null)
+                return;
+            
+            foreach (var field in schema.IndexFields)
+            {                
+                if (_perFieldAnalyzers.ContainsKey(field.Name))
+                    continue;
+                
+                switch (field.DataType)
+                {
+                    case IndexFieldDataType.String:
+                    case IndexFieldDataType.Number:
+                    case IndexFieldDataType.DateTime:
+                        _perFieldAnalyzers[field.Name] = _keywordAnalyzer;
+                        break;
+                    default:
+                        _perFieldAnalyzers[field.Name] = _textAnalyzer;
+                        break;
+                }                  
+            }            
         }
 
         /// <summary>
@@ -76,7 +75,7 @@ namespace PostItDB.Search
             // TODO: Check if fieldName is new; if yes, then add it to the _perFieldAnalyzers
             var schema = _getIndexSchema();            
 
-            return _defaultTextAnalyzer;
+            return _textAnalyzer;
         }
     }
 }

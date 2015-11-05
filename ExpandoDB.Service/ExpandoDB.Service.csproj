@@ -7,8 +7,8 @@
     <ProjectGuid>{24AC01CA-5F8A-47F9-ABBB-7ACE7A6C44FA}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>PostItDB.Server</RootNamespace>
-    <AssemblyName>PostItDB.Server</AssemblyName>
+    <RootNamespace>ExpandoDB.Service</RootNamespace>
+    <AssemblyName>ExpandoDB.Service</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -50,9 +50,9 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\PostItDB\PostItDB.csproj">
+    <ProjectReference Include="..\ExpandoDB\ExpandoDB.csproj">
       <Project>{fab731b0-3894-475c-b2b7-1b602647130f}</Project>
-      <Name>PostItDB</Name>
+      <Name>ExpandoDB</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

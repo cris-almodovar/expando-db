@@ -4,12 +4,12 @@ using System.Dynamic;
 using System.IO;
 using System.Reflection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using PostItDB.Storage;
+using ExpandoDB.Storage;
 using System.Collections.Generic;
 using System.Linq;
-using PostItDB.Search;
+using ExpandoDB.Search;
 
-namespace PostItDB.Tests
+namespace ExpandoDB.Tests
 {
     [TestClass]
     public class SQLiteDynamicStorageTests

@@ -12,8 +12,9 @@ using java.nio.file;
 using FlexLucene.Analysis.Miscellaneous;
 using FlexLucene.Analysis.Core;
 using System.Timers;
+using System.Dynamic;
 
-namespace PostItDB.Search
+namespace ExpandoDB.Search
 {
     /// <summary>
     /// Represents the Lucene full-text index for a collection of contents.
@@ -26,16 +27,15 @@ namespace PostItDB.Search
         private readonly Analyzer _compositeAnalyzer;
         private readonly IndexWriter _writer;
         private readonly QueryParser _queryParser;        
-        private readonly SearcherManager _searcherManager;
-        private readonly Func<IndexSchema> _getIndexSchema;
+        private readonly SearcherManager _searcherManager;        
         private readonly System.Timers.Timer _refreshTimer;
-
+        private Func<IndexSchema> _getIndexSchema;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FullTextIndex"/> class.
         /// </summary>
         /// <param name="indexPath">The path to the directory that will contain the index files.</param>
-        /// <param name="getIndexSchema">Returns the IndexShema for the index.</param>        
+        /// <param name="getIndexSchema">Returns the IndexShema for the full-text index.</param>        
         public FullTextIndex(string indexPath, Func<IndexSchema> getIndexSchema)
         {
             if (String.IsNullOrWhiteSpace(indexPath))
@@ -75,7 +75,59 @@ namespace PostItDB.Search
             _searcherManager.MaybeRefresh();
         }
 
-        public IEnumerable<Guid> Search(string query)
+        /// <summary>
+        /// Inserts a dynamic content into the index.
+        /// </summary>
+        /// <param name="content">The dynamic content.</param>        
+        public void Insert(ExpandoObject content)
+        {
+            if (content == null)
+                throw new ArgumentNullException("content");
+
+            var indexSchema = _getIndexSchema();
+            var document = content.ToLuceneDocument(indexSchema);
+            
+            _writer.AddDocument(document);
+            _writer.Commit();
+        }
+
+        /// <summary>
+        /// Deletes the content identified by the guid.
+        /// </summary>
+        /// <param name="guid">The unique identifier.</param>
+        public void Delete(Guid guid)
+        {
+            var idTerm = new Term("_id", guid.ToString());
+            _writer.DeleteDocuments(idTerm);
+            _writer.Commit();
+        }
+
+        /// <summary>
+        /// Updates the content identified by its _id field.
+        /// </summary>
+        /// <param name="content">The content.</param>
+        /// <exception cref="ArgumentNullException">content</exception>
+        public void Update(ExpandoObject content)
+        {
+            if (content == null)
+                throw new ArgumentNullException("content");
+
+            var indexSchema = _getIndexSchema();
+            var document = content.ToLuceneDocument(indexSchema);
+
+            var id = (content as IDictionary<string, object>)["_id"].ToString();
+            var idTerm = new Term("_id", id);
+            
+            _writer.UpdateDocument(idTerm, document);
+            _writer.Commit();
+        }
+
+        public IEnumerable<Guid> Search(string query, string sortByField = null)
+        {
+            return null;
+        }
+
+        public IEnumerable<Guid> Search(SearchContext context)
         {
             return null;
         }
@@ -90,6 +142,8 @@ namespace PostItDB.Search
 
             _refreshTimer.Stop();
             _refreshTimer.Dispose();
+
+            _getIndexSchema = null;
         }
     }
 }

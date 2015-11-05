@@ -7,7 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace PostItDB.Storage
+namespace ExpandoDB.Storage
 {
     /// <summary>
     /// 
@@ -96,7 +96,7 @@ namespace PostItDB.Storage
         public async Task<Guid> InsertAsync(ExpandoObject content)
         {
             if (content == null)
-                throw new ArgumentNullException(nameof(content));
+                throw new ArgumentNullException("content");
                        
             using (var conn = GetConnection())
             {
@@ -104,7 +104,7 @@ namespace PostItDB.Storage
 
                 var dictionary = (IDictionary<string,object>)content;
                 dictionary["_id"] = guid;
-                dictionary["_createdTimeStamp"] = DateTime.UtcNow;
+                dictionary["_createdTimestamp"] = DateTime.UtcNow;
                 dictionary.ConvertDatesToUtc();                                               
                 
                 var json = NetJSON.NetJSON.Serialize(content);
@@ -144,7 +144,7 @@ namespace PostItDB.Storage
         public async Task<IEnumerable<ExpandoObject>> GetAsync(IList<Guid> guids)
         {
             if (guids == null)
-                throw new ArgumentNullException(nameof(guids));   
+                throw new ArgumentNullException("guids");   
               
             using (var conn = GetConnection())
             {
@@ -161,7 +161,7 @@ namespace PostItDB.Storage
         public async Task<int> UpdateAsync(ExpandoObject content)
         {
             if (content == null)
-                throw new ArgumentNullException(nameof(content));
+                throw new ArgumentNullException("content");
 
             var dictionary = content as IDictionary<string, object>;
             if (dictionary == null)
@@ -177,7 +177,7 @@ namespace PostItDB.Storage
                 if (count == 0)
                     return 0;
 
-                dictionary["_modifiedTimeStamp"] = DateTime.UtcNow;
+                dictionary["_modifiedTimestamp"] = DateTime.UtcNow;
                 dictionary.ConvertDatesToUtc();
                 var json = NetJSON.NetJSON.Serialize(content);
 

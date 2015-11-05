@@ -1,7 +1,7 @@
-﻿using PostItDB.Search;
-using PostItDB.Storage;
+﻿using ExpandoDB.Search;
+using ExpandoDB.Storage;
 
-namespace PostItDB
+namespace ExpandoDB
 {
     public class Collection
     {

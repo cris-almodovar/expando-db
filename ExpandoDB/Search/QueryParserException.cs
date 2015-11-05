@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace PostItDB.Search
+namespace ExpandoDB.Search
 {
     /// <summary>
     /// Represents an error that occurred during the parsing of a Lucene query

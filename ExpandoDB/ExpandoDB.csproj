@@ -7,8 +7,8 @@
     <ProjectGuid>{FAB731B0-3894-475C-B2B7-1B602647130F}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>PostItDB</RootNamespace>
-    <AssemblyName>PostItDB</AssemblyName>
+    <RootNamespace>ExpandoDB</RootNamespace>
+    <AssemblyName>ExpandoDB</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -181,12 +181,14 @@
     <Compile Include="Collection.cs" />
     <Compile Include="Database.cs" />
     <Compile Include="Search\CompositeAnalyzer.cs" />
+    <Compile Include="Search\Extensions.cs" />
     <Compile Include="Search\FullTextAnalyzer.cs" />
     <Compile Include="Search\FullTextIndex.cs" />
     <Compile Include="Search\IndexSchema.cs" />
     <Compile Include="Search\QueryParserException.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Storage\DynamicExtentions.cs" />
+    <Compile Include="Search\SearchContext.cs" />
+    <Compile Include="Storage\Extentions.cs" />
     <Compile Include="Storage\ExpandoList.cs" />
     <Compile Include="Storage\IDynamicStorage.cs" />
     <Compile Include="Storage\SQLiteDynamicStorage.cs" />

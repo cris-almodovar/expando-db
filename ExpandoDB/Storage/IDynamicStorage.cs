@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Dynamic;
 using System.Threading.Tasks;
 
-namespace PostItDB.Storage
+namespace ExpandoDB.Storage
 {
     /// <summary>
     /// 

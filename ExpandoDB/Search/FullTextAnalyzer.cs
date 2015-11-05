@@ -7,7 +7,7 @@ using java.util.regex;
 using System;
 using System.Collections.Generic;
 
-namespace PostItDB.Search
+namespace ExpandoDB.Search
 {
     /// <summary>
     /// Lucene analyzer that splits text into tokens using a list of separator chars, and stems the tokens using
