@@ -29,7 +29,7 @@ namespace ExpandoDB.Tests
             if (File.Exists(dbFilePath))
                 File.Delete(dbFilePath);
 
-            var storage = new SQLiteDynamicStorage(dbFilePath, "test");
+            var storage = new SQLiteExpandoStorage(dbFilePath, "test");
 
             Assert.AreEqual<bool>(File.Exists(dbFilePath), true);
 
@@ -50,7 +50,7 @@ namespace ExpandoDB.Tests
             insertedContent.Cast = new Dictionary<string, object> { { "Simon Jones", "Arthur Dent" }, { "Geoffrey McGivern", "Ford Prefect" } };
 
             var dbFilePath = Path.Combine(_appPath, Guid.NewGuid().ToString() + ".db");
-            var storage = new SQLiteDynamicStorage(dbFilePath, "content");
+            var storage = new SQLiteExpandoStorage(dbFilePath, "content");
 
             var guid = storage.InsertAsync(insertedContent).Result;
             Assert.AreNotEqual<Guid>(guid, Guid.Empty);
@@ -90,7 +90,7 @@ namespace ExpandoDB.Tests
             insertedContent.Cast = new Dictionary<string, object> { { "Simon Jones", "Arthur Dent" }, { "Geoffrey McGivern", "Ford Prefect" } };
 
             var dbFilePath = Path.Combine(_appPath, Guid.NewGuid().ToString() + ".db");
-            var storage = new SQLiteDynamicStorage(dbFilePath, "content");
+            var storage = new SQLiteExpandoStorage(dbFilePath, "content");
 
             var guid = storage.InsertAsync(insertedContent).Result;
             Assert.AreNotEqual<Guid>(guid, Guid.Empty);
@@ -115,7 +115,7 @@ namespace ExpandoDB.Tests
             insertedContent.Text = "The Hitchhiker's Guide to the Galaxy is a comedy science fiction series created by Douglas Adams. Originally a radio comedy broadcast on BBC Radio 4 in 1978, it was later adapted to other formats, and over several years it gradually became an international multi-media phenomenon.";
              
             var dbFilePath = Path.Combine(_appPath, Guid.NewGuid().ToString() + ".db");
-            var storage = new SQLiteDynamicStorage(dbFilePath, "content");
+            var storage = new SQLiteExpandoStorage(dbFilePath, "content");
 
             var guid = storage.InsertAsync(insertedContent).Result;
             Assert.AreNotEqual<Guid>(guid, Guid.Empty);            

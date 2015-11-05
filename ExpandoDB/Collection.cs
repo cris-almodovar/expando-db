@@ -8,7 +8,7 @@ namespace ExpandoDB
         public string Name { get; set; }
         public string Description { get; set; }
         public IndexSchema IndexSchema { get; set; }
-        public IDynamicStorage Storage { get; set; }
+        public IExpandoStorage Storage { get; set; }
         public FullTextIndex FullTextIndex { get; set; }
 
     }

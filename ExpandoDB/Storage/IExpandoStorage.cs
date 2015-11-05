@@ -8,7 +8,7 @@ namespace ExpandoDB.Storage
     /// <summary>
     /// 
     /// </summary>
-    public interface IDynamicStorage
+    public interface IExpandoStorage
     {        
         Task<Guid> InsertAsync(ExpandoObject content);
         Task<ExpandoObject> GetAsync(Guid guid);

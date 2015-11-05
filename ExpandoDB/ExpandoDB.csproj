@@ -190,8 +190,8 @@
     <Compile Include="Search\SearchContext.cs" />
     <Compile Include="Storage\Extentions.cs" />
     <Compile Include="Storage\ExpandoList.cs" />
-    <Compile Include="Storage\IDynamicStorage.cs" />
-    <Compile Include="Storage\SQLiteDynamicStorage.cs" />
+    <Compile Include="Storage\IExpandoStorage.cs" />
+    <Compile Include="Storage\SQLiteExpandoStorage.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

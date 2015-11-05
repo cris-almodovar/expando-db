@@ -12,7 +12,7 @@ namespace ExpandoDB.Storage
     /// <summary>
     /// 
     /// </summary>
-    public class SQLiteDynamicStorage : IDynamicStorage
+    public class SQLiteExpandoStorage : IExpandoStorage
     {
         private const string CONN_STRING_TEMPLATE = "Data Source={0}; Version=3; Pooling=true; Max Pool Size=100; DateTimeKind=UTC; Enlist=N; Compress=True";
         private readonly string _dbFilePath;
@@ -27,11 +27,11 @@ namespace ExpandoDB.Storage
         private readonly string _deleteOneSql;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SQLiteDynamicStorage"/> class.
+        /// Initializes a new instance of the <see cref="SQLiteExpandoStorage"/> class.
         /// </summary>
         /// <param name="dbFilePath">The database file path.</param>
         /// <param name="collectionName">Name of the collection.</param>        
-        public SQLiteDynamicStorage(string dbFilePath, string collectionName)
+        public SQLiteExpandoStorage(string dbFilePath, string collectionName)
         {
             if (String.IsNullOrWhiteSpace(dbFilePath))
                 throw new ArgumentException("dbFilePath is null or blank");
