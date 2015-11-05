@@ -15,5 +15,7 @@ namespace ExpandoDB.Storage
         Task<IEnumerable<ExpandoObject>> GetAsync(IList<Guid> guids);
         Task<int> UpdateAsync(ExpandoObject content);
         Task<int> DeleteAsync(Guid guid);
+        Task<int> DeleteAsync(IList<Guid> guids);
+        Task<bool> ExistsAsync(Guid guid);
     }
 }

@@ -25,6 +25,8 @@ namespace ExpandoDB.Storage
         private readonly string _selectCountSql;
         private readonly string _updateSql;
         private readonly string _deleteOneSql;
+        private readonly string _deleteManySql;
+        private readonly string _existsSql;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SQLiteExpandoStorage"/> class.
@@ -51,6 +53,8 @@ namespace ExpandoDB.Storage
             _selectCountSql = String.Format("SELECT COUNT(*) FROM [{0}] WHERE id = @id", _collectionName);
             _updateSql = String.Format("UPDATE [{0}] SET json = @json WHERE id = @id", _collectionName);
             _deleteOneSql = String.Format("DELETE FROM [{0}] WHERE id = @id", _collectionName);
+            _deleteManySql = String.Format("DELETE FROM [{0}] WHERE id IN @ids", _collectionName);
+            _existsSql = String.Format("SELECT EXISTS (SELECT 1 FROM [{0}] WHERE id = @id)", _collectionName);
 
             EnsureDatabaseExists();
             EnsureCollectionTableExists();
@@ -202,6 +206,40 @@ namespace ExpandoDB.Storage
                 return count;
             }
 
+        }
+
+        /// <summary>
+        /// Deletes the contents identified by the given list of GUIDs.
+        /// </summary>
+        /// <param name="guids">A list of GUIDs identifying the contents to be deleted.</param>
+        /// <returns></returns>        
+        public async Task<int> DeleteAsync(IList<Guid> guids)
+        {
+            if (guids == null)
+                throw new ArgumentNullException("guids");
+
+            using (var conn = GetConnection())
+            {
+                var count = await conn.ExecuteAsync(_deleteManySql, new { ids = guids.Select(g => g.ToString()) });
+                return count;
+            }
+        }
+
+        /// <summary>
+        /// Checks whether a content with the specified GUID exists.
+        /// </summary>
+        /// <param name="guid">The GUID of the content.</param>
+        /// <returns></returns>        
+        public async Task<bool> ExistsAsync(Guid guid)
+        {
+            if (guid == Guid.Empty)
+                throw new ArgumentException("guid cannot be empty");
+
+            using (var conn = GetConnection())
+            {
+                var count = await conn.ExecuteAsync(_existsSql, new { id = guid.ToString() });
+                return count > 0;
+            }
         }
     }
 }

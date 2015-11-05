@@ -6,7 +6,7 @@ using System.Dynamic;
 namespace ExpandoDB.Storage
 {
     /// <summary>
-    /// Represents a list of Expando objects
+    /// Represents an enumerable list of Expando objects
     /// </summary>
     public class ExpandoList : IEnumerable<ExpandoObject>
     {
