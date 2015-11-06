@@ -2,10 +2,6 @@
 using FlexLucene.Analysis.Core;
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ExpandoDB.Search
 {
@@ -17,13 +13,13 @@ namespace ExpandoDB.Search
         private readonly ConcurrentDictionary<string, Analyzer> _perFieldAnalyzers;        
         private readonly Analyzer _textAnalyzer;
         private readonly Analyzer _keywordAnalyzer;
-        private readonly Func<IndexSchema> _getIndexSchema;
+        private readonly Func<SearchSchema> _getIndexSchema;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CompositeAnalyzer"/> class.
         /// </summary>
         /// <param name="defaultAnalyzer">The default analyzer.</param>
-        public CompositeAnalyzer(Func<IndexSchema> getIndexSchema) :
+        public CompositeAnalyzer(Func<SearchSchema> getIndexSchema) :
             base(Analyzer.PER_FIELD_REUSE_STRATEGY)
         {
             if (getIndexSchema == null)
@@ -43,20 +39,21 @@ namespace ExpandoDB.Search
             if (schema == null)
                 return;
             
-            foreach (var field in schema.IndexFields)
+            foreach (var fieldName in schema.IndexedFields.Keys)
             {                
-                if (_perFieldAnalyzers.ContainsKey(field.Name))
+                if (_perFieldAnalyzers.ContainsKey(fieldName))
                     continue;
-                
-                switch (field.DataType)
+
+                var indexedField = schema.IndexedFields[fieldName];
+                switch (indexedField.DataType)
                 {
-                    case IndexFieldDataType.String:
-                    case IndexFieldDataType.Number:
-                    case IndexFieldDataType.DateTime:
-                        _perFieldAnalyzers[field.Name] = _keywordAnalyzer;
+                    case IndexedFieldDataType.String:
+                    case IndexedFieldDataType.Number:
+                    case IndexedFieldDataType.DateTime:
+                        _perFieldAnalyzers[fieldName] = _keywordAnalyzer;
                         break;
                     default:
-                        _perFieldAnalyzers[field.Name] = _textAnalyzer;
+                        _perFieldAnalyzers[fieldName] = _textAnalyzer;
                         break;
                 }                  
             }            

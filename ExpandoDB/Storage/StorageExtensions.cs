@@ -7,10 +7,13 @@ using System.Linq;
 
 namespace ExpandoDB.Storage
 {
-    public static class Extentions
+    /// <summary>
+    /// Provides utility methods related to the persistence of dynamic Content objects.
+    /// </summary>
+    public static class StorageExtensions
     {
         const string ISO_DATE_TIME_FORMAT = "yyyy-MM-ddTHH:mm:ss.fffffffZ";
-        const int GUID_STRING_LENGTH = 36;
+        const int GUID_STRING_LENGTH = 36;             
 
         /// <summary>
         /// Converts a Dictionary<string, object> instance to an ExpandoObject
@@ -149,7 +152,7 @@ namespace ExpandoDB.Storage
                     }                  
                 }                
             }            
-        }
+        }               
 
         private static void ConvertDatesToUtc(this IList list)
         {
@@ -176,15 +179,46 @@ namespace ExpandoDB.Storage
             }
         }
 
-        public static ExpandoObject ToExpando(this string json)
+        /// <summary>
+        /// Deserializes the JSON string into a Content object.
+        /// </summary>
+        /// <param name="json">The JSON string to deserialize.</param>
+        /// <returns></returns>
+        public static Content ToContent(this string json)
         {
             var dictionary = NetJSON.NetJSON.Deserialize<IDictionary<string, object>>(json);
-            return dictionary.ToExpando();
+            var expando = dictionary.ToExpando();
+            return new Content(expando);
         }
 
-        public static ExpandoList ToExpandoList(this IEnumerable<string> jsonResults)
+        /// <summary>
+        /// Deserializes the JSON results .
+        /// </summary>
+        /// <param name="jsonResults">The json results.</param>
+        /// <returns></returns>
+        public static EnumerableContents ToEnumerableContents(this IEnumerable<string> jsonResults)
         {
-            return new ExpandoList(jsonResults);
+            return new EnumerableContents(jsonResults);
+        }
+
+        /// <summary>
+        /// Converts all dates inside the Content to UTC format.
+        /// </summary>
+        /// <param name="content">The content to process.</param>
+        public static void ConvertDatesToUtc(this Content content)
+        {
+            content.AsDictionary().ConvertDatesToUtc();
+        }
+
+        /// <summary>
+        /// Serializes the Content object to a JSON string.
+        /// </summary>
+        /// <param name="content">The content object to serialize.</param>
+        /// <returns></returns>
+        public static string ToJson(this Content content)
+        {
+            var json = NetJSON.NetJSON.Serialize(content.AsExpando());
+            return json;
         }
     }
 }

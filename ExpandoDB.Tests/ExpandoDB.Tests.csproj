@@ -6,8 +6,8 @@
     <ProjectGuid>{412B8855-C637-4184-8EFE-D9827258C85F}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>PostItDB.Tests</RootNamespace>
-    <AssemblyName>PostItDB.Tests</AssemblyName>
+    <RootNamespace>ExpandoDB.Tests</RootNamespace>
+    <AssemblyName>ExpandoDB.Tests</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -153,6 +153,10 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="NetJSON, Version=1.0.14.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\lib\NetJSON.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Data.SQLite, Version=1.0.98.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=MSIL">
@@ -173,7 +177,8 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <Compile Include="SQLiteDynamicStorageTests.cs" />
+    <Compile Include="LuceneDocumentTests.cs" />
+    <Compile Include="SQLiteContentStorageTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data.SQLite;
-using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -12,7 +11,7 @@ namespace ExpandoDB.Storage
     /// <summary>
     /// 
     /// </summary>
-    public class SQLiteExpandoStorage : IExpandoStorage
+    public class SQLiteContentStorage : IContentStorage
     {
         private const string CONN_STRING_TEMPLATE = "Data Source={0}; Version=3; Pooling=true; Max Pool Size=100; DateTimeKind=UTC; Enlist=N; Compress=True";
         private readonly string _dbFilePath;
@@ -25,15 +24,14 @@ namespace ExpandoDB.Storage
         private readonly string _selectCountSql;
         private readonly string _updateSql;
         private readonly string _deleteOneSql;
-        private readonly string _deleteManySql;
-        private readonly string _existsSql;
+        private readonly string _deleteManySql;        
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SQLiteExpandoStorage"/> class.
+        /// Initializes a new instance of the <see cref="SQLiteContentStorage"/> class.
         /// </summary>
         /// <param name="dbFilePath">The database file path.</param>
         /// <param name="collectionName">Name of the collection.</param>        
-        public SQLiteExpandoStorage(string dbFilePath, string collectionName)
+        public SQLiteContentStorage(string dbFilePath, string collectionName)
         {
             if (String.IsNullOrWhiteSpace(dbFilePath))
                 throw new ArgumentException("dbFilePath is null or blank");
@@ -53,14 +51,13 @@ namespace ExpandoDB.Storage
             _selectCountSql = String.Format("SELECT COUNT(*) FROM [{0}] WHERE id = @id", _collectionName);
             _updateSql = String.Format("UPDATE [{0}] SET json = @json WHERE id = @id", _collectionName);
             _deleteOneSql = String.Format("DELETE FROM [{0}] WHERE id = @id", _collectionName);
-            _deleteManySql = String.Format("DELETE FROM [{0}] WHERE id IN @ids", _collectionName);
-            _existsSql = String.Format("SELECT EXISTS (SELECT 1 FROM [{0}] WHERE id = @id)", _collectionName);
+            _deleteManySql = String.Format("DELETE FROM [{0}] WHERE id IN @ids", _collectionName);            
 
             EnsureDatabaseExists();
             EnsureCollectionTableExists();
 
-            NetJSON.NetJSON.DateFormat = NetJSON.NetJSONDateFormat.ISO;            
-            NetJSON.NetJSON.UseEnumString = true;
+            NetJSON.NetJSON.DateFormat = NetJSON.NetJSONDateFormat.ISO;
+            NetJSON.NetJSON.UseEnumString = false;
         }
 
         /// <summary>
@@ -97,22 +94,21 @@ namespace ExpandoDB.Storage
         /// </summary>
         /// <param name="content">The content.</param>
         /// <returns>The unique identifier for the inserted content</returns>
-        public async Task<Guid> InsertAsync(ExpandoObject content)
+        public async Task<Guid> InsertAsync(Content content)
         {
             if (content == null)
                 throw new ArgumentNullException("content");
                        
             using (var conn = GetConnection())
             {
-                var guid = Guid.NewGuid();                
+                var guid = Guid.NewGuid();
+                content._id = guid;
+                content._createdTimestamp = DateTime.UtcNow;
+                content.ConvertDatesToUtc();
 
-                var dictionary = (IDictionary<string,object>)content;
-                dictionary["_id"] = guid;
-                dictionary["_createdTimestamp"] = DateTime.UtcNow;
-                dictionary.ConvertDatesToUtc();                                               
-                
-                var json = NetJSON.NetJSON.Serialize(content);
-                await conn.ExecuteAsync(_insertSql, new { id = guid.ToString(), json });     
+                var id = content._id.ToString();
+                var json = content.ToJson();                
+                await conn.ExecuteAsync(_insertSql, new { id, json });
 
                 return guid;               
             }
@@ -123,37 +119,39 @@ namespace ExpandoDB.Storage
         /// </summary>
         /// <param name="guid">The unique identifier for the content.</param>
         /// <returns></returns>
-        public async Task<ExpandoObject> GetAsync(Guid guid)
+        public async Task<Content> GetAsync(Guid guid)
         {
             if (guid == Guid.Empty)
                 throw new ArgumentException("guid cannot be empty");
                     
             using (var conn = GetConnection())
-            {                
-                var result = await conn.QueryAsync<string>(_selectOneSql, new { id = guid.ToString()});
+            {
+                var id = guid.ToString();
+                var result = await conn.QueryAsync<string>(_selectOneSql, new { id });
                 
                 var json = result.FirstOrDefault();
                 if (String.IsNullOrWhiteSpace(json))    
                     return null;
                 
-                return json.ToExpando();
+                return json.ToContent();
             }
         }
 
         /// <summary>
-        /// Gets the contents identified by the given list of GUIDs.
+        /// Gets the Contents identified by the given list of GUIDs.
         /// </summary>
-        /// <param name="guids">A list of GUIDs identifying the contents to be retrieved.</param>
+        /// <param name="guids">A list of GUIDs identifying the Contents to be retrieved.</param>
         /// <returns></returns>
-        public async Task<IEnumerable<ExpandoObject>> GetAsync(IList<Guid> guids)
+        public async Task<IEnumerable<Content>> GetAsync(IList<Guid> guids)
         {
             if (guids == null)
                 throw new ArgumentNullException("guids");   
               
             using (var conn = GetConnection())
             {
-                var result = await conn.QueryAsync<string>(_selectManySql, new { ids = guids.Select(g => g.ToString())});
-                return result.ToExpandoList();
+                var ids = guids.Select(g => g.ToString());
+                var result = await conn.QueryAsync<string>(_selectManySql, new { ids });
+                return result.ToEnumerableContents();
             }
         }
 
@@ -162,38 +160,34 @@ namespace ExpandoDB.Storage
         /// </summary>
         /// <param name="content">The content.</param>
         /// <returns></returns>        /
-        public async Task<int> UpdateAsync(ExpandoObject content)
+        public async Task<int> UpdateAsync(Content content)
         {
             if (content == null)
-                throw new ArgumentNullException("content");
-
-            var dictionary = content as IDictionary<string, object>;
-            if (dictionary == null)
-                throw new Exception("The content cannot be converted to a Dictionary");
-
-            var guid = dictionary.ContainsKey("_id") ? (Guid)dictionary["_id"] : Guid.Empty;
-            if (guid == Guid.Empty)
+                throw new ArgumentNullException("content");            
+            
+            if (content._id == null || content._id == Guid.Empty)
                 throw new Exception("The content does not have an _id field"); 
 
             using (var conn = GetConnection())
             {
-                var count = await conn.ExecuteScalarAsync<int>(_selectCountSql, new { id = guid.ToString() });
+                var id = content._id.ToString();
+                var count = await conn.ExecuteScalarAsync<int>(_selectCountSql, new { id });
                 if (count == 0)
                     return 0;
 
-                dictionary["_modifiedTimestamp"] = DateTime.UtcNow;
-                dictionary.ConvertDatesToUtc();
-                var json = NetJSON.NetJSON.Serialize(content);
-
-                count = await conn.ExecuteAsync(_updateSql, new { id = guid.ToString(), json });
+                content._modifiedTimestamp = DateTime.UtcNow;
+                content.ConvertDatesToUtc();
+                
+                var json = content.ToJson();                
+                count = await conn.ExecuteAsync(_updateSql, new { id, json });                
                 return count;
             }
         }
 
         /// <summary>
-        /// Deletes the dynamic content.
+        /// Deletes the Content identified by the GUID.
         /// </summary>
-        /// <param name="guid">The unique identifier.</param>
+        /// <param name="guid">The GUID of the Content to be deleted.</param>
         /// <returns></returns>
         public async Task<int> DeleteAsync(Guid guid)
         {
@@ -202,16 +196,16 @@ namespace ExpandoDB.Storage
 
             using (var conn = GetConnection())
             {
-                var count = await conn.ExecuteAsync(_deleteOneSql, new { id = guid.ToString() });
+                var id = guid.ToString(); 
+                var count = await conn.ExecuteAsync(_deleteOneSql, new { id });
                 return count;
             }
-
         }
 
         /// <summary>
-        /// Deletes the contents identified by the given list of GUIDs.
+        /// Deletes the Contents identified by the given list of GUIDs.
         /// </summary>
-        /// <param name="guids">A list of GUIDs identifying the contents to be deleted.</param>
+        /// <param name="guids">The GUIDs of the Contents to be deleted.</param>
         /// <returns></returns>        
         public async Task<int> DeleteAsync(IList<Guid> guids)
         {
@@ -220,15 +214,16 @@ namespace ExpandoDB.Storage
 
             using (var conn = GetConnection())
             {
-                var count = await conn.ExecuteAsync(_deleteManySql, new { ids = guids.Select(g => g.ToString()) });
+                var ids = guids.Select(g => g.ToString());
+                var count = await conn.ExecuteAsync(_deleteManySql, new { ids });
                 return count;
             }
         }
 
         /// <summary>
-        /// Checks whether a content with the specified GUID exists.
+        /// Checks whether a Content with the given GUID exists.
         /// </summary>
-        /// <param name="guid">The GUID of the content.</param>
+        /// <param name="guid">The GUID of the Content.</param>
         /// <returns></returns>        
         public async Task<bool> ExistsAsync(Guid guid)
         {
@@ -237,7 +232,8 @@ namespace ExpandoDB.Storage
 
             using (var conn = GetConnection())
             {
-                var count = await conn.ExecuteAsync(_existsSql, new { id = guid.ToString() });
+                var id = guid.ToString();
+                var count = await conn.ExecuteScalarAsync<int>(_selectCountSql, new { id });
                 return count > 0;
             }
         }

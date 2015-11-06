@@ -1,19 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Dynamic;
 using System.Threading.Tasks;
 
 namespace ExpandoDB.Storage
 {
     /// <summary>
-    /// 
+    /// Provides persistence functions for dynamic Content.
     /// </summary>
-    public interface IExpandoStorage
+    public interface IContentStorage
     {        
-        Task<Guid> InsertAsync(ExpandoObject content);
-        Task<ExpandoObject> GetAsync(Guid guid);
-        Task<IEnumerable<ExpandoObject>> GetAsync(IList<Guid> guids);
-        Task<int> UpdateAsync(ExpandoObject content);
+        Task<Guid> InsertAsync(Content content);
+        Task<Content> GetAsync(Guid guid);
+        Task<IEnumerable<Content>> GetAsync(IList<Guid> guids);
+        Task<int> UpdateAsync(Content content);
         Task<int> DeleteAsync(Guid guid);
         Task<int> DeleteAsync(IList<Guid> guids);
         Task<bool> ExistsAsync(Guid guid);
