@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ExpandoDB.Search;
+using System;
 using System.Collections.Generic;
 using System.Dynamic;
 
@@ -9,9 +10,9 @@ namespace ExpandoDB
     /// </summary>
     public class Content : DynamicObject
     {
-        public const string ID_FIELD = "_id";
-        public const string CREATED_TIMESTAMP_FIELD = "_createdTimestamp";
-        public const string MODIFIED_TIMESTAMP_FIELD = "_modifiedTimestamp";        
+        public const string ID_FIELD_NAME = "_id";
+        public const string CREATED_TIMESTAMP_FIELD_NAME = "_createdTimestamp";
+        public const string MODIFIED_TIMESTAMP_FIELD_NAME = "_modifiedTimestamp";
 
         private readonly dynamic _expando;
         private readonly IDictionary<string, object> _expandoDictionary;
@@ -48,8 +49,8 @@ namespace ExpandoDB
         {
             get
             {
-                if (_expandoDictionary.ContainsKey(ID_FIELD))
-                    return (Guid?)_expandoDictionary[ID_FIELD];
+                if (_expandoDictionary.ContainsKey(ID_FIELD_NAME))
+                    return (Guid?)_expandoDictionary[ID_FIELD_NAME];
                 return null;                
             }
             set
@@ -57,7 +58,7 @@ namespace ExpandoDB
                 if (value == null || value == Guid.Empty)
                     throw new ArgumentException("value cannot be null or empty");
 
-                _expandoDictionary[ID_FIELD] = value;
+                _expandoDictionary[ID_FIELD_NAME] = value;
             }
         }
 
@@ -72,8 +73,8 @@ namespace ExpandoDB
         {
             get
             {
-                if (_expandoDictionary.ContainsKey(CREATED_TIMESTAMP_FIELD))
-                    return (DateTime?)_expandoDictionary[CREATED_TIMESTAMP_FIELD];
+                if (_expandoDictionary.ContainsKey(CREATED_TIMESTAMP_FIELD_NAME))
+                    return (DateTime?)_expandoDictionary[CREATED_TIMESTAMP_FIELD_NAME];
 
                 return null;
             }
@@ -82,7 +83,7 @@ namespace ExpandoDB
                 if (value == null)
                     throw new ArgumentNullException("value");
 
-                _expandoDictionary[CREATED_TIMESTAMP_FIELD] = value;
+                _expandoDictionary[CREATED_TIMESTAMP_FIELD_NAME] = value;
             }
         }
 
@@ -96,8 +97,8 @@ namespace ExpandoDB
         {
             get
             {
-                if (_expandoDictionary.ContainsKey(MODIFIED_TIMESTAMP_FIELD))
-                    return (DateTime?)_expandoDictionary[MODIFIED_TIMESTAMP_FIELD];
+                if (_expandoDictionary.ContainsKey(MODIFIED_TIMESTAMP_FIELD_NAME))
+                    return (DateTime?)_expandoDictionary[MODIFIED_TIMESTAMP_FIELD_NAME];
 
                 return null;
             }
@@ -106,7 +107,7 @@ namespace ExpandoDB
                 if (value == null)
                     throw new ArgumentNullException("value");
 
-                _expandoDictionary[MODIFIED_TIMESTAMP_FIELD] = value;
+                _expandoDictionary[MODIFIED_TIMESTAMP_FIELD_NAME] = value;
             }
         }
         

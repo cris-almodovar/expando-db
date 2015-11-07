@@ -182,6 +182,7 @@
     <Compile Include="Content.cs" />
     <Compile Include="Database.cs" />
     <Compile Include="Search\CompositeAnalyzer.cs" />
+    <Compile Include="Search\LuceneField.cs" />
     <Compile Include="Search\SearchExtensions.cs" />
     <Compile Include="Search\FullTextAnalyzer.cs" />
     <Compile Include="Search\LuceneIndex.cs" />

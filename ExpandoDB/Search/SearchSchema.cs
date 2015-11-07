@@ -17,9 +17,9 @@ namespace ExpandoDB.Search
                 IndexedFields = new ConcurrentDictionary<string, IndexedField>()
             };
             
-            Default.IndexedFields[Content.ID_FIELD] = new IndexedField { Name = Content.ID_FIELD, DataType = IndexedFieldDataType.String, IsSortable = true, IsTokenized = false, IsStored = true };  
-            Default.IndexedFields[Content.CREATED_TIMESTAMP_FIELD] = new IndexedField { Name = Content.CREATED_TIMESTAMP_FIELD, DataType = IndexedFieldDataType.DateTime, IsSortable = true, IsTokenized = false };
-            Default.IndexedFields[Content.MODIFIED_TIMESTAMP_FIELD] = new IndexedField { Name = Content.MODIFIED_TIMESTAMP_FIELD, DataType = IndexedFieldDataType.DateTime, IsSortable = true, IsTokenized = false };            
+            Default.IndexedFields[Content.ID_FIELD_NAME] = new IndexedField { Name = Content.ID_FIELD_NAME, DataType = IndexedFieldDataType.String, IsSortable = true, IsTokenized = false, IsStored = true };  
+            Default.IndexedFields[Content.CREATED_TIMESTAMP_FIELD_NAME] = new IndexedField { Name = Content.CREATED_TIMESTAMP_FIELD_NAME, DataType = IndexedFieldDataType.DateTime, IsSortable = true, IsTokenized = false };
+            Default.IndexedFields[Content.MODIFIED_TIMESTAMP_FIELD_NAME] = new IndexedField { Name = Content.MODIFIED_TIMESTAMP_FIELD_NAME, DataType = IndexedFieldDataType.DateTime, IsSortable = true, IsTokenized = false };            
         }       
     }   
 

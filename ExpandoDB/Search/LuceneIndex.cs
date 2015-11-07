@@ -15,7 +15,7 @@ namespace ExpandoDB.Search
     /// </summary>
     public class LuceneIndex : IDisposable
     {
-        public const string FULL_TEXT_FIELD = "_full_text";
+        
         private const int DEFAULT_SEARCH_LIMIT = 1000;
         private readonly Directory _indexDirectory;
         private readonly Analyzer _compositeAnalyzer;
@@ -23,33 +23,7 @@ namespace ExpandoDB.Search
         private readonly QueryParser _queryParser;        
         private readonly SearcherManager _searcherManager;        
         private readonly System.Timers.Timer _refreshTimer;
-        private Func<SearchSchema> _getSearchSchema;
-        public static readonly LuceneFieldType TEXT_FIELD_TYPE;
-        public static readonly LuceneFieldType ID_FIELD_TYPE;
-        public static readonly LuceneFieldType STRING_FIELD_TYPE;
-        public static readonly LuceneFieldType NUMERIC_FIELD_TYPE;
-        public static readonly LuceneFieldType DATE_FIELD_TYPE;
-
-        /// <summary>
-        /// Initializes the <see cref="LuceneIndex"/> class.
-        /// </summary>
-        static LuceneIndex()
-        {
-            TEXT_FIELD_TYPE = new LuceneFieldType();
-            TEXT_FIELD_TYPE.SetValues(true, true, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS, false, false, DocValuesType.NONE);
-
-            ID_FIELD_TYPE = new LuceneFieldType();
-            ID_FIELD_TYPE.SetValues(false, true, IndexOptions.DOCS, true, false, DocValuesType.SORTED);
-
-            STRING_FIELD_TYPE = new LuceneFieldType();
-            STRING_FIELD_TYPE.SetValues(false, true, IndexOptions.DOCS, false, false, DocValuesType.SORTED);
-
-            NUMERIC_FIELD_TYPE = new LuceneFieldType();
-            NUMERIC_FIELD_TYPE.SetValues(false, true, IndexOptions.DOCS, false, false, DocValuesType.SORTED);
-
-            DATE_FIELD_TYPE = new LuceneFieldType();
-            DATE_FIELD_TYPE.SetValues(false, true, IndexOptions.DOCS, false, false, DocValuesType.SORTED);
-        }
+        private Func<SearchSchema> _getSearchSchema;     
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LuceneIndex"/> class.
@@ -76,7 +50,7 @@ namespace ExpandoDB.Search
             _writer = new IndexWriter(_indexDirectory, config);
             _searcherManager = new SearcherManager(_writer, true, null);
 
-            _queryParser = new QueryParser(FULL_TEXT_FIELD, _compositeAnalyzer);            
+            _queryParser = new QueryParser(LuceneField.FULL_TEXT_FIELD_NAME, _compositeAnalyzer);            
 
             _refreshTimer = new System.Timers.Timer
             {
