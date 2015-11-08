@@ -6,13 +6,13 @@ namespace ExpandoDB.Search
 {
     public static class SearchExtensions
     {
-        public static LuceneDocument ToLuceneDocument(this Content content, SearchSchema searchSchema = null)
+        public static LuceneDocument ToLuceneDocument(this Content content, IndexSchema indexSchema = null)
         {
             if (content == null)
                 throw new ArgumentNullException("content");
 
-            if (searchSchema == null)
-                searchSchema = SearchSchema.Default;
+            if (indexSchema == null)
+                indexSchema = IndexSchema.CreateDefault();
 
             var dictionary = content.AsDictionary();
             if (!dictionary.ContainsKey(Content.ID_FIELD_NAME))
@@ -21,13 +21,15 @@ namespace ExpandoDB.Search
             var luceneDocument = new LuceneDocument();
             foreach (var fieldName in dictionary.Keys)
             {
+                // NOTE: If schema.IsAutoPopulated is true, auto-add fields to the indexschema
+
                 IndexedField indexedField = null;
-                if (!searchSchema.IndexedFields.TryGetValue(fieldName, out indexedField))                
+                if (!indexSchema.IndexedFields.TryGetValue(fieldName, out indexedField))                
                 {
                     indexedField = new IndexedField { 
                         Name = fieldName                        
                     };
-                    searchSchema.IndexedFields.TryAdd(fieldName, indexedField);
+                    indexSchema.IndexedFields.TryAdd(fieldName, indexedField);
                 }
 
                 var fieldValue = dictionary[fieldName];
@@ -37,8 +39,10 @@ namespace ExpandoDB.Search
                     luceneDocument.Add(luceneField);
             }
 
-            // Add the full text field            
-            var fullTextField = new Field(LuceneField.FULL_TEXT_FIELD_NAME, content.ToFullTextString(), LuceneField.FULL_TEXT_FIELD_TYPE);
+            // The full-text field is always generated and added to the lucene document,
+            // even though it is not part of the index schema exposed to the user.
+            var fullText = content.ToFullTextString();            
+            var fullTextField = new Field(LuceneField.FULL_TEXT_FIELD_NAME, fullText, LuceneField.FULL_TEXT_FIELD_TYPE);
             luceneDocument.Add(fullTextField);
 
             return luceneDocument;

@@ -6,6 +6,7 @@ using FlexLucene.Store;
 using java.nio.file;
 using System;
 using System.Collections.Generic;
+using System.Text;
 using LuceneFieldType = FlexLucene.Document.FieldType;
 
 namespace ExpandoDB.Search
@@ -15,7 +16,6 @@ namespace ExpandoDB.Search
     /// </summary>
     public class LuceneIndex : IDisposable
     {
-        
         private const int DEFAULT_SEARCH_LIMIT = 1000;
         private readonly Directory _indexDirectory;
         private readonly Analyzer _compositeAnalyzer;
@@ -23,14 +23,14 @@ namespace ExpandoDB.Search
         private readonly QueryParser _queryParser;        
         private readonly SearcherManager _searcherManager;        
         private readonly System.Timers.Timer _refreshTimer;
-        private Func<SearchSchema> _getSearchSchema;     
+        private Func<IndexSchema> _getSearchSchema;     
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LuceneIndex"/> class.
         /// </summary>
         /// <param name="indexPath">The path to the directory that will contain the index files.</param>
         /// <param name="getSearchSchema">Returns the IndexShema for the full-text index.</param>        
-        public LuceneIndex(string indexPath, Func<SearchSchema> getSearchSchema)
+        public LuceneIndex(string indexPath, Func<IndexSchema> getSearchSchema)
         {
             if (String.IsNullOrWhiteSpace(indexPath))
                 throw new ArgumentNullException("indexPath");    
@@ -59,14 +59,25 @@ namespace ExpandoDB.Search
                 Enabled = true
             };
 
-            _refreshTimer.Elapsed += RefreshIndexReader;
+            _refreshTimer.Elapsed += OnRefreshTimerElapsed;
             _refreshTimer.Start();
 
         }
 
-        private void RefreshIndexReader(object sender, System.Timers.ElapsedEventArgs e)
+        /// <summary>
+        /// Refreshes the Lucene index so that Search() reflects the latest insertions and deletions.
+        /// </summary>
+        /// <remarks>
+        /// The index refreshes itself automatically every second.
+        /// </remarks>
+        public void Refresh()
         {
             _searcherManager.MaybeRefresh();
+        }
+
+        private void OnRefreshTimerElapsed(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            Refresh();
         }
 
         /// <summary>
@@ -116,9 +127,49 @@ namespace ExpandoDB.Search
             _writer.Commit();
         }
 
-        public IEnumerable<Guid> Search(string query, string sortByField = null)
+        public IEnumerable<Guid> Search(string queryString, string sortByField = null)
         {
-            return null;
+            var query = _queryParser.Parse(queryString);            
+
+            var searcher = _searcherManager.Acquire() as IndexSearcher;
+            if (searcher != null)
+            {
+                try
+                {
+                    var sort = GetSortCriteria(sortByField);
+                    var topDocs = searcher.Search(query, 1000000, sort);
+                    var hitCount = topDocs.TotalHits; // > context.MaxItems.Value ? context.MaxItems.Value : topDocs.TotalHits;
+
+                    if (topDocs.TotalHits > 0)
+                    {
+                        foreach (var sd in topDocs.ScoreDocs)
+                        {
+                            var doc = searcher.Doc(sd.Doc);
+                            if (doc != null)
+                            {
+                                var idField = doc.GetField(LuceneField.ID_FIELD_NAME);                                
+                                var bytes = idField.binaryValue().Bytes;
+                                var guid = Guid.Parse(Encoding.UTF8.GetString(bytes));                                
+                                yield return guid;
+                            }
+                        }
+                    }
+                }                
+                finally
+                {
+                    _searcherManager.Release(searcher);
+                }
+            }                     
+        }
+
+        private Sort GetSortCriteria(string sortByField = null)
+        {
+            if (String.IsNullOrWhiteSpace(sortByField))
+                return Sort.RELEVANCE;
+
+            var descending = sortByField.TrimStart().StartsWith("-", StringComparison.InvariantCulture);
+            var sortField = new SortField(sortByField, SortField.Type.STRING, descending);
+            return new Sort(sortField);
         }
 
         public IEnumerable<Guid> Search(SearchContext context)
@@ -134,6 +185,7 @@ namespace ExpandoDB.Search
             _searcherManager.Close();
             _writer.Close();
 
+            _refreshTimer.Elapsed -= OnRefreshTimerElapsed;
             _refreshTimer.Stop();
             _refreshTimer.Dispose();
 

@@ -13,7 +13,7 @@ namespace ExpandoDB
     {
         public string Name { get; set; }
         public string Description { get; set; }
-        public SearchSchema IndexSchema { get; set; }
+        public IndexSchema IndexSchema { get; set; }
         public IContentStorage Storage { get; set; }
         public LuceneIndex FullTextIndex { get; set; }
 

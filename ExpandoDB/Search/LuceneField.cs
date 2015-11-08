@@ -1,6 +1,7 @@
 ﻿using FlexLucene.Document;
 using FlexLucene.Index;
 using FlexLucene.Util;
+using java.lang;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,12 +27,12 @@ namespace ExpandoDB.Search
 
         static LuceneField()
         {
-            FULL_TEXT_FIELD_TYPE = new FieldType().Initialize(true, true, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, false, false, DocValuesType.NONE);  
-            STRING_FIELD_TYPE = new FieldType().Initialize(false, true, IndexOptions.DOCS, false, false, DocValuesType.SORTED);
-            STORED_STRING_FIELD_TYPE = new FieldType().Initialize(false, true, IndexOptions.DOCS, true, false, DocValuesType.SORTED);
+            FULL_TEXT_FIELD_TYPE = new FieldType().InitializeFieldType(true, true, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, false, false, DocValuesType.NONE);  
+            STRING_FIELD_TYPE = new FieldType().InitializeFieldType(false, true, IndexOptions.DOCS, false, false, DocValuesType.SORTED);
+            STORED_STRING_FIELD_TYPE = new FieldType().InitializeFieldType(false, true, IndexOptions.DOCS, true, false, DocValuesType.SORTED);
         }
 
-        private static FieldType Initialize(this FieldType fieldType, bool tokenized = false, bool omitNorms = true, IndexOptions indexOptions = null, bool stored = false, bool storeTermVectors = false, DocValuesType docValuesType = null)
+        private static FieldType InitializeFieldType(this FieldType fieldType, bool tokenized = false, bool omitNorms = true, IndexOptions indexOptions = null, bool stored = false, bool storeTermVectors = false, DocValuesType docValuesType = null)
         {
             fieldType.SetTokenized(tokenized);
             fieldType.SetOmitNorms(omitNorms);
@@ -85,7 +86,7 @@ namespace ExpandoDB.Search
                     if (fieldType == typeof(Guid))
                     {
                         indexedField.DataType = IndexedFieldDataType.String;
-                        var idValue = ((Guid)value).ToString();
+                        var idValue = ((Guid)value).ToString();                        
                         luceneFields.Add(new Field(fieldName, new BytesRef(idValue), LuceneField.STORED_STRING_FIELD_TYPE));
                     }
                     break;
@@ -99,7 +100,7 @@ namespace ExpandoDB.Search
             if (content == null)
                 throw new ArgumentNullException("content");
 
-            var buffer = new StringBuilder();
+            var buffer = new System.Text.StringBuilder();
 
             var dictionary = content.AsDictionary();
             foreach (var fieldName in dictionary.Keys)
@@ -166,7 +167,7 @@ namespace ExpandoDB.Search
 
         private static string InvertNegativeNumber(string negativeNumber)
         {
-            var buffer = new StringBuilder();
+            var buffer = new System.Text.StringBuilder();
             for (int i = 0; i < negativeNumber.Length; i++)
             {
                 char digit = negativeNumber[i];

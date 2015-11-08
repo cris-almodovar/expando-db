@@ -13,13 +13,13 @@ namespace ExpandoDB.Search
         private readonly ConcurrentDictionary<string, Analyzer> _perFieldAnalyzers;        
         private readonly Analyzer _textAnalyzer;
         private readonly Analyzer _keywordAnalyzer;
-        private readonly Func<SearchSchema> _getIndexSchema;
+        private readonly Func<IndexSchema> _getIndexSchema;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CompositeAnalyzer"/> class.
         /// </summary>
         /// <param name="defaultAnalyzer">The default analyzer.</param>
-        public CompositeAnalyzer(Func<SearchSchema> getIndexSchema) :
+        public CompositeAnalyzer(Func<IndexSchema> getIndexSchema) :
             base(Analyzer.PER_FIELD_REUSE_STRATEGY)
         {
             if (getIndexSchema == null)

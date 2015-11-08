@@ -4,6 +4,8 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Linq;
+using System.Text;
+using System.Threading;
 
 namespace ExpandoDB.Tests
 {
@@ -20,10 +22,11 @@ namespace ExpandoDB.Tests
             _appPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
             _indexPath = Path.Combine(_appPath, "index");
-            if (!Directory.Exists(_indexPath))
-                Directory.CreateDirectory(_indexPath);
 
-            var schema = SearchSchema.Default;
+            if (Directory.Exists(_indexPath))
+                Directory.Delete(_indexPath, true);            
+
+            var schema = IndexSchema.CreateDefault();
             _luceneIndex = new LuceneIndex(_indexPath, () => schema);
         }
 
@@ -41,8 +44,11 @@ namespace ExpandoDB.Tests
         {
             var content = CreateContent();
             var luceneDocument = content.ToLuceneDocument();
+            var idField = luceneDocument.GetField(LuceneField.ID_FIELD_NAME);
+            var bytes = idField.binaryValue().Bytes.Where(b => b > 0).ToArray();
+            var id = Encoding.UTF8.GetString(bytes);
 
-            Assert.AreEqual<string>(content._id.ToString(), luceneDocument.Get("_id"));
+            Assert.AreEqual<string>(content._id.ToString(), id);
         }
 
         private static Content CreateContent()
@@ -54,7 +60,7 @@ namespace ExpandoDB.Tests
             dynamic book = content.AsExpando();
             book.Title = "The Hitchhiker's Guide to the Galaxy";
             book.Author = "Douglas Adams";
-            book.PublishDate = DateTime.Now;
+            book.PublishDate = new DateTime(1979, 10, 12, 12, 0, 0, DateTimeKind.Utc);
             book.Rating = 10;
             book.Description = "The Hitchhiker's Guide to the Galaxy is a comedy science fiction series created by Douglas Adams. Originally a radio comedy broadcast on BBC Radio 4 in 1978, it was later adapted to other formats, and over several years it gradually became an international multi-media phenomenon.";
             return content;
@@ -63,14 +69,17 @@ namespace ExpandoDB.Tests
         [TestMethod]
         public void Can_add_Content_and_search()
         {
-            var content = CreateContent();
-            _luceneIndex.Insert(content);
+            for (var i = 0; i < 100; i++)
+            {
+                var content = CreateContent();
+                _luceneIndex.Insert(content);
+            }
 
-            var guid = _luceneIndex.Search("hitchhiker AND galaxy").FirstOrDefault();
+            _luceneIndex.Refresh();
 
-            Assert.AreEqual<Guid?>(content._id, guid);
+            var count = _luceneIndex.Search("hitchhiker AND galaxy").Count();
 
-
+            Assert.AreEqual<int>(count, 100);
         }
     }
 }
