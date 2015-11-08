@@ -117,6 +117,9 @@ namespace ExpandoDB.Search
             if (content == null)
                 throw new ArgumentNullException("content");
 
+            if (content._id == null || content._id == Guid.Empty)
+                throw new InvalidOperationException("Cannot update Content that does not have an _id");
+
             var searchSchema = _getSearchSchema();
             var document = content.ToLuceneDocument(searchSchema);
 
