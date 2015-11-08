@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace ExpandoDB.Storage
 {
     /// <summary>
-    /// 
+    /// Implements the persistence of dynamic Content objects, using SQLite as the storage engine.
     /// </summary>
     public class SQLiteContentStorage : IContentStorage
     {
