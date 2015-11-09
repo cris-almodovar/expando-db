@@ -9,7 +9,7 @@ using System.Reflection;
 
 namespace ExpandoDB.Tests
 {
-    [TestClass]
+    [TestClass]    
     public class SQLiteDynamicStorageTests
     {
         private string _appPath;
@@ -42,6 +42,7 @@ namespace ExpandoDB.Tests
         }
 
         [TestMethod]
+        [TestCategory("Content Storage test")]
         public void Database_file_is_auto_created()        
         {            
             var dbFilePath = Path.Combine(_dbPath, Guid.NewGuid().ToString() + ".db");
@@ -57,6 +58,7 @@ namespace ExpandoDB.Tests
         }
 
         [TestMethod]
+        [TestCategory("Content Storage test")]
         public void Can_insert_dynamic_content()
         {
             dynamic inserted = new Content();
@@ -91,6 +93,7 @@ namespace ExpandoDB.Tests
         }
 
         [TestMethod]
+        [TestCategory("Content Storage test")]
         public void Can_delete_dynamic_content()
         {
             dynamic inserted = new Content();
@@ -112,6 +115,7 @@ namespace ExpandoDB.Tests
         }
 
         [TestMethod]
+        [TestCategory("Content Storage test")]
         public void Can_update_dynamic_content()
         {
             dynamic inserted = new Content();

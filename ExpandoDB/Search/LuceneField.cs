@@ -16,34 +16,10 @@ namespace ExpandoDB.Search
         public const string ID_FIELD_NAME = Content.ID_FIELD_NAME;        
         public const string CREATED_TIMESTAMP_FIELD_NAME = Content.CREATED_TIMESTAMP_FIELD_NAME;
         public const string MODIFIED_TIMESTAMP_FIELD_NAME = Content.MODIFIED_TIMESTAMP_FIELD_NAME;
-        public const string FULL_TEXT_FIELD_NAME = "_fullText";
-        
-        public static readonly FieldType FULL_TEXT_FIELD_TYPE;        
-        public static readonly FieldType STRING_FIELD_TYPE;
-        public static readonly FieldType STORED_STRING_FIELD_TYPE;
+        public const string FULL_TEXT_FIELD_NAME = "_fullText";   
 
-        const string dateTimeFormat = "yyyyMMddHHmm";
+        const string dateTimeFormat = "yyyyMMddHHmmss";
         const string numberFormat = "000000000000000.000000000000";
-
-        static LuceneField()
-        {
-            FULL_TEXT_FIELD_TYPE = new FieldType().InitializeFieldType(true, true, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, false, false, DocValuesType.NONE);  
-            STRING_FIELD_TYPE = new FieldType().InitializeFieldType(false, true, IndexOptions.DOCS, false, false, DocValuesType.SORTED);
-            STORED_STRING_FIELD_TYPE = new FieldType().InitializeFieldType(false, true, IndexOptions.DOCS, true, false, DocValuesType.SORTED);
-        }
-
-        private static FieldType InitializeFieldType(this FieldType fieldType, bool tokenized = false, bool omitNorms = true, IndexOptions indexOptions = null, bool stored = false, bool storeTermVectors = false, DocValuesType docValuesType = null)
-        {
-            fieldType.SetTokenized(tokenized);
-            fieldType.SetOmitNorms(omitNorms);
-            fieldType.SetIndexOptions(indexOptions ?? IndexOptions.DOCS);
-            fieldType.SetStored(stored);
-            fieldType.SetStoreTermVectors(storeTermVectors);
-            fieldType.SetDocValuesType(docValuesType ?? DocValuesType.NONE);
-            fieldType.Freeze();
-
-            return fieldType;
-        }
 
         public static IList<Field> ToLuceneFields(this object value, IndexedField indexedField)
         {
@@ -63,31 +39,40 @@ namespace ExpandoDB.Search
                 case TypeCode.Single:
                     indexedField.DataType = IndexedFieldDataType.Number;
                     var numberString = Convert.ToDouble(value).ToLuceneNumberString();
-                    luceneFields.Add(new Field(fieldName, new BytesRef(numberString), LuceneField.STRING_FIELD_TYPE));
+                    luceneFields.Add(new StringField(fieldName, numberString, Field.Store.NO));
+                    luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(numberString)));
                     break;
 
                 case TypeCode.String:
                     indexedField.DataType = IndexedFieldDataType.String;
                     var stringValue = (string)value;
+                    var stringValueForSorting = stringValue.Trim().ToLowerInvariant();
                     var countOfWhiteSpaces = Regex.Matches(stringValue, @"\s").Count;
                     if (countOfWhiteSpaces <= 2)
-                        luceneFields.Add(new Field(fieldName, new BytesRef(stringValue), LuceneField.STRING_FIELD_TYPE));
+                    {
+                        luceneFields.Add(new StringField(fieldName, stringValue, Field.Store.NO));
+                        luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(stringValueForSorting)));
+                    }
                     else
-                        luceneFields.Add(new Field(fieldName, stringValue, LuceneField.FULL_TEXT_FIELD_TYPE));
+                    {                        
+                        luceneFields.Add(new TextField(fieldName, stringValue, Field.Store.NO));
+                    }
                     break;
 
                 case TypeCode.DateTime:
                     indexedField.DataType = IndexedFieldDataType.DateTime;
                     var dateValue = ((DateTime)value).ToLuceneDateString();
-                    luceneFields.Add(new Field(fieldName, new BytesRef(dateValue), LuceneField.STRING_FIELD_TYPE));
+                    luceneFields.Add(new StringField(fieldName, dateValue, Field.Store.NO));
+                    luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(dateValue)));
                     break;
 
                 case TypeCode.Object:
                     if (fieldType == typeof(Guid))
                     {
                         indexedField.DataType = IndexedFieldDataType.String;
-                        var idValue = ((Guid)value).ToString();                        
-                        luceneFields.Add(new Field(fieldName, new BytesRef(idValue), LuceneField.STORED_STRING_FIELD_TYPE));
+                        var idValue = ((Guid)value).ToString();
+                        luceneFields.Add(new StringField(fieldName, idValue, Field.Store.YES));
+                        luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(idValue)));
                     }
                     break;
             }

@@ -6,10 +6,11 @@ using System.Reflection;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Collections.Generic;
 
 namespace ExpandoDB.Tests
 {
-    [TestClass]
+    [TestClass]    
     public class LuceneIndexTests
     {
         private LuceneIndex _luceneIndex;
@@ -20,27 +21,28 @@ namespace ExpandoDB.Tests
         public void Initialize()
         {
             _appPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-
             _indexPath = Path.Combine(_appPath, "index");
 
             if (Directory.Exists(_indexPath))
                 Directory.Delete(_indexPath, true);            
-
-            var schema = IndexSchema.CreateDefault();
-            _luceneIndex = new LuceneIndex(_indexPath, () => schema);
+            
+            _luceneIndex = new LuceneIndex(_indexPath);
         }
 
         [TestCleanup]
         public void Cleanup()
-        {
+        {   
+            // Release the resources used by the index
             _luceneIndex.Dispose();
 
+            // Delete the index directory and all index files
             if (Directory.Exists(_indexPath))    
                 Directory.Delete(_indexPath, true);
         }
 
         [TestMethod]
-        public void Can_convert_Content_to_Lucene_document()
+        [TestCategory("Lucene Index test")]
+        public void Can_convert_content_to_Lucene_document()
         {
             var content = CreateContent();
             var luceneDocument = content.ToLuceneDocument();
@@ -67,19 +69,34 @@ namespace ExpandoDB.Tests
         }
 
         [TestMethod]
-        public void Can_add_Content_and_search()
+        [TestCategory("Lucene Index test")]
+        public void Can_add_contents_and_search()
         {
-            for (var i = 0; i < 100; i++)
+            var contents = new List<Content>();
+            for(var i = 0; i < 5; i++)
             {
-                var content = CreateContent();
-                _luceneIndex.Insert(content);
+                contents.Add(CreateContent());
+                Thread.Sleep(1500);
             }
+
+            var contentGuidsInReverseOrder = contents.OrderByDescending(c => c._createdTimestamp).Select(c => c._id.Value).ToList();
+
+            for (var i = contents.Count - 1; i >= 0; i--)
+                _luceneIndex.Insert(contents[i]);
 
             _luceneIndex.Refresh();
 
-            var count = _luceneIndex.Search("hitchhiker AND galaxy").Count();
+            int hitCount;
+            int pageCount;
+            bool hasMoreHits;
+            int topN = 5;
 
-            Assert.AreEqual<int>(count, 100);
+            var result = _luceneIndex.Search("hitchhiker AND galaxy", out hitCount, out pageCount, out hasMoreHits, sortByFields: new [] { '-'+LuceneField.CREATED_TIMESTAMP_FIELD_NAME }, topN: topN);
+
+            Assert.AreEqual<int>(hitCount, 5);
+            Assert.IsFalse(hasMoreHits);
+            Assert.IsTrue(result.SequenceEqual(contentGuidsInReverseOrder));
+
         }
     }
 }

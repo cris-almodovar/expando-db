@@ -47,7 +47,7 @@ namespace ExpandoDB.Storage
             _createTableSql = String.Format("CREATE TABLE IF NOT EXISTS [{0}] (id TEXT PRIMARY KEY, json TEXT)", _collectionName);
             _insertSql = String.Format("INSERT INTO [{0}] (id, json) VALUES (@id, @json)", _collectionName);
             _selectOneSql = String.Format("SELECT json FROM [{0}] WHERE id = @id", _collectionName);
-            _selectManySql = String.Format("SELECT json FROM [{0}] WHERE id IN @ids", _collectionName);
+            _selectManySql = String.Format("SELECT id, json FROM [{0}] WHERE id IN @ids", _collectionName);
             _selectCountSql = String.Format("SELECT COUNT(*) FROM [{0}] WHERE id = @id", _collectionName);
             _updateSql = String.Format("UPDATE [{0}] SET json = @json WHERE id = @id", _collectionName);
             _deleteOneSql = String.Format("DELETE FROM [{0}] WHERE id = @id", _collectionName);
@@ -145,13 +145,24 @@ namespace ExpandoDB.Storage
         public async Task<IEnumerable<Content>> GetAsync(IList<Guid> guids)
         {
             if (guids == null)
-                throw new ArgumentNullException("guids");   
-              
+                throw new ArgumentNullException("guids");
+
             using (var conn = GetConnection())
-            {
-                var ids = guids.Select(g => g.ToString());
-                var result = await conn.QueryAsync<string>(_selectManySql, new { ids });
-                return result.ToEnumerableContents();
+            {   
+                var ids = guids.Select(g => g.ToString()).ToList();
+                var result = await conn.QueryAsync(_selectManySql, new { ids });  // The result will not be ordered
+                var resultLookup = result.ToDictionary(row => row.id as string);
+                
+                // Need to make sure the Contents come in the same order as the input guids
+                var orderedResult = new string[guids.Count];
+                for (var i = 0; i < guids.Count; i++)
+                {
+                    var id = ids[i];
+                    var json = resultLookup[id] as string;
+                    orderedResult[i] = json;
+                }
+
+                return orderedResult.ToEnumerableContents();
             }
         }
 

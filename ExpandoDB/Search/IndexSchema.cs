@@ -9,11 +9,11 @@ namespace ExpandoDB.Search
         public ConcurrentDictionary<string, IndexedField> IndexedFields { get; set; }     
         public bool IsAutoPopulated { get; set; } 
 
-        public static IndexSchema CreateDefault()
+        public static IndexSchema CreateDefault(string name = null)
         {
             var schema = new IndexSchema
             {
-                Name = String.Empty,
+                Name = name ?? "Default",
                 IndexedFields = new ConcurrentDictionary<string, IndexedField>(),
                 IsAutoPopulated = false
             };
