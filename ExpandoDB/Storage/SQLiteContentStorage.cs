@@ -150,15 +150,19 @@ namespace ExpandoDB.Storage
             using (var conn = GetConnection())
             {   
                 var ids = guids.Select(g => g.ToString()).ToList();
-                var result = await conn.QueryAsync(_selectManySql, new { ids });  // The result will not be ordered
-                var resultLookup = result.ToDictionary(row => row.id as string);
+                var result = await conn.QueryAsync(_selectManySql, new { ids });
                 
-                // Need to make sure the Contents come in the same order as the input guids
+                // The result will not be in the same order as the input guids.
+                // So we need re-sort the result to be in the same order as the input guids
+
+                var resultLookup = result.ToDictionary(row => row.id as string);
                 var orderedResult = new string[guids.Count];
+
                 for (var i = 0; i < guids.Count; i++)
                 {
                     var id = ids[i];
-                    var json = resultLookup[id] as string;
+                    var json = resultLookup[id].json as string;
+
                     orderedResult[i] = json;
                 }
 

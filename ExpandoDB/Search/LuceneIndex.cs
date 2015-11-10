@@ -32,8 +32,7 @@ namespace ExpandoDB.Search
         /// <summary>
         /// Initializes a new instance of the <see cref="LuceneIndex"/> class.
         /// </summary>
-        /// <param name="indexPath">The path to the directory that will contain the index files.</param>
-        /// <param name="getSearchSchema">Returns the IndexShema for the full-text index.</param>        
+        /// <param name="indexPath">The path to the directory that will contain the index files.</param>                
         public LuceneIndex(string indexPath, IndexSchema indexSchema = null)
         {
             if (String.IsNullOrWhiteSpace(indexPath))
@@ -104,7 +103,7 @@ namespace ExpandoDB.Search
             var document = content.ToLuceneDocument(_indexSchema);
             
             _writer.AddDocument(document);
-            _writer.Commit();
+            _writer.Commit();            
         }
 
         /// <summary>
@@ -140,26 +139,28 @@ namespace ExpandoDB.Search
             _writer.Commit();
         }
 
-        public IList<Guid> Search(string queryString, out int hitCount, out int pageCount, out bool hasMoreHits, IList<string> sortByFields = null, int? topN = null, int? itemsPerPage = null, int? pageNumber = null)
+        public SearchResult<Guid> Search(SearchCriteria criteria)
         {
-            hitCount = 0;
-            pageCount = 0;
-            hasMoreHits = false;
+            criteria.TopN = criteria.TopN ?? DEFAULT_SEARCH_TOP_N;
+            criteria.ItemsPerPage = criteria.ItemsPerPage ?? DEFAULT_SEARCH_ITEMS_PER_PAGE;
+            criteria.PageNumber = criteria.PageNumber ?? 1;
 
-            topN = topN ?? DEFAULT_SEARCH_TOP_N;
-            itemsPerPage = itemsPerPage ?? DEFAULT_SEARCH_ITEMS_PER_PAGE;
-            pageNumber = pageNumber ?? 1;
-
-            if (topN <= 0)
+            if (criteria.TopN <= 0)
                 throw new ArgumentException("topN cannot be <= zero");
-            if (itemsPerPage <= 0)
+            if (criteria.ItemsPerPage <= 0)
                 throw new ArgumentException("itemsPerPage cannot be <= zero");
-            if (pageNumber <= 0)
+            if (criteria.PageNumber <= 0)
                 throw new ArgumentException("pageNumber cannot be <= zero");
 
-            var contentIds = new List<Guid>();
+            var result = new SearchResult<Guid>(criteria)
+            {
+                HitCount = 0,
+                TotalHitCount = 0,
+                PageCount = 0,
+                Items = new List<Guid>()
+            };   
 
-            var query = _queryParser.Parse(queryString);
+            var query = _queryParser.Parse(criteria.Query);
 
             var searcherManager = GetSearcherManager();
             if (searcherManager == null)
@@ -173,24 +174,26 @@ namespace ExpandoDB.Search
             {
                 try
                 {
-                    var sort = GetSortCriteria(sortByFields);
-                    var topFieldDocs = searcher.Search(query, (topN.Value + 1), sort); // pass in topN+1 so that we know we will know if the number of matching items is greater than topN
+                    var sort = GetSortCriteria(criteria.SortByField);
+                    
+                    var topFieldDocs = searcher.Search(query, criteria.TopN.Value, sort); 
 
-                    // Check if Search() returned more than topN matching items;
-                    hasMoreHits = (topFieldDocs.ScoreDocs.Length > topN.Value);
-                    hitCount = hasMoreHits ? topN.Value : topFieldDocs.ScoreDocs.Length;                    
+                    // Check if Search() returned more than topN matching items;                    
+                    result.HitCount = topFieldDocs.ScoreDocs.Length;
+                    result.TotalHitCount = topFieldDocs.TotalHits;                 
 
-                    if (hitCount > 0)
+                    if (result.HitCount > 0)
                     {
-                        var itemsToSkip = (pageNumber.Value - 1) * itemsPerPage.Value;
-                        var itemsToTake = itemsPerPage.Value;
+                        var itemsToSkip = (criteria.PageNumber.Value - 1) * criteria.ItemsPerPage.Value;
+                        var itemsToTake = criteria.ItemsPerPage.Value;
 
-                        var scoreDocsForCurrentPage = topFieldDocs.ScoreDocs
-                                                                    .Take(hitCount)
-                                                                    .Skip(itemsToSkip)
-                                                                    .Take(itemsToTake)
-                                                                    .ToList();
+                        var scoreDocsForCurrentPage = 
+                                topFieldDocs.ScoreDocs
+                                            .Skip(itemsToSkip)
+                                            .Take(itemsToTake)
+                                            .ToList();
 
+                        var contentIds = new List<Guid>();
                         for (var i = 0; i < scoreDocsForCurrentPage.Count; i++)
                         {
                             var sd = scoreDocsForCurrentPage[i];
@@ -204,7 +207,8 @@ namespace ExpandoDB.Search
                             contentIds.Add(Guid.Parse(idValue));
                         }
 
-                        pageCount = ComputePageCount(hitCount, itemsPerPage.Value);                        
+                        result.Items = contentIds;
+                        result.PageCount = ComputePageCount(result.HitCount.Value, criteria.ItemsPerPage.Value);                        
                     }                    
                                         
                 }
@@ -218,7 +222,7 @@ namespace ExpandoDB.Search
                 }
             }
 
-            return contentIds;
+            return result;
         }
 
         private int ComputePageCount(int hitCount, int itemsPerPage)
@@ -251,20 +255,15 @@ namespace ExpandoDB.Search
             }
         }
 
-        private Sort GetSortCriteria(IList<string> sortByFields = null)
+        private Sort GetSortCriteria(string sortByField = null)
         {
-            if (sortByFields == null || sortByFields.Count == 0)
+            if (String.IsNullOrWhiteSpace(sortByField))
                 return Sort.RELEVANCE;
 
-            var sortFields = new List<SortField>();
-            foreach (var fieldName in sortByFields)
-            {   
-                var sortFieldName = fieldName.Trim();
-                var reverse = sortFieldName.StartsWith("-", StringComparison.InvariantCulture);
-                var sortField = new SortField(sortFieldName, SortField.Type.STRING_VAL, reverse);
-                
-                sortFields.Add(sortField);
-            }
+            var sortFields = new List<SortField>();            
+            var sortFieldName = sortByField.Trim();
+            var reverse = sortFieldName.StartsWith("-", StringComparison.InvariantCulture);
+            sortFields.Add(new SortField(sortFieldName, SortField.Type.STRING, reverse));            
 
             return new Sort(sortFields.ToArray());
         }       

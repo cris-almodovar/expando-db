@@ -46,9 +46,8 @@ namespace ExpandoDB.Tests
         {
             var content = CreateContent();
             var luceneDocument = content.ToLuceneDocument();
-            var idField = luceneDocument.GetField(LuceneField.ID_FIELD_NAME);
-            var bytes = idField.binaryValue().Bytes.Where(b => b > 0).ToArray();
-            var id = Encoding.UTF8.GetString(bytes);
+            var idField = luceneDocument.GetField(LuceneField.ID_FIELD_NAME);            
+            var id = idField.stringValue();
 
             Assert.AreEqual<string>(content._id.ToString(), id);
         }
@@ -73,30 +72,34 @@ namespace ExpandoDB.Tests
         public void Can_add_contents_and_search()
         {
             var contents = new List<Content>();
-            for(var i = 0; i < 5; i++)
+            for(var i = 0; i < 10; i++)
             {
-                contents.Add(CreateContent());
-                Thread.Sleep(1500);
+                dynamic newContent = CreateContent();                
+                newContent.BookId = 9-i;
+
+                contents.Add(newContent);
+                _luceneIndex.Insert(newContent);
+                Thread.Sleep(1200);
+                
             }
 
-            var contentGuidsInReverseOrder = contents.OrderByDescending(c => c._createdTimestamp).Select(c => c._id.Value).ToList();
-
-            for (var i = contents.Count - 1; i >= 0; i--)
-                _luceneIndex.Insert(contents[i]);
+            var contentIds = contents.Select(c => c._id.Value).ToList();
+            contentIds.Reverse();
 
             _luceneIndex.Refresh();
 
-            int hitCount;
-            int pageCount;
-            bool hasMoreHits;
-            int topN = 5;
+            var criteria = new SearchCriteria
+            {
+                Query = "hitchhiker and galaxy",
+                SortByField = "BookId",
+                TopN = 10
+            };           
 
-            var result = _luceneIndex.Search("hitchhiker AND galaxy", out hitCount, out pageCount, out hasMoreHits, sortByFields: new [] { '-'+LuceneField.CREATED_TIMESTAMP_FIELD_NAME }, topN: topN);
+            var result = _luceneIndex.Search(criteria);
 
-            Assert.AreEqual<int>(hitCount, 5);
-            Assert.IsFalse(hasMoreHits);
-            Assert.IsTrue(result.SequenceEqual(contentGuidsInReverseOrder));
-
+            Assert.AreEqual<int?>(result.HitCount, 10);
+            Assert.AreEqual<int?>(result.HitCount, result.TotalHitCount);
+            Assert.IsTrue(result.Items.SequenceEqual(contentIds));
         }
     }
 }

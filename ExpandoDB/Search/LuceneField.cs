@@ -22,13 +22,13 @@ namespace ExpandoDB.Search
         const string numberFormat = "000000000000000.000000000000";
 
         public static IList<Field> ToLuceneFields(this object value, IndexedField indexedField)
-        {
+        {            
             if (value == null)
                 return null;
 
             var luceneFields = new List<Field>();
             var fieldType = value.GetType();
-            var fieldName = indexedField.Name;
+            var fieldName = indexedField.Name.Trim();            
 
             switch (Type.GetTypeCode(fieldType))
             {
@@ -40,7 +40,7 @@ namespace ExpandoDB.Search
                     indexedField.DataType = IndexedFieldDataType.Number;
                     var numberString = Convert.ToDouble(value).ToLuceneNumberString();
                     luceneFields.Add(new StringField(fieldName, numberString, Field.Store.NO));
-                    luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(numberString)));
+                    luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(numberString)));                    
                     break;
 
                 case TypeCode.String:
@@ -48,10 +48,10 @@ namespace ExpandoDB.Search
                     var stringValue = (string)value;
                     var stringValueForSorting = stringValue.Trim().ToLowerInvariant();
                     var countOfWhiteSpaces = Regex.Matches(stringValue, @"\s").Count;
-                    if (countOfWhiteSpaces <= 2)
+                    if (countOfWhiteSpaces <= 1)
                     {
                         luceneFields.Add(new StringField(fieldName, stringValue, Field.Store.NO));
-                        luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(stringValueForSorting)));
+                        luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(stringValueForSorting)));                        
                     }
                     else
                     {                        
@@ -63,7 +63,7 @@ namespace ExpandoDB.Search
                     indexedField.DataType = IndexedFieldDataType.DateTime;
                     var dateValue = ((DateTime)value).ToLuceneDateString();
                     luceneFields.Add(new StringField(fieldName, dateValue, Field.Store.NO));
-                    luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(dateValue)));
+                    luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(dateValue)));                    
                     break;
 
                 case TypeCode.Object:
@@ -72,7 +72,7 @@ namespace ExpandoDB.Search
                         indexedField.DataType = IndexedFieldDataType.String;
                         var idValue = ((Guid)value).ToString();
                         luceneFields.Add(new StringField(fieldName, idValue, Field.Store.YES));
-                        luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(idValue)));
+                        luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(idValue)));                        
                     }
                     break;
             }

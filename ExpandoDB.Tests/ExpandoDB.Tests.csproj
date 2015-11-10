@@ -177,6 +177,7 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="CollectionTests.cs" />
     <Compile Include="LuceneIndexTests.cs" />
     <Compile Include="SQLiteContentStorageTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
