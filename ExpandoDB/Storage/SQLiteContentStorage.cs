@@ -103,7 +103,7 @@ namespace ExpandoDB.Storage
             {
                 var guid = Guid.NewGuid();
                 content._id = guid;
-                content._createdTimestamp = DateTime.UtcNow;
+                content._createdTimestamp = content._modifiedTimestamp = DateTime.UtcNow;
                 content.ConvertDatesToUtc();
 
                 var id = content._id.ToString();
