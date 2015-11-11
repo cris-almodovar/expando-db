@@ -48,11 +48,15 @@ namespace ExpandoDB
 
         public async Task<SearchResult<Content>> Search(SearchCriteria criteria)
         {
-            var searchResult = new SearchResult<Content>(criteria);
-            
+            var searchResult = new SearchResult<Content>(criteria);            
             var luceneResult = _luceneIndex.Search(criteria);
             
-            if (luceneResult.HitCount > 0)            
+            // Copy values from Lucene result
+            searchResult.HitCount = luceneResult.HitCount;
+            searchResult.TotalHitCount = luceneResult.TotalHitCount;
+            searchResult.PageCount = luceneResult.PageCount;
+
+            if (searchResult.HitCount > 0)            
                 searchResult.Items = await _storage.GetAsync(luceneResult.Items.ToList());            
 
             return searchResult; 

@@ -54,7 +54,7 @@ namespace ExpandoDB.Search
             
             InitializeSearcherManager();            
 
-            _queryParser = new QueryParser(LuceneField.FULL_TEXT_FIELD_NAME, _compositeAnalyzer);            
+            _queryParser = new LuceneQueryParser(LuceneField.FULL_TEXT_FIELD_NAME, _compositeAnalyzer, _indexSchema);            
 
             _refreshTimer = new System.Timers.Timer
             {
@@ -263,6 +263,9 @@ namespace ExpandoDB.Search
             var sortFields = new List<SortField>();            
             var sortFieldName = sortByField.Trim();
             var reverse = sortFieldName.StartsWith("-", StringComparison.InvariantCulture);
+            if (reverse)
+                sortFieldName = sortFieldName.TrimStart('-');
+
             sortFields.Add(new SortField(sortFieldName, SortField.Type.STRING, reverse));            
 
             return new Sort(sortFields.ToArray());

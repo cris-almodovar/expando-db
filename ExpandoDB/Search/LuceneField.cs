@@ -16,10 +16,10 @@ namespace ExpandoDB.Search
         public const string ID_FIELD_NAME = Content.ID_FIELD_NAME;        
         public const string CREATED_TIMESTAMP_FIELD_NAME = Content.CREATED_TIMESTAMP_FIELD_NAME;
         public const string MODIFIED_TIMESTAMP_FIELD_NAME = Content.MODIFIED_TIMESTAMP_FIELD_NAME;
-        public const string FULL_TEXT_FIELD_NAME = "_fullText";   
+        public const string FULL_TEXT_FIELD_NAME = "_fullText";
 
-        const string dateTimeFormat = "yyyyMMddHHmmss";
-        const string numberFormat = "000000000000000.000000000000";
+        public const string DATE_TIME_FORMAT = "yyyyMMddHHmmssfffffff";  
+        public const string NUMBER_FORMAT = "000000000000000.000000000000";
 
         public static IList<Field> ToLuceneFields(this object value, IndexedField indexedField)
         {            
@@ -46,16 +46,22 @@ namespace ExpandoDB.Search
                 case TypeCode.String:
                     indexedField.DataType = IndexedFieldDataType.String;
                     var stringValue = (string)value;
-                    var stringValueForSorting = stringValue.Trim().ToLowerInvariant();
+                    
                     var countOfWhiteSpaces = Regex.Matches(stringValue, @"\s").Count;
-                    if (countOfWhiteSpaces <= 1)
+                    if (countOfWhiteSpaces == 0)
                     {
                         luceneFields.Add(new StringField(fieldName, stringValue, Field.Store.NO));
-                        luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(stringValueForSorting)));                        
+                        var stringValueForSorting = stringValue.Trim().ToLowerInvariant();
+                        luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(stringValueForSorting)));
                     }
                     else
                     {                        
                         luceneFields.Add(new TextField(fieldName, stringValue, Field.Store.NO));
+                        if (countOfWhiteSpaces <= 10)
+                        {
+                            var stringValueForSorting = stringValue.Trim().ToLowerInvariant();
+                            luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(stringValueForSorting)));
+                        }
                     }
                     break;
 
@@ -128,12 +134,12 @@ namespace ExpandoDB.Search
 
         public static string ToLuceneDateString(this DateTime value)
         {            
-            return value.ToString(dateTimeFormat);
+            return value.ToString(DATE_TIME_FORMAT);
         }
 
         public static string ToLuceneNumberString(this double value)
         { 
-            var numberString = value.ToString(numberFormat);
+            var numberString = value.ToString(NUMBER_FORMAT);
             if (numberString.StartsWith("-", StringComparison.InvariantCulture))
             {
                 numberString = numberString.Remove(0, 1);

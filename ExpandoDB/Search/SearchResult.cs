@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ExpandoDB.Search
 {
-    public class SearchResult<T>
+    public class SearchResult<TResult>
     {
         public string Query { get; set; }
         public string SortByField { get; set; }
@@ -16,7 +16,7 @@ namespace ExpandoDB.Search
         public int? HitCount { get; set; }
         public int? TotalHitCount { get; set; }
         public int? PageCount { get; set; }        
-        public IEnumerable<T> Items { get; set; }       
+        public IEnumerable<TResult> Items { get; set; }       
 
         public SearchResult(SearchCriteria criteria)
         {

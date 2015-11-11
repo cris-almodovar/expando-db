@@ -95,12 +95,16 @@ namespace ExpandoDB.Tests
 
             var criteria = new SearchCriteria
             {
-                Query = @"Title:""thanks for all the fish"""
+                Query = @"Rating:9",
+                SortByField = "Title"
             };
 
             var result = _collection.Search(criteria).Result;
 
-            Assert.AreEqual<Guid?>(result.Items.First()._id, book4._id);
+            var expected = "Life, the Universe and Everything";
+            var actual = result.Items.First().AsDictionary()["Title"] as string;
+
+            Assert.AreEqual<string>(expected, actual);
 
 
         }

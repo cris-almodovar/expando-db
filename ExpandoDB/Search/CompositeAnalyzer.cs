@@ -62,13 +62,30 @@ namespace ExpandoDB.Search
         /// <param name="fieldName">Name of the field.</param>
         /// <returns></returns>
         protected override Analyzer getWrappedAnalyzer(string fieldName)
-        {            
+        {
+            var analyzer = _textAnalyzer;
+
             if (_perFieldAnalyzers.ContainsKey(fieldName))
-                return _perFieldAnalyzers[fieldName];
+                analyzer = _perFieldAnalyzers[fieldName];
 
-            // TODO: Check if fieldName is new; if yes, then add it to the _perFieldAnalyzers            
+            // Check if fieldName is new; if yes, then add it to the _perFieldAnalyzers
+            if (_indexSchema.IndexedFields.ContainsKey(fieldName))
+            {
+                var indexedField = _indexSchema.IndexedFields[fieldName];
+                switch (indexedField.DataType)
+                {
+                    case IndexedFieldDataType.String:
+                    case IndexedFieldDataType.Number:
+                    case IndexedFieldDataType.DateTime:
+                        _perFieldAnalyzers[fieldName] = analyzer = _keywordAnalyzer;                        
+                        break;
+                    default:
+                        _perFieldAnalyzers[fieldName] = analyzer = _textAnalyzer;
+                        break;
+                }       
+            }
 
-            return _textAnalyzer;
+            return analyzer;
         }
     }
 }
