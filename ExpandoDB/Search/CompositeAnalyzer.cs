@@ -10,21 +10,21 @@ namespace ExpandoDB.Search
         private readonly ConcurrentDictionary<string, Analyzer> _perFieldAnalyzers;        
         private readonly Analyzer _textAnalyzer;
         private readonly Analyzer _keywordAnalyzer;
-        private readonly IndexSchema _indexSchema;
+        private readonly ContentSchema _schema;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CompositeAnalyzer" /> class.
         /// </summary>
-        /// <param name="indexSchema">The index schema.</param>        
-        public CompositeAnalyzer(IndexSchema indexSchema) :
+        /// <param name="schema">The Content schema.</param>        
+        public CompositeAnalyzer(ContentSchema schema) :
             base(Analyzer.PER_FIELD_REUSE_STRATEGY)
         {
-            if (indexSchema == null)
-                throw new ArgumentNullException("indexSchema");
+            if (schema == null)
+                throw new ArgumentNullException("schema");
                    
             _textAnalyzer = new FullTextAnalyzer();
             _keywordAnalyzer = new KeywordAnalyzer();
-            _indexSchema = indexSchema;
+            _schema = schema;
 
             _perFieldAnalyzers = new ConcurrentDictionary<string, Analyzer>();
             InitializePerFieldAnalyzers();            
@@ -32,17 +32,17 @@ namespace ExpandoDB.Search
 
         private void InitializePerFieldAnalyzers()
         {   
-            foreach (var fieldName in _indexSchema.IndexedFields.Keys)
+            foreach (var fieldName in _schema.Fields.Keys)
             {                
                 if (_perFieldAnalyzers.ContainsKey(fieldName))
                     continue;
 
-                var indexedField = _indexSchema.IndexedFields[fieldName];
-                switch (indexedField.DataType)
+                var fieldDef = _schema.Fields[fieldName];
+                switch (fieldDef.DataType)
                 {
-                    case IndexedFieldDataType.String:
-                    case IndexedFieldDataType.Number:
-                    case IndexedFieldDataType.DateTime:
+                    case FieldDataType.String:
+                    case FieldDataType.Number:
+                    case FieldDataType.DateTime:
                         _perFieldAnalyzers[fieldName] = _keywordAnalyzer;
                         break;
                     default:
@@ -65,14 +65,14 @@ namespace ExpandoDB.Search
                 analyzer = _perFieldAnalyzers[fieldName];
 
             // Check if fieldName is new; if yes, then add it to the _perFieldAnalyzers
-            if (_indexSchema.IndexedFields.ContainsKey(fieldName))
+            if (_schema.Fields.ContainsKey(fieldName))
             {
-                var indexedField = _indexSchema.IndexedFields[fieldName];
-                switch (indexedField.DataType)
+                var fieldDef = _schema.Fields[fieldName];
+                switch (fieldDef.DataType)
                 {
-                    case IndexedFieldDataType.String:
-                    case IndexedFieldDataType.Number:
-                    case IndexedFieldDataType.DateTime:
+                    case FieldDataType.String:
+                    case FieldDataType.Number:
+                    case FieldDataType.DateTime:
                         _perFieldAnalyzers[fieldName] = analyzer = _keywordAnalyzer;                        
                         break;
                     default:

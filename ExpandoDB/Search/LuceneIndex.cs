@@ -28,19 +28,19 @@ namespace ExpandoDB.Search
         private object _searcherManagerLock = new object();
         private readonly System.Timers.Timer _refreshTimer;
 
-        private readonly IndexSchema _indexSchema;
-        public IndexSchema IndexSchema { get { return _indexSchema; } }
+        private readonly ContentSchema _schema;
+        public ContentSchema Schema { get { return _schema; } }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LuceneIndex"/> class.
         /// </summary>
         /// <param name="indexPath">The path to the directory that will contain the index files.</param>                
-        public LuceneIndex(string indexPath, IndexSchema indexSchema = null)
+        public LuceneIndex(string indexPath, ContentSchema schema = null)
         {
             if (String.IsNullOrWhiteSpace(indexPath))
                 throw new ArgumentNullException("indexPath");
-            if (indexSchema == null)
-                indexSchema = IndexSchema.CreateDefault();
+            if (schema == null)
+                schema = ContentSchema.CreateDefault();
 
             if (!System.IO.Directory.Exists(indexPath))
                 System.IO.Directory.CreateDirectory(indexPath);
@@ -48,14 +48,14 @@ namespace ExpandoDB.Search
             var path = Paths.get(indexPath);
             _indexDirectory = new MMapDirectory(path);
 
-            _indexSchema = indexSchema;
-            _compositeAnalyzer = new CompositeAnalyzer(_indexSchema);
+            _schema = schema;
+            _compositeAnalyzer = new CompositeAnalyzer(_schema);
 
             var config = new IndexWriterConfig(_compositeAnalyzer);
             _writer = new IndexWriter(_indexDirectory, config);
 
             _searcherManager = new SearcherManager(_writer, true, null);
-            _queryParser = new LuceneQueryParser(LuceneField.FULL_TEXT_FIELD_NAME, _compositeAnalyzer, _indexSchema);            
+            _queryParser = new LuceneQueryParser(LuceneField.FULL_TEXT_FIELD_NAME, _compositeAnalyzer, _schema);            
 
             _refreshTimer = new System.Timers.Timer
             {
@@ -98,7 +98,7 @@ namespace ExpandoDB.Search
             if (content == null)
                 throw new ArgumentNullException("content");
             
-            var document = content.ToLuceneDocument(_indexSchema);
+            var document = content.ToLuceneDocument(_schema);
             
             _writer.AddDocument(document);
             _writer.Commit();            
@@ -128,7 +128,7 @@ namespace ExpandoDB.Search
             if (content._id == null || content._id == Guid.Empty)
                 throw new InvalidOperationException("Cannot update Content that does not have an _id");
             
-            var document = content.ToLuceneDocument(_indexSchema);
+            var document = content.ToLuceneDocument(_schema);
 
             var id = content._id.ToString();
             var idTerm = new Term("_id", id);
@@ -144,6 +144,7 @@ namespace ExpandoDB.Search
         /// <returns></returns>
         public SearchResult<Guid> Search(SearchCriteria criteria)
         {
+            criteria.Query = String.IsNullOrWhiteSpace(criteria.Query) ? "*:*" : criteria.Query;
             criteria.TopN = criteria.TopN ?? DEFAULT_SEARCH_TOP_N;
             criteria.ItemsPerPage = criteria.ItemsPerPage ?? DEFAULT_SEARCH_ITEMS_PER_PAGE;
             criteria.PageNumber = criteria.PageNumber ?? 1;
@@ -159,7 +160,6 @@ namespace ExpandoDB.Search
                 {
                     var sort = GetSortCriteria(criteria.SortByField);
                     var topFieldDocs = searcher.Search(query, criteria.TopN.Value, sort);
-
                     result.PopulateWith(topFieldDocs, id => searcher.Doc(id));
                 }
                 finally

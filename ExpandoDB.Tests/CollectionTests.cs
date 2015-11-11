@@ -20,7 +20,7 @@ namespace ExpandoDB.Tests
         private string _dbPath;
         private string _dbFilePath;
         private string _indexPath;
-        private Collection _collection;
+        private ContentCollection _collection;
 
         [TestInitialize]
         public void Initialize()
@@ -40,7 +40,7 @@ namespace ExpandoDB.Tests
             if (Directory.Exists(_indexPath))
                 Directory.Delete(_indexPath, true);
 
-            _collection = new Collection("books", _dbFilePath, _indexPath);
+            _collection = new ContentCollection("books", _dbFilePath, _indexPath);
         }
 
         [TestCleanup]
@@ -100,7 +100,6 @@ namespace ExpandoDB.Tests
             };
 
             var result = _collection.Search(criteria).Result;
-
             var expected = "Life, the Universe and Everything";
             var actual = result.Items.First().AsDictionary()["Title"] as string;
 

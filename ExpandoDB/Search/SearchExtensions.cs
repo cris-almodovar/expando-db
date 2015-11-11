@@ -9,13 +9,13 @@ namespace ExpandoDB.Search
 {
     public static class SearchExtensions
     {
-        public static LuceneDocument ToLuceneDocument(this Content content, IndexSchema indexSchema = null)
+        public static LuceneDocument ToLuceneDocument(this Content content, ContentSchema schema = null)
         {
             if (content == null)
                 throw new ArgumentNullException("content");
 
-            if (indexSchema == null)
-                indexSchema = IndexSchema.CreateDefault();
+            if (schema == null)
+                schema = ContentSchema.CreateDefault();
 
             var dictionary = content.AsDictionary();
             if (!dictionary.ContainsKey(Content.ID_FIELD_NAME))
@@ -23,21 +23,19 @@ namespace ExpandoDB.Search
 
             var luceneDocument = new LuceneDocument();
             foreach (var fieldName in dictionary.Keys)
-            {
-                // NOTE: If schema.IsAutoPopulated is true, auto-add fields to the indexschema
-
-                IndexedField indexedField = null;
-                if (!indexSchema.IndexedFields.TryGetValue(fieldName, out indexedField))                
+            {               
+                FieldDefinition fieldDef = null;
+                if (!schema.Fields.TryGetValue(fieldName, out fieldDef))                
                 {
-                    indexedField = new IndexedField { 
+                    fieldDef = new FieldDefinition { 
                         Name = fieldName                        
                     };
-                    indexSchema.IndexedFields.TryAdd(fieldName, indexedField);
+                    schema.Fields.TryAdd(fieldName, fieldDef);
                 }
 
                 var fieldValue = dictionary[fieldName];
                 
-                var luceneFields = fieldValue.ToLuceneFields(indexedField);
+                var luceneFields = fieldValue.ToLuceneFields(fieldDef);
                 foreach (var luceneField in luceneFields)
                     luceneDocument.Add(luceneField);
             }
