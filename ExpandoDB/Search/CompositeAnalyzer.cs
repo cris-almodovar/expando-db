@@ -4,10 +4,7 @@ using System;
 using System.Collections.Concurrent;
 
 namespace ExpandoDB.Search
-{
-    /// <summary>
-    /// 
-    /// </summary>
+{    
     public class CompositeAnalyzer : AnalyzerWrapper
     {
         private readonly ConcurrentDictionary<string, Analyzer> _perFieldAnalyzers;        
@@ -18,8 +15,7 @@ namespace ExpandoDB.Search
         /// <summary>
         /// Initializes a new instance of the <see cref="CompositeAnalyzer" /> class.
         /// </summary>
-        /// <param name="indexSchema">The index schema.</param>
-        /// <exception cref="ArgumentNullException">indexSchema</exception>
+        /// <param name="indexSchema">The index schema.</param>        
         public CompositeAnalyzer(IndexSchema indexSchema) :
             base(Analyzer.PER_FIELD_REUSE_STRATEGY)
         {

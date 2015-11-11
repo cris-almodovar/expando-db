@@ -137,6 +137,11 @@ namespace ExpandoDB.Search
             _writer.Commit();
         }
 
+        /// <summary>
+        /// Searches the Lucene index for Contents that match the specified search criteria.
+        /// </summary>
+        /// <param name="criteria">The search criteria.</param>
+        /// <returns></returns>
         public SearchResult<Guid> Search(SearchCriteria criteria)
         {
             criteria.TopN = criteria.TopN ?? DEFAULT_SEARCH_TOP_N;

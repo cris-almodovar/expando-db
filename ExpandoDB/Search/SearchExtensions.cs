@@ -44,12 +44,16 @@ namespace ExpandoDB.Search
 
             // The full-text field is always generated and added to the lucene document,
             // even though it is not part of the index schema exposed to the user.
-            var fullText = content.ToFullTextString();
+            var fullText = content.ToLuceneFullTextString();
              luceneDocument.Add(new TextField(LuceneField.FULL_TEXT_FIELD_NAME, fullText, Field.Store.NO));            
 
             return luceneDocument;
         }
 
+        /// <summary>
+        /// Validates the specified search criteria.
+        /// </summary>
+        /// <param name="criteria">The search criteria.</param>
         public static void Validate(this SearchCriteria criteria)
         {
             if (criteria.TopN == null || criteria.TopN <= 0)
@@ -60,6 +64,12 @@ namespace ExpandoDB.Search
                 throw new ArgumentException("pageNumber cannot be null or <= zero");
         }
 
+        /// <summary>
+        /// Populates the SearchResult with data from the specified TopFieldDocs object.
+        /// </summary>
+        /// <param name="result">The SearchResult to be populated.</param>
+        /// <param name="topFieldDocs">The TopFieldDocs object.</param>
+        /// <param name="getDoc">Returns the Lucene document given the doc id.</param>
         public static void PopulateWith(this SearchResult<Guid> result, TopFieldDocs topFieldDocs, Func<int, LuceneDocument> getDoc)
         {
             result.HitCount = topFieldDocs.ScoreDocs.Length;

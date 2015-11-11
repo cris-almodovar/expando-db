@@ -21,6 +21,12 @@ namespace ExpandoDB.Search
         public const string DATE_TIME_FORMAT = "yyyyMMddHHmmssfffffff";  
         public const string NUMBER_FORMAT = "000000000000000.000000000000";
 
+        /// <summary>
+        /// Generates Lucene fields for the given value.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <param name="indexedField">The indexed field.</param>
+        /// <returns></returns>
         public static IList<Field> ToLuceneFields(this object value, IndexedField indexedField)
         {            
             if (value == null)
@@ -43,19 +49,19 @@ namespace ExpandoDB.Search
                     luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(numberString)));                    
                     break;
 
-                case TypeCode.String:
-                    indexedField.DataType = IndexedFieldDataType.String;
-                    var stringValue = (string)value;
-                    
+                case TypeCode.String:                    
+                    var stringValue = (string)value;                    
                     var countOfWhiteSpaces = Regex.Matches(stringValue, @"\s").Count;
                     if (countOfWhiteSpaces == 0)
                     {
+                        indexedField.DataType = IndexedFieldDataType.String;
                         luceneFields.Add(new StringField(fieldName, stringValue, Field.Store.NO));
                         var stringValueForSorting = stringValue.Trim().ToLowerInvariant();
                         luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(stringValueForSorting)));
                     }
                     else
-                    {                        
+                    {
+                        indexedField.DataType = IndexedFieldDataType.Text;
                         luceneFields.Add(new TextField(fieldName, stringValue, Field.Store.NO));
                         if (countOfWhiteSpaces <= 10)
                         {
@@ -80,13 +86,20 @@ namespace ExpandoDB.Search
                         luceneFields.Add(new StringField(fieldName, idValue, Field.Store.YES));
                         luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(idValue)));                        
                     }
+                    // TODO: Add support for IList and IDictionary
+
                     break;
             }
 
             return luceneFields;
         }
 
-        public static string ToFullTextString(this Content content)
+        /// <summary>
+        /// Generates the Lucene full-text representation of the Content object.
+        /// </summary>
+        /// <param name="content">The Content object.</param>
+        /// <returns></returns>        
+        public static string ToLuceneFullTextString(this Content content)
         {
             if (content == null)
                 throw new ArgumentNullException("content");
@@ -121,25 +134,33 @@ namespace ExpandoDB.Search
                     case TypeCode.Object:
                         if (fieldType == typeof(Guid))
                             buffer.AppendFormat("{0}\r\n", ((Guid)fieldValue).ToString());
-                        break;
 
-                    default:
-                        break;
-
+                        // TODO: Add support for IList and IDictionary
+                        break;  
                 }
             }
 
             return buffer.ToString();
         }
 
-        public static string ToLuceneDateString(this DateTime value)
+        /// <summary>
+        /// Generates the Lucene text representation of the given date.
+        /// </summary>
+        /// <param name="date">The value.</param>
+        /// <returns></returns>
+        public static string ToLuceneDateString(this DateTime date)
         {            
-            return value.ToString(DATE_TIME_FORMAT);
+            return date.ToString(DATE_TIME_FORMAT);
         }
 
-        public static string ToLuceneNumberString(this double value)
+        /// <summary>
+        /// Generates the Lucene text representation of the given number.
+        /// </summary>
+        /// <param name="number">The number.</param>
+        /// <returns></returns>
+        public static string ToLuceneNumberString(this double number)
         { 
-            var numberString = value.ToString(NUMBER_FORMAT);
+            var numberString = number.ToString(NUMBER_FORMAT);
             if (numberString.StartsWith("-", StringComparison.InvariantCulture))
             {
                 numberString = numberString.Remove(0, 1);

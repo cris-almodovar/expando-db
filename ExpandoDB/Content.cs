@@ -1,4 +1,5 @@
 ﻿using ExpandoDB.Search;
+using ExpandoDB.Storage;
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
@@ -27,9 +28,18 @@ namespace ExpandoDB
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="Content"/> class from a JSON string.
+        /// </summary>
+        /// <param name="json">The JSON string to be used to populate the Content object.</param>
+        public Content(string json)
+            : this (json.ToExpando())
+        {
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Content"/> class based on the given ExpandoObject.
         /// </summary>
-        /// <param name="expando">The expando.</param>
+        /// <param name="expando">The ExpandoObject to be used to populate the Content object.</param>
         public Content(ExpandoObject expando)
         {
             if (expando == null)

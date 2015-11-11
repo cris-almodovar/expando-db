@@ -16,15 +16,26 @@ namespace ExpandoDB
     /// </remarks>
     public class Collection : IDisposable
     {
-        private readonly string _name;
-        public string Name { get { return _name; } }
-
         private readonly string _dbFilePath;
         private readonly string _indexPath;
         private readonly IContentStorage _storage;
         private readonly LuceneIndex _luceneIndex;
         private readonly IndexSchema _indexSchema;
+        private readonly string _name;
+        /// <summary>
+        /// Gets the name of the Collection.
+        /// </summary>
+        /// <value>
+        /// The name of the Collection
+        /// </value>
+        public string Name { get { return _name; } }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Collection"/> class.
+        /// </summary>
+        /// <param name="name">The name of the Collection.</param>
+        /// <param name="dbFilePath">The database file path.</param>
+        /// <param name="indexPath">The index path.</param>
         public Collection(string name, string dbFilePath, string indexPath)
         {            
             _name = name;
@@ -38,6 +49,11 @@ namespace ExpandoDB
             _luceneIndex = new LuceneIndex(_indexPath, _indexSchema);
         }
 
+        /// <summary>
+        /// Inserts the specified Content into the Collection
+        /// </summary>
+        /// <param name="content">The Content object to insert</param>
+        /// <returns></returns>
         public async Task<Guid> Insert(Content content)
         {
             var guid = await _storage.InsertAsync(content);
@@ -46,6 +62,11 @@ namespace ExpandoDB
             return guid;
         }
 
+        /// <summary>
+        /// Searches the Collection for Contents that match the specified search criteria.
+        /// </summary>
+        /// <param name="criteria">The search criteria.</param>
+        /// <returns></returns>
         public async Task<SearchResult<Content>> Search(SearchCriteria criteria)
         {
             var searchResult = new SearchResult<Content>(criteria);            
@@ -62,6 +83,9 @@ namespace ExpandoDB
             return searchResult; 
         }
 
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
         public void Dispose()
         {
             _luceneIndex.Dispose();

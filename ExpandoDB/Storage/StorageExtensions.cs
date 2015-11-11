@@ -8,7 +8,7 @@ using System.Linq;
 namespace ExpandoDB.Storage
 {
     /// <summary>
-    /// Provides utility methods related to the persistence of dynamic Content objects.
+    /// Provides utility methods for persisting Content objects.
     /// </summary>
     public static class StorageExtensions
     {
@@ -124,11 +124,10 @@ namespace ExpandoDB.Storage
 
         internal static void ConvertDatesToUtc(this IDictionary<string, object> dictionary)
         {
-            var keysToProcess = dictionary.Where(kvp => kvp.Value is DateTime || 
-                                                        kvp.Value is IDictionary<string, object> || 
-                                                        kvp.Value is IList)
-                                          .Select(kvp => kvp.Key)
-                                          .ToArray(); 
+            var keysToProcess = 
+                    dictionary.Where(kvp => kvp.Value is DateTime || kvp.Value is IDictionary<string, object> || kvp.Value is IList)
+                              .Select(kvp => kvp.Key)
+                              .ToArray(); 
                       
             foreach (var key in keysToProcess)
             {
@@ -185,10 +184,23 @@ namespace ExpandoDB.Storage
         /// <param name="json">The JSON string to deserialize.</param>
         /// <returns></returns>
         public static Content ToContent(this string json)
+        {         
+            return new Content(json.ToExpando());
+        }
+
+        /// <summary>
+        /// Deserializes the JSON string into an ExpandoObject.
+        /// </summary>
+        /// <param name="json">The JSON string to deserialize.</param>
+        /// <returns></returns>
+        public static ExpandoObject ToExpando(this string json)
         {
+            if (String.IsNullOrWhiteSpace(json))
+                throw new ArgumentException("JSON string is null or empty");
+
             var dictionary = NetJSON.NetJSON.Deserialize<IDictionary<string, object>>(json);
             var expando = dictionary.ToExpando();
-            return new Content(expando);
+            return expando;
         }
 
         /// <summary>
