@@ -1,5 +1,8 @@
 ﻿using FlexLucene.Document;
+using FlexLucene.Search;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using LuceneDocument = FlexLucene.Document.Document;
 
 namespace ExpandoDB.Search
@@ -45,7 +48,65 @@ namespace ExpandoDB.Search
              luceneDocument.Add(new TextField(LuceneField.FULL_TEXT_FIELD_NAME, fullText, Field.Store.NO));            
 
             return luceneDocument;
-        }      
-        
+        }
+
+        public static void Validate(this SearchCriteria criteria)
+        {
+            if (criteria.TopN == null || criteria.TopN <= 0)
+                throw new ArgumentException("topN cannot be null or <= zero");
+            if (criteria.ItemsPerPage == null || criteria.ItemsPerPage <= 0)
+                throw new ArgumentException("itemsPerPage cannot be null or <= zero");
+            if (criteria.PageNumber == null || criteria.PageNumber <= 0)
+                throw new ArgumentException("pageNumber cannot be null or <= zero");
+        }
+
+        public static void PopulateWith(this SearchResult<Guid> result, TopFieldDocs topFieldDocs, Func<int, LuceneDocument> getDoc)
+        {
+            result.HitCount = topFieldDocs.ScoreDocs.Length;
+            result.TotalHitCount = topFieldDocs.TotalHits;
+
+            if (result.HitCount > 0)
+            {
+                var itemsToSkip = (result.PageNumber.Value - 1) * result.ItemsPerPage.Value;
+                var itemsToTake = result.ItemsPerPage.Value;
+
+                var scoreDocs = topFieldDocs.ScoreDocs
+                                            .Skip(itemsToSkip)
+                                            .Take(itemsToTake)
+                                            .ToList();
+
+                var contentIds = new List<Guid>();
+                for (var i = 0; i < scoreDocs.Count; i++)
+                {
+                    var sd = scoreDocs[i];
+                    var doc = getDoc(sd.Doc);
+                    if (doc == null)
+                        continue;
+
+                    var idField = doc.GetField(LuceneField.ID_FIELD_NAME);
+                    var idValue = idField.stringValue();
+
+                    contentIds.Add(Guid.Parse(idValue));
+                }
+
+                result.Items = contentIds;
+                result.PageCount = ComputePageCount(result.HitCount.Value, result.ItemsPerPage.Value);
+            }
+        }
+
+        private static int ComputePageCount(int hitCount, int itemsPerPage)
+        {
+            var pageCount = 0;
+            if (hitCount > 0 && itemsPerPage > 0)
+            {
+                pageCount = hitCount / itemsPerPage;
+                var remainder = hitCount % itemsPerPage;
+                if (remainder > 0)
+                    pageCount += 1;
+            }
+
+            return pageCount;
+        }
+
     }
 }

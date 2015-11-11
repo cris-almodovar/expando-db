@@ -23,11 +23,13 @@ namespace ExpandoDB.Search
         private readonly Directory _indexDirectory;
         private readonly Analyzer _compositeAnalyzer;
         private readonly IndexWriter _writer;
-        private readonly QueryParser _queryParser;
-        private readonly IndexSchema _indexSchema;
+        private readonly QueryParser _queryParser;        
         private SearcherManager _searcherManager;
         private object _searcherManagerLock = new object();
-        private readonly System.Timers.Timer _refreshTimer;            
+        private readonly System.Timers.Timer _refreshTimer;
+
+        private readonly IndexSchema _indexSchema;
+        public IndexSchema IndexSchema { get { return _indexSchema; } }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LuceneIndex"/> class.
@@ -51,9 +53,8 @@ namespace ExpandoDB.Search
 
             var config = new IndexWriterConfig(_compositeAnalyzer);
             _writer = new IndexWriter(_indexDirectory, config);
-            
-            InitializeSearcherManager();            
 
+            _searcherManager = new SearcherManager(_writer, true, null);
             _queryParser = new LuceneQueryParser(LuceneField.FULL_TEXT_FIELD_NAME, _compositeAnalyzer, _indexSchema);            
 
             _refreshTimer = new System.Timers.Timer
@@ -66,9 +67,7 @@ namespace ExpandoDB.Search
             _refreshTimer.Elapsed += OnRefreshTimerElapsed;
             _refreshTimer.Start();
 
-        }
-
-        public IndexSchema IndexSchema { get { return _indexSchema; } }
+        }        
         
         /// <summary>
         /// Refreshes the Lucene index so that Search() reflects the latest insertions and deletions.
@@ -77,9 +76,8 @@ namespace ExpandoDB.Search
         /// The index refreshes itself automatically every second.
         /// </remarks>
         public void Refresh()
-        {
-            var searcherManager = GetSearcherManager();
-            searcherManager.MaybeRefresh();
+        {  
+            _searcherManager.MaybeRefresh();
         }
 
         private void OnRefreshTimerElapsed(object sender, System.Timers.ElapsedEventArgs e)
@@ -144,108 +142,30 @@ namespace ExpandoDB.Search
             criteria.TopN = criteria.TopN ?? DEFAULT_SEARCH_TOP_N;
             criteria.ItemsPerPage = criteria.ItemsPerPage ?? DEFAULT_SEARCH_ITEMS_PER_PAGE;
             criteria.PageNumber = criteria.PageNumber ?? 1;
+            criteria.Validate();
 
-            if (criteria.TopN <= 0)
-                throw new ArgumentException("topN cannot be <= zero");
-            if (criteria.ItemsPerPage <= 0)
-                throw new ArgumentException("itemsPerPage cannot be <= zero");
-            if (criteria.PageNumber <= 0)
-                throw new ArgumentException("pageNumber cannot be <= zero");
-
-            var result = new SearchResult<Guid>(criteria)
-            {
-                HitCount = 0,
-                TotalHitCount = 0,
-                PageCount = 0,
-                Items = new List<Guid>()
-            };   
-
+            var result = new SearchResult<Guid>(criteria);
             var query = _queryParser.Parse(criteria.Query);
 
-            var searcherManager = GetSearcherManager();
-            if (searcherManager == null)
-            {
-                Thread.SpinWait(10); // Avoid a context switch - we know the searcherManager will be available soon!
-                searcherManager = GetSearcherManager();
-            }
-
-            var searcher = searcherManager.Acquire() as IndexSearcher;
+            var searcher = _searcherManager.Acquire() as IndexSearcher;
             if (searcher != null)
             {
                 try
                 {
                     var sort = GetSortCriteria(criteria.SortByField);
-                    
-                    var topFieldDocs = searcher.Search(query, criteria.TopN.Value, sort); 
+                    var topFieldDocs = searcher.Search(query, criteria.TopN.Value, sort);
 
-                    // Check if Search() returned more than topN matching items;                    
-                    result.HitCount = topFieldDocs.ScoreDocs.Length;
-                    result.TotalHitCount = topFieldDocs.TotalHits;                 
-
-                    if (result.HitCount > 0)
-                    {
-                        var itemsToSkip = (criteria.PageNumber.Value - 1) * criteria.ItemsPerPage.Value;
-                        var itemsToTake = criteria.ItemsPerPage.Value;
-
-                        var scoreDocsForCurrentPage = 
-                                topFieldDocs.ScoreDocs
-                                            .Skip(itemsToSkip)
-                                            .Take(itemsToTake)
-                                            .ToList();
-
-                        var contentIds = new List<Guid>();
-                        for (var i = 0; i < scoreDocsForCurrentPage.Count; i++)
-                        {
-                            var sd = scoreDocsForCurrentPage[i];
-                            var doc = searcher.Doc(sd.Doc);
-                            if (doc == null)
-                                continue;
-
-                            var idField = doc.GetField(LuceneField.ID_FIELD_NAME);
-                            var idValue = idField.stringValue();
-
-                            contentIds.Add(Guid.Parse(idValue));
-                        }
-
-                        result.Items = contentIds;
-                        result.PageCount = ComputePageCount(result.HitCount.Value, criteria.ItemsPerPage.Value);                        
-                    }                    
-                                        
+                    result.PopulateWith(topFieldDocs, id => searcher.Doc(id));
                 }
-                catch (AlreadyClosedException)  
-                {
-                    InitializeSearcherManager();                    
-                }                
                 finally
                 {
-                    searcherManager.Release(searcher);
+                    _searcherManager.Release(searcher);
+                    searcher = null;
                 }
             }
 
             return result;
-        }
-
-        private int ComputePageCount(int hitCount, int itemsPerPage)
-        {
-            var pageCount = 0;
-            if (hitCount > 0 && itemsPerPage > 0)
-            {
-                pageCount = hitCount / itemsPerPage;
-                var remainder = hitCount % itemsPerPage;
-                if (remainder > 0)
-                    pageCount += 1;
-            }
-
-            return pageCount;
-        }
-
-        private SearcherManager GetSearcherManager()
-        {
-            if (_searcherManager == null)
-                InitializeSearcherManager();
-
-            return _searcherManager;
-        }
+        }        
 
         private void InitializeSearcherManager()
         {

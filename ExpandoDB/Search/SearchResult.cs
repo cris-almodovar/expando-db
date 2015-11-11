@@ -25,6 +25,11 @@ namespace ExpandoDB.Search
             TopN = criteria.TopN;
             ItemsPerPage = criteria.ItemsPerPage;
             PageNumber = criteria.PageNumber;
+
+            HitCount = 0;
+            TotalHitCount = 0;
+            PageCount = 0;
+            Items = new List<TResult>();
         }
 
         
