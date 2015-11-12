@@ -37,7 +37,12 @@ namespace ExpandoDB
         /// <param name="dbPath">The path to the db folder.</param>
         /// <param name="indexSchema">The index schema.</param>
         public ContentCollection(string name, string dbPath, IndexSchema indexSchema = null)
-        {            
+        {
+            if (String.IsNullOrWhiteSpace(name))
+                throw new ArgumentException("name cannot be null or blank");
+            if (String.IsNullOrWhiteSpace(dbPath))
+                throw new ArgumentException("dbPath cannot be null or blank");
+
             _name = name;
 
             if (!Directory.Exists(dbPath))
@@ -61,8 +66,11 @@ namespace ExpandoDB
         /// </summary>
         /// <param name="content">The Content object to insert</param>
         /// <returns></returns>
-        public async Task<Guid> Insert(Content content)
+        public async Task<Guid> InsertAsync(Content content)
         {
+            if (content == null)
+                throw new ArgumentNullException("content");
+
             var guid = await _storage.InsertAsync(content);
             _luceneIndex.Insert(content);
 
@@ -75,7 +83,10 @@ namespace ExpandoDB
         /// <param name="criteria">The search criteria.</param>
         /// <returns></returns>
         public async Task<SearchResult<Content>> SearchAsync(SearchCriteria criteria)
-        {              
+        {
+            if (criteria == null)
+                throw new ArgumentNullException("criteria");
+
             var luceneResult = _luceneIndex.Search(criteria);
             var searchResult = new SearchResult<Content>(criteria, luceneResult);            
 
@@ -92,6 +103,9 @@ namespace ExpandoDB
         /// <returns></returns>
         public int Count(SearchCriteria criteria)
         {
+            if (criteria == null)
+                throw new ArgumentNullException("criteria");
+
             var luceneResult = _luceneIndex.Search(criteria);
             return luceneResult.TotalHitCount ?? 0;
         }
@@ -103,6 +117,9 @@ namespace ExpandoDB
         /// <returns></returns>
         public async Task<int> UpdateAsync(Content content)
         {
+            if (content == null)
+                throw new ArgumentNullException("content");
+
             var affected = await _storage.UpdateAsync(content);
             if (affected > 0)
                 _luceneIndex.Update(content);
@@ -118,6 +135,9 @@ namespace ExpandoDB
         /// <returns></returns>
         public async Task<int> DeleteAsync(Guid guid)
         {
+            if (guid == Guid.Empty)
+                throw new ArgumentException("guid cannot be empty");
+
             var affected = await _storage.DeleteAsync(guid);
             if (affected > 0)
                 _luceneIndex.Delete(guid);

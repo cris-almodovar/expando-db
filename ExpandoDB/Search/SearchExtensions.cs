@@ -70,6 +70,13 @@ namespace ExpandoDB.Search
         /// <param name="getDoc">A lambda that returns the Lucene document given the doc id.</param>
         public static void PopulateWith(this SearchResult<Guid> result, TopFieldDocs topFieldDocs, Func<int, LuceneDocument> getDoc)
         {
+            if (result == null)
+                throw new ArgumentNullException("result");
+            if (topFieldDocs == null)
+                throw new ArgumentNullException("topFieldDocs");
+            if (getDoc == null)
+                throw new ArgumentNullException("getDoc");
+
             result.HitCount = topFieldDocs.ScoreDocs.Length;
             result.TotalHitCount = topFieldDocs.TotalHits;
 

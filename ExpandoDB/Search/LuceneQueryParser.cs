@@ -16,6 +16,13 @@ namespace ExpandoDB.Search
         public LuceneQueryParser(string defaultFieldName, Analyzer analyzer, IndexSchema indexSchema) 
             : base (defaultFieldName, analyzer)
         {
+            if (String.IsNullOrWhiteSpace(defaultFieldName))
+                throw new ArgumentException("defaultFieldName cannot be null or blank");
+            if (analyzer == null)
+                throw new ArgumentNullException("analyzer");
+            if (indexSchema == null)
+                throw new ArgumentNullException("indexSchema");
+
             _indexSchema = indexSchema;
         }       
 

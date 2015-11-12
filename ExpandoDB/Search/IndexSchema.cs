@@ -10,9 +10,12 @@ namespace ExpandoDB
 
         public static IndexSchema CreateDefault(string name = null)
         {
+            if (String.IsNullOrWhiteSpace(name))
+                name = "Default";
+
             var indexSchema = new IndexSchema
             {
-                Name = name ?? "Default",
+                Name = name,
                 Fields = new ConcurrentDictionary<string, IndexedField>()                
             };
 

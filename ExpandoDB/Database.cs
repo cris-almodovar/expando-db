@@ -87,6 +87,9 @@ namespace ExpandoDB
         {
             get
             {
+                if (String.IsNullOrWhiteSpace(name))
+                    throw new ArgumentException("name cannot be null or blank");
+
                 ContentCollection collection = null;
                 if (!_contentCollections.TryGetValue(name, out collection))
                 {
@@ -100,8 +103,7 @@ namespace ExpandoDB
 
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-        /// </summary>
-        /// <exception cref="System.NotImplementedException"></exception>
+        /// </summary>        
         public void Dispose()
         {
             foreach (var collection in _contentCollections.Values)            

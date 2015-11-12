@@ -40,7 +40,7 @@ namespace ExpandoDB.Tests
 
             var booksCollection = _db["books"];
             foreach (var book in new[] { book1, book2, book3, book4 })
-                booksCollection.Insert(book).Wait();
+                booksCollection.InsertAsync(book).Wait();
 
             // Give the collection some time to refresh the Lucene index
             Thread.Sleep(1000);

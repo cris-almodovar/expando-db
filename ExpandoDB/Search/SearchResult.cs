@@ -20,6 +20,9 @@ namespace ExpandoDB.Search
 
         public SearchResult(SearchCriteria criteria, SearchResult<Guid> luceneResult = null)
         {
+            if (criteria == null)
+                throw new ArgumentNullException("criteria");
+
             Query = criteria.Query;
             SortByField = criteria.SortByField;
             TopN = criteria.TopN;

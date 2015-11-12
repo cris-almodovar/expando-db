@@ -96,6 +96,9 @@ namespace ExpandoDB.Search
         /// <param name="guid">The unique identifier.</param>
         public void Delete(Guid guid)
         {
+            if (guid == Guid.Empty)
+                throw new ArgumentException("guid cannot be empty");
+
             var idTerm = new Term("_id", guid.ToString());
             _writer.DeleteDocuments(idTerm);
             _writer.Commit();
@@ -130,6 +133,9 @@ namespace ExpandoDB.Search
         /// <returns></returns>
         public SearchResult<Guid> Search(SearchCriteria criteria)
         {
+            if (criteria == null)
+                throw new ArgumentNullException("criteria");
+
             criteria.Query = String.IsNullOrWhiteSpace(criteria.Query) ? "*:*" : criteria.Query;
             criteria.TopN = criteria.TopN ?? DEFAULT_SEARCH_TOP_N;
             criteria.ItemsPerPage = criteria.ItemsPerPage ?? DEFAULT_SEARCH_ITEMS_PER_PAGE;

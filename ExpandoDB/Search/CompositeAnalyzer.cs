@@ -59,6 +59,9 @@ namespace ExpandoDB.Search
         /// <returns></returns>
         protected override Analyzer getWrappedAnalyzer(string fieldName)
         {
+            if (String.IsNullOrWhiteSpace(fieldName))
+                throw new ArgumentException("fieldName cannot be null or blank");
+
             var analyzer = _textAnalyzer;
 
             if (_perFieldAnalyzers.ContainsKey(fieldName))

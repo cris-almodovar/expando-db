@@ -17,6 +17,9 @@ namespace ExpandoDB.Storage
         /// <param name="jsonResults">The list of JSON strings</param>
         public EnumerableContents(IEnumerable<string> jsonResults)
         {
+            if (jsonResults == null)
+                throw new ArgumentNullException("jsonResults");
+
             _jsonResults = jsonResults;
         }
 

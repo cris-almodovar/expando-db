@@ -61,7 +61,7 @@ namespace ExpandoDB.Tests
         public void Can_insert_content()
         {
             var book = CreateBook("The Hitchhiker's Guide to the Galaxy", "Douglas Adams", new DateTime(1979, 10, 12, 12, 0, 0, DateTimeKind.Utc), 10, "The Hitchhiker's Guide to the Galaxy is a comedy science fiction series created by Douglas Adams. Originally a radio comedy broadcast on BBC Radio 4 in 1978, it was later adapted to other formats, and over several years it gradually became an international multi-media phenomenon.");
-            var guid = _collection.Insert(book).Result;
+            var guid = _collection.InsertAsync(book).Result;
 
             Assert.AreEqual<Guid>(book._id.Value, guid);
         }
@@ -76,7 +76,7 @@ namespace ExpandoDB.Tests
             var book4 = CreateBook("So Long, and Thanks for All the Fish", "Douglas Adams", new DateTime(1984, 10, 12, 12, 0, 0, DateTimeKind.Utc), 9, "So Long, and Thanks for All the Fish is the fourth book of the Hitchhiker's Guide to the Galaxy trilogy written by Douglas Adams. Its title is the message left by the dolphins when they departed Planet Earth just before it was demolished to make way for a hyperspace bypass, as described in The Hitchhiker's Guide to the Galaxy.");
 
             foreach (var book in new[] {  book1, book2, book3, book4 })
-                _collection.Insert(book).Wait();
+                _collection.InsertAsync(book).Wait();
 
             Thread.Sleep(1000);
 

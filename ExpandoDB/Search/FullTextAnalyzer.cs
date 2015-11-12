@@ -27,7 +27,7 @@ namespace ExpandoDB.Search
         /// the tokens that make up the texts, using the Porter stemming algorithm.</param>
         /// <param name="ignoreCase">if set to <c>true</c>, character casing is ignored.</param>
         /// <param name="separatorChars">A string whose component characters will be used to split the texts into tokens.</param>   
-        public FullTextAnalyzer(bool enableStemming = true, bool ignoreCase = true, string separatorChars = DEFAULT_SEPARATOR_CHARS)
+        public FullTextAnalyzer(bool enableStemming = true, bool ignoreCase = true, string separatorChars = null)
         {
             if (String.IsNullOrWhiteSpace(separatorChars))
                 separatorChars = DEFAULT_SEPARATOR_CHARS;
@@ -43,6 +43,9 @@ namespace ExpandoDB.Search
         /// <returns></returns>
         protected override TokenStreamComponents createComponents(string fieldName)
         {
+            if (String.IsNullOrWhiteSpace(fieldName))
+                throw new ArgumentException("fieldName cannot be null or blank");
+
             var pattern = Pattern.compile(_separatorChars);
             var tokenizer = new PatternTokenizer(pattern, -1);
             var stream = _ignoreCase ? new LowerCaseFilter(tokenizer) as TokenStream : tokenizer as TokenStream;
@@ -62,8 +65,13 @@ namespace ExpandoDB.Search
         /// <param name="ignoreCase">if set to <c>true</c>, character casing is ignored.</param>
         /// <param name="separatorChars">A string whose component characters will be used to split the texts into tokens.</param> 
         /// <returns></returns>
-        public static IEnumerable<string> Tokenize(string text, bool enableStemming = true, bool ignoreCase = true, string separatorChars = DEFAULT_SEPARATOR_CHARS)
+        public static IEnumerable<string> Tokenize(string text, bool enableStemming = true, bool ignoreCase = true, string separatorChars = null)
         {
+            if (String.IsNullOrWhiteSpace(text))
+                throw new ArgumentException("text cannot be null or blank");
+            if (String.IsNullOrWhiteSpace(separatorChars))
+                separatorChars = DEFAULT_SEPARATOR_CHARS;
+
             using (var analyzer = new FullTextAnalyzer(enableStemming, ignoreCase, separatorChars))
             {
                 using (var stream = analyzer.TokenStream("text", text))

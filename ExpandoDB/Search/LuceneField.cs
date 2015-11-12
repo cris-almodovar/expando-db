@@ -26,6 +26,8 @@ namespace ExpandoDB.Search
         {            
             if (value == null)
                 return null;
+            if (indexedField == null)
+                throw new ArgumentNullException("indexedField");
 
             var luceneFields = new List<Field>();
             var fieldType = value.GetType();
