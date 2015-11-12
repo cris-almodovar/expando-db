@@ -27,9 +27,7 @@ namespace ExpandoDB.Tests
 
             _dbPath = Path.Combine(_appPath, "db");
             if (Directory.Exists(_dbPath))
-                Directory.Delete(_dbPath, true);      
-            if (!Directory.Exists(_dbPath))
-                Directory.CreateDirectory(_dbPath);            
+                Directory.Delete(_dbPath, true); 
 
             _collection = new ContentCollection("books", _dbPath);
         }

@@ -60,5 +60,11 @@ namespace ExpandoDB.Storage
         /// <param name="guid">The GUID of the Content.</param>
         /// <returns></returns>   
         Task<bool> ExistsAsync(Guid guid);
+
+        /// <summary>
+        /// Drops the underlying table that stores the data for this Storage.
+        /// </summary>
+        /// <returns></returns>
+        Task DropAsync();
     }
 }

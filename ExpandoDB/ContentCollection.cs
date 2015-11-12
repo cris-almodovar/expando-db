@@ -39,6 +39,10 @@ namespace ExpandoDB
         public ContentCollection(string name, string dbPath, IndexSchema indexSchema = null)
         {            
             _name = name;
+
+            if (!Directory.Exists(dbPath))
+                Directory.CreateDirectory(dbPath);
+
             _dbFilePath = Path.Combine(dbPath, Database.DB_FILENAME);
 
             _indexPath = Path.Combine(dbPath, Database.INDEX_DIR_NAME, name);
@@ -119,6 +123,18 @@ namespace ExpandoDB
                 _luceneIndex.Delete(guid);
 
             return affected;
+        }
+
+        /// <summary>
+        /// Drops this Collection.
+        /// </summary>
+        /// <returns></returns>
+        public async Task DropAsync()
+        {
+            await _storage.DropAsync();            
+            _luceneIndex.Dispose();
+            await Task.Delay(500);
+            Directory.Delete(_indexPath, true);
         }
 
         /// <summary>

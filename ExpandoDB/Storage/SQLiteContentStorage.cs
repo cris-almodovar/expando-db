@@ -24,7 +24,8 @@ namespace ExpandoDB.Storage
         private readonly string _selectCountSql;
         private readonly string _updateSql;
         private readonly string _deleteOneSql;
-        private readonly string _deleteManySql;        
+        private readonly string _deleteManySql;
+        private readonly string _dropTableSql;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SQLiteContentStorage"/> class.
@@ -53,7 +54,8 @@ namespace ExpandoDB.Storage
             _selectCountSql = String.Format("SELECT COUNT(*) FROM [{0}] WHERE id = @id", _contentCollectionName);
             _updateSql = String.Format("UPDATE [{0}] SET json = @json WHERE id = @id", _contentCollectionName);
             _deleteOneSql = String.Format("DELETE FROM [{0}] WHERE id = @id", _contentCollectionName);
-            _deleteManySql = String.Format("DELETE FROM [{0}] WHERE id IN @ids", _contentCollectionName);            
+            _deleteManySql = String.Format("DELETE FROM [{0}] WHERE id IN @ids", _contentCollectionName);
+            _dropTableSql = String.Format("DROP TABLE IF EXISTS [{0}]", _contentCollectionName);
 
             EnsureDatabaseExists();
             EnsureCollectionTableExists();
@@ -256,6 +258,18 @@ namespace ExpandoDB.Storage
                 var id = guid.ToString();
                 var count = await conn.ExecuteScalarAsync<int>(_selectCountSql, new { id });
                 return count > 0;
+            }
+        }
+
+        /// <summary>
+        /// Drops the underlying SQLite table that stores the data for this Storage.
+        /// </summary>
+        /// <returns></returns>
+        public async Task DropAsync()
+        {
+            using (var conn = GetConnection())
+            {                
+                await conn.ExecuteAsync(_dropTableSql);                
             }
         }
     }
