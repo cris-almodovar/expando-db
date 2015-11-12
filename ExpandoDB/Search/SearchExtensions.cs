@@ -9,13 +9,13 @@ namespace ExpandoDB.Search
 {
     public static class SearchExtensions
     {
-        public static LuceneDocument ToLuceneDocument(this Content content, ContentSchema schema = null)
+        public static LuceneDocument ToLuceneDocument(this Content content, IndexSchema indexSchema = null)
         {
             if (content == null)
                 throw new ArgumentNullException("content");
 
-            if (schema == null)
-                schema = ContentSchema.CreateDefault();
+            if (indexSchema == null)
+                indexSchema = IndexSchema.CreateDefault();
 
             var dictionary = content.AsDictionary();
             if (!dictionary.ContainsKey(Content.ID_FIELD_NAME))
@@ -24,18 +24,18 @@ namespace ExpandoDB.Search
             var luceneDocument = new LuceneDocument();
             foreach (var fieldName in dictionary.Keys)
             {               
-                FieldDefinition fieldDef = null;
-                if (!schema.Fields.TryGetValue(fieldName, out fieldDef))                
+                IndexedField indexedField = null;
+                if (!indexSchema.Fields.TryGetValue(fieldName, out indexedField))                
                 {
-                    fieldDef = new FieldDefinition { 
+                    indexedField = new IndexedField { 
                         Name = fieldName                        
                     };
-                    schema.Fields.TryAdd(fieldName, fieldDef);
+                    indexSchema.Fields.TryAdd(fieldName, indexedField);
                 }
 
                 var fieldValue = dictionary[fieldName];
                 
-                var luceneFields = fieldValue.ToLuceneFields(fieldDef);
+                var luceneFields = fieldValue.ToLuceneFields(indexedField);
                 foreach (var luceneField in luceneFields)
                     luceneDocument.Add(luceneField);
             }
@@ -63,11 +63,11 @@ namespace ExpandoDB.Search
         }
 
         /// <summary>
-        /// Populates the SearchResult with data from the specified TopFieldDocs object.
+        /// Populates the SearchResult object with data from the specified TopFieldDocs object.
         /// </summary>
         /// <param name="result">The SearchResult to be populated.</param>
-        /// <param name="topFieldDocs">The TopFieldDocs object.</param>
-        /// <param name="getDoc">Returns the Lucene document given the doc id.</param>
+        /// <param name="topFieldDocs">The TopFieldDocs object returned by Lucene.</param>
+        /// <param name="getDoc">A lambda that returns the Lucene document given the doc id.</param>
         public static void PopulateWith(this SearchResult<Guid> result, TopFieldDocs topFieldDocs, Func<int, LuceneDocument> getDoc)
         {
             result.HitCount = topFieldDocs.ScoreDocs.Length;

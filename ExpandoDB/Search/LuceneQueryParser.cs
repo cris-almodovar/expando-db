@@ -11,25 +11,25 @@ namespace ExpandoDB.Search
 {
     public class LuceneQueryParser : QueryParser
     {
-        private readonly ContentSchema _schema;
+        private readonly IndexSchema _indexSchema;
 
-        public LuceneQueryParser(string defaultFieldName, Analyzer analyzer, ContentSchema schema) 
+        public LuceneQueryParser(string defaultFieldName, Analyzer analyzer, IndexSchema indexSchema) 
             : base (defaultFieldName, analyzer)
         {
-            _schema = schema;
+            _indexSchema = indexSchema;
         }       
 
         protected override Query getRangeQuery(string fieldName, string part1, string part2, bool startInclusive, bool endInclusive)
         {
-            if (_schema.Fields.ContainsKey(fieldName))
+            if (_indexSchema.Fields.ContainsKey(fieldName))
             {
-                var fieldDef = _schema.Fields[fieldName];
-                if (fieldDef.DataType == FieldDataType.Number)
+                var indexedField = _indexSchema.Fields[fieldName];
+                if (indexedField.DataType == FieldDataType.Number)
                 {
                     part1 = FormatAsLuceneNumberString(part1);
                     part2 = FormatAsLuceneNumberString(part2);                    
                 }
-                else if (fieldDef.DataType == FieldDataType.DateTime)
+                else if (indexedField.DataType == FieldDataType.DateTime)
                 {
                     part1 = part1.PadRight(LuceneField.DATE_TIME_FORMAT.Length, '0');
                     part2 = part2.PadRight(LuceneField.DATE_TIME_FORMAT.Length, '0');
@@ -40,12 +40,12 @@ namespace ExpandoDB.Search
 
         protected override Query getFieldQuery(string fieldName, string queryText, bool quoted)
         {
-            if (_schema.Fields.ContainsKey(fieldName))
+            if (_indexSchema.Fields.ContainsKey(fieldName))
             {
-                var fieldDef = _schema.Fields[fieldName];
-                if (fieldDef.DataType == FieldDataType.Number)
+                var indexedField = _indexSchema.Fields[fieldName];
+                if (indexedField.DataType == FieldDataType.Number)
                     queryText = FormatAsLuceneNumberString(queryText);
-                else if (fieldDef.DataType == FieldDataType.DateTime)
+                else if (indexedField.DataType == FieldDataType.DateTime)
                     queryText = queryText.PadRight(LuceneField.DATE_TIME_FORMAT.Length, '0');
             }
             return base.getFieldQuery(fieldName, queryText, quoted);

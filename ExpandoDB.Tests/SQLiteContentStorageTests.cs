@@ -42,7 +42,7 @@ namespace ExpandoDB.Tests
         }
 
         [TestMethod]
-        [TestCategory("Content Storage test")]
+        [TestCategory("Content Storage tests")]
         public void Database_file_is_auto_created()        
         {            
             var dbFilePath = Path.Combine(_dbPath, Guid.NewGuid().ToString() + ".db");
@@ -58,7 +58,7 @@ namespace ExpandoDB.Tests
         }
 
         [TestMethod]
-        [TestCategory("Content Storage test")]
+        [TestCategory("Content Storage tests")]
         public void Can_insert_dynamic_content()
         {
             dynamic inserted = new Content();
@@ -93,7 +93,7 @@ namespace ExpandoDB.Tests
         }
 
         [TestMethod]
-        [TestCategory("Content Storage test")]
+        [TestCategory("Content Storage tests")]
         public void Can_delete_dynamic_content()
         {
             dynamic inserted = new Content();
@@ -115,7 +115,7 @@ namespace ExpandoDB.Tests
         }
 
         [TestMethod]
-        [TestCategory("Content Storage test")]
+        [TestCategory("Content Storage tests")]
         public void Can_update_dynamic_content()
         {
             dynamic inserted = new Content();
@@ -126,7 +126,7 @@ namespace ExpandoDB.Tests
             inserted.Description = "The Hitchhiker's Guide to the Galaxy is a comedy science fiction series created by Douglas Adams. Originally a radio comedy broadcast on BBC Radio 4 in 1978, it was later adapted to other formats, and over several years it gradually became an international multi-media phenomenon.";
             
             var guid = _storage.InsertAsync(inserted).Result;
-            Assert.AreNotEqual<Guid>(guid, Guid.Empty);            
+            Assert.AreNotEqual<Guid>(guid, Guid.Empty);       
 
             dynamic retrieved = _storage.GetAsync(guid).Result;
             retrieved.Rating = 12;

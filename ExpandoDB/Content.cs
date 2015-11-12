@@ -7,7 +7,7 @@ using System.Dynamic;
 namespace ExpandoDB
 {
     /// <summary>
-    /// Represents a dynamic, schema-less Content object.
+    /// Represents a dynamic Content object.
     /// </summary>
     public class Content : DynamicObject
     {
@@ -45,8 +45,37 @@ namespace ExpandoDB
             if (expando == null)
                 throw new ArgumentNullException("expando");
 
-            _expando = expando;
+            _expando = expando;            
             _expandoDictionary = (IDictionary<string, object>)_expando;
+
+            EnsureIdIsValid();
+        }
+
+        private void EnsureIdIsValid()
+        {
+            if (!_expandoDictionary.ContainsKey(ID_FIELD_NAME))
+            {
+                _expandoDictionary[ID_FIELD_NAME] = Guid.NewGuid();
+                return;
+            }
+
+            var idValue = _expandoDictionary[ID_FIELD_NAME];
+            if (idValue == null)
+            {
+                _expandoDictionary[ID_FIELD_NAME] = Guid.NewGuid();
+                return;
+            }
+
+            var idType = idValue.GetType();
+            if (idType == typeof(Guid))
+            {
+                if ((Guid)idValue == Guid.Empty)
+                    _expandoDictionary[ID_FIELD_NAME] = Guid.NewGuid();
+                return;
+            }
+
+            throw new Exception("The _id field contains a value that is not a GUID.");
+
         }
 
         /// <summary>
@@ -165,7 +194,7 @@ namespace ExpandoDB
         /// Returns the Content as an ExpandoObject.
         /// </summary>
         /// <returns></returns>
-        public ExpandoObject AsExpando()
+        internal ExpandoObject AsExpando()
         {
             return _expando;
         }
@@ -174,7 +203,7 @@ namespace ExpandoDB
         /// Returns the Content as a Dictionary<string, object>.
         /// </summary>
         /// <returns></returns>
-        public IDictionary<string, object> AsDictionary()
+        internal IDictionary<string, object> AsDictionary()
         {
             return _expandoDictionary;
         }

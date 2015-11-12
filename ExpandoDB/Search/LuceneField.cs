@@ -25,16 +25,16 @@ namespace ExpandoDB.Search
         /// Generates Lucene fields for the given value.
         /// </summary>
         /// <param name="value">The value.</param>
-        /// <param name="fieldDef">The indexed field.</param>
+        /// <param name="indexedField">The indexed field.</param>
         /// <returns></returns>
-        public static IList<Field> ToLuceneFields(this object value, FieldDefinition fieldDef)
+        public static IList<Field> ToLuceneFields(this object value, IndexedField indexedField)
         {            
             if (value == null)
                 return null;
 
             var luceneFields = new List<Field>();
             var fieldType = value.GetType();
-            var fieldName = fieldDef.Name.Trim();            
+            var fieldName = indexedField.Name.Trim();            
 
             switch (Type.GetTypeCode(fieldType))
             {
@@ -43,7 +43,7 @@ namespace ExpandoDB.Search
                 case TypeCode.Decimal:
                 case TypeCode.Double:
                 case TypeCode.Single:
-                    fieldDef.DataType = FieldDataType.Number;
+                    indexedField.DataType = FieldDataType.Number;
                     var numberString = Convert.ToDouble(value).ToLuceneNumberString();
                     luceneFields.Add(new StringField(fieldName, numberString, Field.Store.NO));
                     luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(numberString)));                    
@@ -54,14 +54,14 @@ namespace ExpandoDB.Search
                     var countOfWhiteSpaces = Regex.Matches(stringValue, @"\s").Count;
                     if (countOfWhiteSpaces == 0)
                     {
-                        fieldDef.DataType = FieldDataType.String;
+                        indexedField.DataType = FieldDataType.String;
                         luceneFields.Add(new StringField(fieldName, stringValue, Field.Store.NO));
                         var stringValueForSorting = stringValue.Trim().ToLowerInvariant();
                         luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(stringValueForSorting)));
                     }
                     else
                     {
-                        fieldDef.DataType = FieldDataType.Text;
+                        indexedField.DataType = FieldDataType.Text;
                         luceneFields.Add(new TextField(fieldName, stringValue, Field.Store.NO));
                         if (countOfWhiteSpaces <= 10)
                         {
@@ -72,7 +72,7 @@ namespace ExpandoDB.Search
                     break;
 
                 case TypeCode.DateTime:
-                    fieldDef.DataType = FieldDataType.DateTime;
+                    indexedField.DataType = FieldDataType.DateTime;
                     var dateValue = ((DateTime)value).ToLuceneDateString();
                     luceneFields.Add(new StringField(fieldName, dateValue, Field.Store.NO));
                     luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(dateValue)));                    
@@ -81,7 +81,7 @@ namespace ExpandoDB.Search
                 case TypeCode.Object:
                     if (fieldType == typeof(Guid))
                     {
-                        fieldDef.DataType = FieldDataType.String;
+                        indexedField.DataType = FieldDataType.String;
                         var idValue = ((Guid)value).ToString();
                         luceneFields.Add(new StringField(fieldName, idValue, Field.Store.YES));
                         luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(idValue)));                        

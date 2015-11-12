@@ -41,7 +41,7 @@ namespace ExpandoDB.Tests
         }
 
         [TestMethod]
-        [TestCategory("Lucene Index test")]
+        [TestCategory("Lucene Index tests")]
         public void Can_convert_content_to_Lucene_document()
         {
             var content = CreateContent();
@@ -58,7 +58,7 @@ namespace ExpandoDB.Tests
             content._id = Guid.NewGuid();
             content._createdTimestamp = DateTime.UtcNow;
 
-            dynamic book = content.AsExpando();
+            dynamic book = content;
             book.Title = "The Hitchhiker's Guide to the Galaxy";
             book.Author = "Douglas Adams";
             book.PublishDate = new DateTime(1979, 10, 12, 12, 0, 0, DateTimeKind.Utc);
@@ -68,7 +68,7 @@ namespace ExpandoDB.Tests
         }
 
         [TestMethod]
-        [TestCategory("Lucene Index test")]
+        [TestCategory("Lucene Index tests")]
         public void Can_add_contents_and_search()
         {
             var contents = new List<Content>();

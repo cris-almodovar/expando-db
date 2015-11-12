@@ -17,9 +17,7 @@ namespace ExpandoDB.Tests
     public class CollectionTests
     {
         private string _appPath;
-        private string _dbPath;
-        private string _dbFilePath;
-        private string _indexPath;
+        private string _dbPath;       
         private ContentCollection _collection;
 
         [TestInitialize]
@@ -28,38 +26,29 @@ namespace ExpandoDB.Tests
             _appPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
             _dbPath = Path.Combine(_appPath, "db");
+            if (Directory.Exists(_dbPath))
+                Directory.Delete(_dbPath, true);      
             if (!Directory.Exists(_dbPath))
-                Directory.CreateDirectory(_dbPath);
+                Directory.CreateDirectory(_dbPath);            
 
-            _dbFilePath = Path.Combine(_dbPath, "expando.db");
-            if (File.Exists(_dbFilePath))
-                File.Delete(_dbFilePath);
-           
-            _indexPath = Path.Combine(_appPath, "index");
-
-            if (Directory.Exists(_indexPath))
-                Directory.Delete(_indexPath, true);
-
-            _collection = new ContentCollection("books", _dbFilePath, _indexPath);
+            _collection = new ContentCollection("books", _dbPath);
         }
 
         [TestCleanup]
         public void Cleanup()
         {
             _collection.Dispose();
-            SQLiteConnection.ClearAllPools();
-            File.Delete(_dbFilePath);
-            Directory.Delete(_dbPath, true);
-            Directory.Delete(_indexPath, true);
+            SQLiteConnection.ClearAllPools();            
+            Directory.Delete(_dbPath, true);            
         }
 
-        private static Content CreateBook(string title, string author, DateTime publishDate, int rating, string description)
+        public static Content CreateBook(string title, string author, DateTime publishDate, int rating, string description)
         {
             var content = new Content();
             content._id = Guid.NewGuid();
             content._createdTimestamp = DateTime.UtcNow;
 
-            dynamic book = content.AsExpando();
+            dynamic book = content;
             book.Title = title; 
             book.Author = author; 
             book.PublishDate = publishDate; 
@@ -70,7 +59,7 @@ namespace ExpandoDB.Tests
         }
 
         [TestMethod]
-        [TestCategory("Content collection tests")]
+        [TestCategory("Content Collection tests")]
         public void Can_insert_content()
         {
             var book = CreateBook("The Hitchhiker's Guide to the Galaxy", "Douglas Adams", new DateTime(1979, 10, 12, 12, 0, 0, DateTimeKind.Utc), 10, "The Hitchhiker's Guide to the Galaxy is a comedy science fiction series created by Douglas Adams. Originally a radio comedy broadcast on BBC Radio 4 in 1978, it was later adapted to other formats, and over several years it gradually became an international multi-media phenomenon.");
@@ -80,7 +69,7 @@ namespace ExpandoDB.Tests
         }
 
         [TestMethod]
-        [TestCategory("Content collection tests")]
+        [TestCategory("Content Collection tests")]
         public void Can_search_for_content()
         {
             var book1 = CreateBook("The Hitchhiker's Guide to the Galaxy", "Douglas Adams", new DateTime(1979, 10, 12, 12, 0, 0, DateTimeKind.Utc), 10, "The Hitchhiker's Guide to the Galaxy is a comedy science fiction series created by Douglas Adams. Originally a radio comedy broadcast on BBC Radio 4 in 1978, it was later adapted to other formats, and over several years it gradually became an international multi-media phenomenon.");
@@ -99,9 +88,11 @@ namespace ExpandoDB.Tests
                 SortByField = "Title"
             };
 
-            var result = _collection.Search(criteria).Result;
+            var result = _collection.SearchAsync(criteria).Result;
+            dynamic firstItem = result.Items.First(); 
+                   
             var expected = "Life, the Universe and Everything";
-            var actual = result.Items.First().AsDictionary()["Title"] as string;
+            var actual = firstItem.Title as string;
 
             Assert.AreEqual<string>(expected, actual);
 

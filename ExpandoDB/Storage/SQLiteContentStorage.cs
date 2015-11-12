@@ -16,7 +16,7 @@ namespace ExpandoDB.Storage
         private const string CONN_STRING_TEMPLATE = "Data Source={0}; Version=3; Pooling=true; Max Pool Size=100; DateTimeKind=UTC; Enlist=N; Compress=True";
         private readonly string _dbFilePath;
         private readonly string _connectionString;
-        private readonly string _collectionName;
+        private readonly string _contentCollectionName;
         private readonly string _createTableSql;
         private readonly string _insertSql;
         private readonly string _selectOneSql;
@@ -30,28 +30,30 @@ namespace ExpandoDB.Storage
         /// Initializes a new instance of the <see cref="SQLiteContentStorage"/> class.
         /// </summary>
         /// <param name="dbFilePath">The database file path.</param>
-        /// <param name="collectionName">Name of the collection.</param>        
-        public SQLiteContentStorage(string dbFilePath, string collectionName)
+        /// <param name="contentCollectionName">The name of the Content collection that will be stored in this instance.
+        /// This corresponds to the name of the SQLite table that will hold the collection data.
+        /// </param>        
+        public SQLiteContentStorage(string dbFilePath, string contentCollectionName)
         {
             if (String.IsNullOrWhiteSpace(dbFilePath))
                 throw new ArgumentException("dbFilePath is null or blank");
-            if (String.IsNullOrWhiteSpace(collectionName))
+            if (String.IsNullOrWhiteSpace(contentCollectionName))
                 throw new ArgumentException("collectionName is null or blank");
-            if (collectionName.Any(c => c == '[' || c == ']'))
+            if (contentCollectionName.Any(c => c == '[' || c == ']'))
                 throw new ArgumentException("collectionName cannot contain '[' or ']'");
 
             _dbFilePath = dbFilePath;
-            _collectionName = collectionName;
+            _contentCollectionName = contentCollectionName;
             _connectionString = String.Format(CONN_STRING_TEMPLATE, dbFilePath);
 
-            _createTableSql = String.Format("CREATE TABLE IF NOT EXISTS [{0}] (id TEXT PRIMARY KEY, json TEXT)", _collectionName);
-            _insertSql = String.Format("INSERT INTO [{0}] (id, json) VALUES (@id, @json)", _collectionName);
-            _selectOneSql = String.Format("SELECT json FROM [{0}] WHERE id = @id", _collectionName);
-            _selectManySql = String.Format("SELECT id, json FROM [{0}] WHERE id IN @ids", _collectionName);
-            _selectCountSql = String.Format("SELECT COUNT(*) FROM [{0}] WHERE id = @id", _collectionName);
-            _updateSql = String.Format("UPDATE [{0}] SET json = @json WHERE id = @id", _collectionName);
-            _deleteOneSql = String.Format("DELETE FROM [{0}] WHERE id = @id", _collectionName);
-            _deleteManySql = String.Format("DELETE FROM [{0}] WHERE id IN @ids", _collectionName);            
+            _createTableSql = String.Format("CREATE TABLE IF NOT EXISTS [{0}] (id TEXT PRIMARY KEY, json TEXT)", _contentCollectionName);
+            _insertSql = String.Format("INSERT INTO [{0}] (id, json) VALUES (@id, @json)", _contentCollectionName);
+            _selectOneSql = String.Format("SELECT json FROM [{0}] WHERE id = @id", _contentCollectionName);
+            _selectManySql = String.Format("SELECT id, json FROM [{0}] WHERE id IN @ids", _contentCollectionName);
+            _selectCountSql = String.Format("SELECT COUNT(*) FROM [{0}] WHERE id = @id", _contentCollectionName);
+            _updateSql = String.Format("UPDATE [{0}] SET json = @json WHERE id = @id", _contentCollectionName);
+            _deleteOneSql = String.Format("DELETE FROM [{0}] WHERE id = @id", _contentCollectionName);
+            _deleteManySql = String.Format("DELETE FROM [{0}] WHERE id IN @ids", _contentCollectionName);            
 
             EnsureDatabaseExists();
             EnsureCollectionTableExists();
@@ -90,19 +92,22 @@ namespace ExpandoDB.Storage
         }
 
         /// <summary>
-        /// Inserts a new content into the storage.
+        /// Inserts a Content object into the storage.
         /// </summary>
-        /// <param name="content">The content.</param>
-        /// <returns>The unique identifier for the inserted content</returns>
+        /// <param name="content">The Content object to insert.</param>
+        /// <returns>The GUID of the inserted Content</returns>
+        /// <remarks>
+        /// If the Content object does not have an id, it will be auto-generated.</remarks>
         public async Task<Guid> InsertAsync(Content content)
         {
             if (content == null)
                 throw new ArgumentNullException("content");
                        
             using (var conn = GetConnection())
-            {
-                var guid = Guid.NewGuid();
-                content._id = guid;
+            {  
+                if (!content._id.HasValue)
+                    content._id = Guid.NewGuid();
+
                 content._createdTimestamp = content._modifiedTimestamp = DateTime.UtcNow;
                 content.ConvertDatesToUtc();
 
@@ -110,15 +115,16 @@ namespace ExpandoDB.Storage
                 var json = content.ToJson();                
                 await conn.ExecuteAsync(_insertSql, new { id, json });
 
-                return guid;               
+                return content._id.Value;               
             }
         }
 
         /// <summary>
-        /// Gets the content identified by the given GUID.
+        /// Gets the Content identified by the specified GUID.
         /// </summary>
-        /// <param name="guid">The unique identifier for the content.</param>
-        /// <returns></returns>
+        /// <param name="guid">The GUID for the content.</param>
+        /// <returns>The Content object that corresponds to the specified GUID,
+        /// or null if there is no Content object with the specified GUID.</returns>
         public async Task<Content> GetAsync(Guid guid)
         {
             if (guid == Guid.Empty)
@@ -138,7 +144,7 @@ namespace ExpandoDB.Storage
         }
 
         /// <summary>
-        /// Gets the Contents identified by the given list of GUIDs.
+        /// Gets the Contents identified by the specified list of GUIDs.
         /// </summary>
         /// <param name="guids">A list of GUIDs identifying the Contents to be retrieved.</param>
         /// <returns></returns>
@@ -171,10 +177,10 @@ namespace ExpandoDB.Storage
         }
 
         /// <summary>
-        /// Updates the dynamic content.
+        /// Updates the Content object.
         /// </summary>
-        /// <param name="content">The content.</param>
-        /// <returns></returns>        /
+        /// <param name="content">The Content object to update.</param>
+        /// <returns></returns>        
         public async Task<int> UpdateAsync(Content content)
         {
             if (content == null)
@@ -200,7 +206,7 @@ namespace ExpandoDB.Storage
         }
 
         /// <summary>
-        /// Deletes the Content identified by the GUID.
+        /// Deletes the Content object identified by the specified GUID.
         /// </summary>
         /// <param name="guid">The GUID of the Content to be deleted.</param>
         /// <returns></returns>
@@ -218,7 +224,7 @@ namespace ExpandoDB.Storage
         }
 
         /// <summary>
-        /// Deletes the Contents identified by the given list of GUIDs.
+        /// Deletes multiple Contents identified by the specified list of GUIDs.
         /// </summary>
         /// <param name="guids">The GUIDs of the Contents to be deleted.</param>
         /// <returns></returns>        
@@ -236,7 +242,7 @@ namespace ExpandoDB.Storage
         }
 
         /// <summary>
-        /// Checks whether a Content with the given GUID exists.
+        /// Checks whether a Content with the specified GUID exists.
         /// </summary>
         /// <param name="guid">The GUID of the Content.</param>
         /// <returns></returns>        

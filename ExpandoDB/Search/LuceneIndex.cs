@@ -26,21 +26,21 @@ namespace ExpandoDB.Search
         private readonly QueryParser _queryParser;        
         private SearcherManager _searcherManager;
         private object _searcherManagerLock = new object();
-        private readonly System.Timers.Timer _refreshTimer;
+        private readonly Timer _autoRefreshTimer;
+        private readonly IndexSchema _indexSchema;
+        public IndexSchema Schema { get { return _indexSchema; } }       
 
-        private readonly ContentSchema _schema;
-        public ContentSchema Schema { get { return _schema; } }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LuceneIndex"/> class.
         /// </summary>
         /// <param name="indexPath">The path to the directory that will contain the index files.</param>                
-        public LuceneIndex(string indexPath, ContentSchema schema = null)
+        public LuceneIndex(string indexPath, IndexSchema indexSchema = null)
         {
             if (String.IsNullOrWhiteSpace(indexPath))
                 throw new ArgumentNullException("indexPath");
-            if (schema == null)
-                schema = ContentSchema.CreateDefault();
+            if (indexSchema == null)
+                indexSchema = IndexSchema.CreateDefault();
 
             if (!System.IO.Directory.Exists(indexPath))
                 System.IO.Directory.CreateDirectory(indexPath);
@@ -48,46 +48,32 @@ namespace ExpandoDB.Search
             var path = Paths.get(indexPath);
             _indexDirectory = new MMapDirectory(path);
 
-            _schema = schema;
-            _compositeAnalyzer = new CompositeAnalyzer(_schema);
+            _indexSchema = indexSchema ?? IndexSchema.CreateDefault();
+            _compositeAnalyzer = new CompositeAnalyzer(_indexSchema);
 
             var config = new IndexWriterConfig(_compositeAnalyzer);
             _writer = new IndexWriter(_indexDirectory, config);
 
             _searcherManager = new SearcherManager(_writer, true, null);
-            _queryParser = new LuceneQueryParser(LuceneField.FULL_TEXT_FIELD_NAME, _compositeAnalyzer, _schema);            
-
-            _refreshTimer = new System.Timers.Timer
-            {
-                Interval = 1000,  
-                AutoReset = true,
-                Enabled = true
-            };
-
-            _refreshTimer.Elapsed += OnRefreshTimerElapsed;
-            _refreshTimer.Start();
-
+            _queryParser = new LuceneQueryParser(LuceneField.FULL_TEXT_FIELD_NAME, _compositeAnalyzer, _indexSchema);
+                        
+            _autoRefreshTimer = new Timer(o => Refresh(), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));         
         }        
         
         /// <summary>
         /// Refreshes the Lucene index so that Search() reflects the latest insertions and deletions.
         /// </summary>
         /// <remarks>
-        /// The index refreshes itself automatically every second.
+        /// The LuceneIndex auto-invokes this method automatically every second.
         /// </remarks>
         public void Refresh()
-        {  
-            _searcherManager.MaybeRefresh();
-        }
-
-        private void OnRefreshTimerElapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
             try
             {
-                Refresh();
+                _searcherManager.MaybeRefresh();
             }
             catch { }
-        }
+        }        
 
         /// <summary>
         /// Inserts a dynamic content into the index.
@@ -98,7 +84,7 @@ namespace ExpandoDB.Search
             if (content == null)
                 throw new ArgumentNullException("content");
             
-            var document = content.ToLuceneDocument(_schema);
+            var document = content.ToLuceneDocument(_indexSchema);
             
             _writer.AddDocument(document);
             _writer.Commit();            
@@ -128,7 +114,7 @@ namespace ExpandoDB.Search
             if (content._id == null || content._id == Guid.Empty)
                 throw new InvalidOperationException("Cannot update Content that does not have an _id");
             
-            var document = content.ToLuceneDocument(_schema);
+            var document = content.ToLuceneDocument(_indexSchema);
 
             var id = content._id.ToString();
             var idTerm = new Term("_id", id);
@@ -203,10 +189,7 @@ namespace ExpandoDB.Search
         {
             _searcherManager.Close();
             _writer.Close();
-
-            _refreshTimer.Elapsed -= OnRefreshTimerElapsed;
-            _refreshTimer.Stop();
-            _refreshTimer.Dispose();            
+            _autoRefreshTimer.Dispose();            
         }
     }
 }
