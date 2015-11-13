@@ -96,7 +96,7 @@ namespace ExpandoDB.Search
                     break;
 
                 case TypeCode.Object:
-                    if (fieldType == typeof(Guid))
+                    if (fieldType == typeof(Guid) || fieldType == typeof(Guid?))
                     {
                         if (indexedField.DataType == FieldDataType.None)
                             indexedField.DataType = FieldDataType.String;
@@ -162,7 +162,7 @@ namespace ExpandoDB.Search
                     return FieldDataType.DateTime;
 
                 case TypeCode.Object:
-                    if (type == typeof(Guid))
+                    if (type == typeof(Guid) || type == typeof(Guid?))
                         return FieldDataType.String;
                     else if (value is IList)
                         return FieldDataType.Array;
@@ -266,49 +266,7 @@ namespace ExpandoDB.Search
                 if (fieldValue == null)
                     continue;
 
-                var fieldType = fieldValue.GetType();
-                var fieldTypeCode = Type.GetTypeCode(fieldType);
-
-                switch (fieldTypeCode)
-                {
-                    case TypeCode.UInt16:
-                    case TypeCode.UInt32:
-                    case TypeCode.UInt64:
-                    case TypeCode.Int16:
-                    case TypeCode.Int32:
-                    case TypeCode.Int64:
-                    case TypeCode.Decimal:
-                    case TypeCode.Double:
-                    case TypeCode.Single:
-                        buffer.AppendFormat("{0}\r\n", fieldValue.ToString());
-                        break;
-
-                    case TypeCode.DateTime:
-                        buffer.AppendFormat("{0}\r\n", ((DateTime)fieldValue).ToString("yyyy-MM-dd"));
-                        break;
-
-                    case TypeCode.String:
-                        buffer.AppendFormat("{0}\r\n", fieldValue as string);
-                        break;
-
-                    case TypeCode.Object:
-                        if (fieldType == typeof(Guid))
-                        {
-                            buffer.AppendFormat("{0}\r\n", ((Guid)fieldValue).ToString());
-                        }
-                        else if (fieldValue is IList)
-                        {
-                            var list = fieldValue as IList;
-                            buffer.AppendFormat("{0}\r\n", list.ToLuceneFullTextString());
-
-                        }
-                        else if (fieldValue is IDictionary<string, object>)
-                        {
-                            var dictionary2 = fieldValue as IDictionary<string, object>;
-                            buffer.AppendFormat("{0}\r\n", dictionary2.ToLuceneFullTextString());
-                        }                        
-                        break;  
-                }
+                buffer.AppendFormat(fieldValue.ToLuceneFullTextString());
             }
 
             return buffer.ToString();
@@ -372,50 +330,60 @@ namespace ExpandoDB.Search
                 if (item == null)
                     continue;
 
-                var itemType = item.GetType();
-                var itemTypeCode = Type.GetTypeCode(itemType);
+                buffer.AppendFormat(item.ToLuceneFullTextString());
+            }
 
-                switch (itemTypeCode)
-                {
-                    case TypeCode.UInt16:
-                    case TypeCode.UInt32:
-                    case TypeCode.UInt64:
-                    case TypeCode.Int16:
-                    case TypeCode.Int32:
-                    case TypeCode.Int64:
-                    case TypeCode.Decimal:
-                    case TypeCode.Double:
-                    case TypeCode.Single:
-                        buffer.AppendFormat("{0}\r\n", item.ToString());
-                        break;
+            return buffer.ToString();
+        }
 
-                    case TypeCode.DateTime:
-                        buffer.AppendFormat("{0}\r\n", ((DateTime)item).ToString("yyyy-MM-dd"));
-                        break;
+        private static string ToLuceneFullTextString(this object value)
+        {
+            if (value == null)
+                return String.Empty;
 
-                    case TypeCode.String:
-                        buffer.AppendFormat("{0}\r\n", item as string);
-                        break;
+            var buffer = new StringBuilder();
+            var type = value.GetType();
+            var typeCode = Type.GetTypeCode(type);
 
-                    case TypeCode.Object:
-                        if (itemType == typeof(Guid))
-                        {
-                            buffer.AppendFormat("{0}\r\n", ((Guid)item).ToString());
-                        }
-                        else if (itemType is IList)
-                        {
-                            var list2 = item as IList;
-                            buffer.AppendFormat("{0}\r\n", list2.ToLuceneFullTextString());
+            switch (typeCode)
+            {
+                case TypeCode.UInt16:
+                case TypeCode.UInt32:
+                case TypeCode.UInt64:
+                case TypeCode.Int16:
+                case TypeCode.Int32:
+                case TypeCode.Int64:
+                case TypeCode.Decimal:
+                case TypeCode.Double:
+                case TypeCode.Single:
+                    buffer.AppendFormat("{0}\r\n", value.ToString());
+                    break;
 
-                        }
-                        else if (itemType is IDictionary<string, object>)
-                        {
-                            var dictionary2 = item as IDictionary<string, object>;
-                            buffer.AppendFormat("{0}\r\n", dictionary2.ToLuceneFullTextString());
-                        }
-                        break;
+                case TypeCode.DateTime:
+                    buffer.AppendFormat("{0}\r\n", ((DateTime)value).ToString("yyyy-MM-dd"));
+                    break;
 
-                }
+                case TypeCode.String:
+                    buffer.AppendFormat("{0}\r\n", value as string);
+                    break;
+
+                case TypeCode.Object:
+                    if (type == typeof(Guid) || type == typeof(Guid?))
+                    {
+                        buffer.AppendFormat("{0}\r\n", ((Guid)value).ToString());
+                    }
+                    else if (type is IList)
+                    {
+                        var list2 = value as IList;
+                        buffer.AppendFormat("{0}\r\n", list2.ToLuceneFullTextString());
+
+                    }
+                    else if (type is IDictionary<string, object>)
+                    {
+                        var dictionary2 = value as IDictionary<string, object>;
+                        buffer.AppendFormat("{0}\r\n", dictionary2.ToLuceneFullTextString());
+                    }
+                    break;
 
             }
 
@@ -432,51 +400,7 @@ namespace ExpandoDB.Search
                 if (field == null)
                     continue;
 
-                var fieldType = field.GetType();
-                var fieldTypeCode = Type.GetTypeCode(fieldType);
-
-                switch (fieldTypeCode)
-                {
-                    case TypeCode.UInt16:
-                    case TypeCode.UInt32:
-                    case TypeCode.UInt64:
-                    case TypeCode.Int16:
-                    case TypeCode.Int32:
-                    case TypeCode.Int64:
-                    case TypeCode.Decimal:
-                    case TypeCode.Double:
-                    case TypeCode.Single:
-                        buffer.AppendFormat("{0}\r\n", field.ToString());
-                        break;
-
-                    case TypeCode.DateTime:
-                        buffer.AppendFormat("{0}\r\n", ((DateTime)field).ToString("yyyy-MM-dd"));
-                        break;
-
-                    case TypeCode.String:
-                        buffer.AppendFormat("{0}\r\n", field as string);
-                        break;
-
-                    case TypeCode.Object:
-                        if (fieldType == typeof(Guid))
-                        {
-                            buffer.AppendFormat("{0}\r\n", ((Guid)field).ToString());
-                        }
-                        else if (fieldType is IList)
-                        {
-                            var list2 = field as IList;
-                            buffer.AppendFormat("{0}\r\n", list2.ToLuceneFullTextString());
-
-                        }
-                        else if (fieldType is IDictionary<string, object>)
-                        {
-                            var dictionary2 = field as IDictionary<string, object>;
-                            buffer.AppendFormat("{0}\r\n", dictionary2.ToLuceneFullTextString());
-                        }
-                        break;
-
-                }
-
+                buffer.AppendFormat(field.ToLuceneFullTextString());
             }
 
             return buffer.ToString();

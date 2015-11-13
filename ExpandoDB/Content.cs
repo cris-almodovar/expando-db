@@ -293,6 +293,8 @@ namespace ExpandoDB
                     return true;
 
                 case TypeCode.Object:
+                    if (objectType == typeof(Guid))
+                        return true;
                     if (value is IList || value is IDictionary<string, object>)
                         return true;
                     break;
