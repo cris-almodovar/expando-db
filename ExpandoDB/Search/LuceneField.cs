@@ -3,6 +3,8 @@ using FlexLucene.Util;
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using System.Collections;
+using System.Text;
 
 namespace ExpandoDB.Search
 {
@@ -44,10 +46,14 @@ namespace ExpandoDB.Search
                 case TypeCode.Decimal:
                 case TypeCode.Double:
                 case TypeCode.Single:
-                    indexedField.DataType = FieldDataType.Number;
+                    if (indexedField.DataType == FieldDataType.None)
+                        indexedField.DataType = FieldDataType.Number;
+
                     var numberString = Convert.ToDouble(value).ToLuceneNumberString();
                     luceneFields.Add(new StringField(fieldName, numberString, Field.Store.NO));
-                    luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(numberString)));                    
+
+                    if (indexedField.DataType != FieldDataType.Array)
+                        luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(numberString)));                    
                     break;
 
                 case TypeCode.String:                    
@@ -55,16 +61,22 @@ namespace ExpandoDB.Search
                     var countOfWhiteSpaces = Regex.Matches(stringValue, @"\s").Count;
                     if (countOfWhiteSpaces == 0)
                     {
-                        indexedField.DataType = FieldDataType.String;
+                        if (indexedField.DataType == FieldDataType.None)
+                            indexedField.DataType = FieldDataType.String;
+
                         luceneFields.Add(new StringField(fieldName, stringValue, Field.Store.NO));
                         var stringValueForSorting = stringValue.Trim().ToLowerInvariant();
-                        luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(stringValueForSorting)));
+
+                        if (indexedField.DataType != FieldDataType.Array)
+                            luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(stringValueForSorting)));
                     }
                     else
                     {
-                        indexedField.DataType = FieldDataType.Text;
+                        if (indexedField.DataType == FieldDataType.None)
+                            indexedField.DataType = FieldDataType.Text;
+
                         luceneFields.Add(new TextField(fieldName, stringValue, Field.Store.NO));
-                        if (countOfWhiteSpaces <= 10)
+                        if (countOfWhiteSpaces <= 10 && indexedField.DataType != FieldDataType.Array)
                         {
                             var stringValueForSorting = stringValue.Trim().ToLowerInvariant();
                             luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(stringValueForSorting)));
@@ -73,23 +85,163 @@ namespace ExpandoDB.Search
                     break;
 
                 case TypeCode.DateTime:
-                    indexedField.DataType = FieldDataType.DateTime;
+                    if (indexedField.DataType == FieldDataType.None)
+                        indexedField.DataType = FieldDataType.DateTime;
+
                     var dateValue = ((DateTime)value).ToLuceneDateString();
                     luceneFields.Add(new StringField(fieldName, dateValue, Field.Store.NO));
-                    luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(dateValue)));                    
+
+                    if (indexedField.DataType != FieldDataType.Array)
+                        luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(dateValue)));                    
                     break;
 
                 case TypeCode.Object:
                     if (fieldType == typeof(Guid))
                     {
-                        indexedField.DataType = FieldDataType.String;
+                        if (indexedField.DataType == FieldDataType.None)
+                            indexedField.DataType = FieldDataType.String;
+
                         var idValue = ((Guid)value).ToString();
                         luceneFields.Add(new StringField(fieldName, idValue, Field.Store.YES));
-                        luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(idValue)));                        
-                    }
-                    // TODO: Add support for IList and IDictionary
 
+                        if (indexedField.DataType != FieldDataType.Array)
+                            luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(idValue)));                        
+                    }
+                    else if (value is IList)
+                    {
+                        if (indexedField.DataType == FieldDataType.None)
+                            indexedField.DataType = FieldDataType.Array;
+
+                        var list = value as IList;
+                        luceneFields.AddRange(list.ToLuceneFields(indexedField));
+                    }
+                    else if (value is IDictionary<string, object>)
+                    {
+                        if (indexedField.DataType == FieldDataType.None)
+                            indexedField.DataType = FieldDataType.Object;
+
+                        var dictionary = value as IDictionary<string, object>;
+                        luceneFields.AddRange(dictionary.ToLuceneFields(indexedField));
+                    }
                     break;
+            }
+
+            return luceneFields;
+        }
+
+        private static FieldDataType GetFieldDataType(object value)
+        {
+            if (value == null)
+                return FieldDataType.None;
+
+            var type = value.GetType();
+            var typeCode = Type.GetTypeCode(type);
+
+            switch (typeCode)
+            {
+                case TypeCode.UInt16:
+                case TypeCode.UInt32:
+                case TypeCode.UInt64:
+                case TypeCode.Int16:
+                case TypeCode.Int32:
+                case TypeCode.Int64:
+                case TypeCode.Decimal:
+                case TypeCode.Double:
+                case TypeCode.Single:
+                    return FieldDataType.Number;
+
+                case TypeCode.String:
+                    var stringValue = (string)value;
+                    var countOfWhiteSpaces = Regex.Matches(stringValue, @"\s").Count;
+                    if (countOfWhiteSpaces == 0)
+                        return FieldDataType.String;
+                    else
+                        return FieldDataType.Text;
+
+                case TypeCode.DateTime:
+                    return FieldDataType.DateTime;
+
+                case TypeCode.Object:
+                    if (type == typeof(Guid))
+                        return FieldDataType.String;
+                    else if (value is IList)
+                        return FieldDataType.Array;
+                    else if (value is IDictionary<string, object>)
+                        return FieldDataType.Object;
+                    break;
+            }
+
+            return FieldDataType.None;
+        }
+
+        private static List<Field> ToLuceneFields(this IList list, IndexedField indexedField)
+        {
+            var luceneFields = new List<Field>();
+            if (list.Count > 0)
+            {
+                foreach (var item in list)
+                {
+                    if (item == null)
+                        continue;                    
+                    
+                    if (indexedField.ArrayElementDataType == FieldDataType.None)
+                        indexedField.ArrayElementDataType = GetFieldDataType(item);
+                    else if (indexedField.ArrayElementDataType != GetFieldDataType(item))
+                        throw new ArgumentException(String.Format("All the elements of '{0}' must be of type '{1}'", indexedField.Name, indexedField.DataType));
+
+                    switch (indexedField.ArrayElementDataType)
+                    {
+                        case FieldDataType.String:
+                        case FieldDataType.Text:
+                        case FieldDataType.Number:
+                        case FieldDataType.DateTime:
+                            luceneFields.AddRange(item.ToLuceneFields(indexedField));
+                            break;
+
+                        case FieldDataType.Object:
+                            var dictionary = item as IDictionary<string, object>;
+                            if (dictionary != null)
+                                luceneFields.AddRange(dictionary.ToLuceneFields(indexedField));
+                            break;
+                    }
+                }
+            }
+
+            return luceneFields;
+        }
+
+        private static List<Field> ToLuceneFields(this IDictionary<string, object> dictionary, IndexedField indexedField)
+        {
+            var luceneFields = new List<Field>();
+            var childSchema = new IndexSchema(indexedField.Name);
+            indexedField.DataType = FieldDataType.Object;
+            indexedField.ObjectSchema = childSchema;
+
+            foreach (var fieldName in dictionary.Keys)
+            {
+                var childField = dictionary[fieldName];
+                if (childField == null)
+                    continue;
+
+                var childFieldDataType = GetFieldDataType(childField);
+                switch (childFieldDataType)
+                {
+                    case FieldDataType.String:
+                    case FieldDataType.Text:
+                    case FieldDataType.Number:
+                    case FieldDataType.DateTime:
+                        var childIndexedField = new IndexedField
+                        {
+                            Name = String.Format("{0}.{1}", indexedField.Name, fieldName),
+                            DataType = childFieldDataType
+                        };
+
+                        childSchema.Fields.TryAdd(childIndexedField.Name, childIndexedField);
+                        luceneFields.AddRange(childField.ToLuceneFields(childIndexedField));
+                        break;
+                    default:
+                        continue;                   
+                }
             }
 
             return luceneFields;
@@ -111,6 +263,9 @@ namespace ExpandoDB.Search
             foreach (var fieldName in dictionary.Keys)
             {
                 var fieldValue = dictionary[fieldName];
+                if (fieldValue == null)
+                    continue;
+
                 var fieldType = fieldValue.GetType();
                 var fieldTypeCode = Type.GetTypeCode(fieldType);
 
@@ -138,9 +293,20 @@ namespace ExpandoDB.Search
 
                     case TypeCode.Object:
                         if (fieldType == typeof(Guid))
+                        {
                             buffer.AppendFormat("{0}\r\n", ((Guid)fieldValue).ToString());
+                        }
+                        else if (fieldValue is IList)
+                        {
+                            var list = fieldValue as IList;
+                            buffer.AppendFormat("{0}\r\n", list.ToLuceneFullTextString());
 
-                        // TODO: Add support for IList and IDictionary
+                        }
+                        else if (fieldValue is IDictionary<string, object>)
+                        {
+                            var dictionary2 = fieldValue as IDictionary<string, object>;
+                            buffer.AppendFormat("{0}\r\n", dictionary2.ToLuceneFullTextString());
+                        }                        
                         break;  
                 }
             }
@@ -192,6 +358,125 @@ namespace ExpandoDB.Search
                     buffer.Append(('9' - digit));
                 else
                     buffer.Append(digit);
+            }
+
+            return buffer.ToString();
+        }
+
+        public static string ToLuceneFullTextString(this IList list)
+        {
+            var buffer = new StringBuilder();
+
+            foreach (var item in list)
+            {
+                if (item == null)
+                    continue;
+
+                var itemType = item.GetType();
+                var itemTypeCode = Type.GetTypeCode(itemType);
+
+                switch (itemTypeCode)
+                {
+                    case TypeCode.UInt16:
+                    case TypeCode.UInt32:
+                    case TypeCode.UInt64:
+                    case TypeCode.Int16:
+                    case TypeCode.Int32:
+                    case TypeCode.Int64:
+                    case TypeCode.Decimal:
+                    case TypeCode.Double:
+                    case TypeCode.Single:
+                        buffer.AppendFormat("{0}\r\n", item.ToString());
+                        break;
+
+                    case TypeCode.DateTime:
+                        buffer.AppendFormat("{0}\r\n", ((DateTime)item).ToString("yyyy-MM-dd"));
+                        break;
+
+                    case TypeCode.String:
+                        buffer.AppendFormat("{0}\r\n", item as string);
+                        break;
+
+                    case TypeCode.Object:
+                        if (itemType == typeof(Guid))
+                        {
+                            buffer.AppendFormat("{0}\r\n", ((Guid)item).ToString());
+                        }
+                        else if (itemType is IList)
+                        {
+                            var list2 = item as IList;
+                            buffer.AppendFormat("{0}\r\n", list2.ToLuceneFullTextString());
+
+                        }
+                        else if (itemType is IDictionary<string, object>)
+                        {
+                            var dictionary2 = item as IDictionary<string, object>;
+                            buffer.AppendFormat("{0}\r\n", dictionary2.ToLuceneFullTextString());
+                        }
+                        break;
+
+                }
+
+            }
+
+            return buffer.ToString();
+        }
+
+        public static string ToLuceneFullTextString(this IDictionary<string, object> dictionary)
+        {
+            var buffer = new StringBuilder();
+
+            foreach (var fieldName in dictionary.Keys)
+            {
+                var field = dictionary[fieldName];
+                if (field == null)
+                    continue;
+
+                var fieldType = field.GetType();
+                var fieldTypeCode = Type.GetTypeCode(fieldType);
+
+                switch (fieldTypeCode)
+                {
+                    case TypeCode.UInt16:
+                    case TypeCode.UInt32:
+                    case TypeCode.UInt64:
+                    case TypeCode.Int16:
+                    case TypeCode.Int32:
+                    case TypeCode.Int64:
+                    case TypeCode.Decimal:
+                    case TypeCode.Double:
+                    case TypeCode.Single:
+                        buffer.AppendFormat("{0}\r\n", field.ToString());
+                        break;
+
+                    case TypeCode.DateTime:
+                        buffer.AppendFormat("{0}\r\n", ((DateTime)field).ToString("yyyy-MM-dd"));
+                        break;
+
+                    case TypeCode.String:
+                        buffer.AppendFormat("{0}\r\n", field as string);
+                        break;
+
+                    case TypeCode.Object:
+                        if (fieldType == typeof(Guid))
+                        {
+                            buffer.AppendFormat("{0}\r\n", ((Guid)field).ToString());
+                        }
+                        else if (fieldType is IList)
+                        {
+                            var list2 = field as IList;
+                            buffer.AppendFormat("{0}\r\n", list2.ToLuceneFullTextString());
+
+                        }
+                        else if (fieldType is IDictionary<string, object>)
+                        {
+                            var dictionary2 = field as IDictionary<string, object>;
+                            buffer.AppendFormat("{0}\r\n", dictionary2.ToLuceneFullTextString());
+                        }
+                        break;
+
+                }
+
             }
 
             return buffer.ToString();

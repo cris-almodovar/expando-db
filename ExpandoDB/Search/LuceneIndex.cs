@@ -56,15 +56,15 @@ namespace ExpandoDB.Search
 
             _searcherManager = new SearcherManager(_writer, true, null);
             _queryParser = new LuceneQueryParser(LuceneField.FULL_TEXT_FIELD_NAME, _compositeAnalyzer, _indexSchema);
-                        
-            _autoRefreshTimer = new Timer(o => Refresh(), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));         
+
+            _autoRefreshTimer = new Timer(o => Refresh(), null, TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(500));         
         }        
         
         /// <summary>
         /// Refreshes the Lucene index so that Search() reflects the latest insertions and deletions.
         /// </summary>
         /// <remarks>
-        /// The LuceneIndex auto-invokes this method automatically every second.
+        /// The LuceneIndex auto-invokes this method automatically every 500 milliseconds.
         /// </remarks>
         public void Refresh()
         {

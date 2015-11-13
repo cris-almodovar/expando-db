@@ -34,6 +34,8 @@ namespace ExpandoDB.Search
                 }
 
                 var fieldValue = dictionary[fieldName];
+                if (fieldValue == null)
+                    continue;
                 
                 var luceneFields = fieldValue.ToLuceneFields(indexedField);
                 foreach (var luceneField in luceneFields)

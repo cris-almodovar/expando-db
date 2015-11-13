@@ -18,7 +18,11 @@ namespace ExpandoDB.Tests
         public void Initialize()
         {
             var appPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+
             _dbPath = Path.Combine(appPath, "db");
+            if (Directory.Exists(_dbPath))
+                Directory.Delete(_dbPath, true);
+
             _db = new Database(_dbPath);
         }
 
@@ -38,7 +42,7 @@ namespace ExpandoDB.Tests
             var book3 = CollectionTests.CreateBook("Life, the Universe and Everything", "Douglas Adams", new DateTime(1982, 10, 12, 12, 0, 0, DateTimeKind.Utc), 9, "Life, the Universe and Everything (1982, ISBN 0-345-39182-9) is the third book in the five-volume Hitchhiker's Guide to the Galaxy science fiction trilogy by British writer Douglas Adams. The title refers to the Answer to Life, the Universe, and Everything.");
             var book4 = CollectionTests.CreateBook("So Long, and Thanks for All the Fish", "Douglas Adams", new DateTime(1984, 10, 12, 12, 0, 0, DateTimeKind.Utc), 9, "So Long, and Thanks for All the Fish is the fourth book of the Hitchhiker's Guide to the Galaxy trilogy written by Douglas Adams. Its title is the message left by the dolphins when they departed Planet Earth just before it was demolished to make way for a hyperspace bypass, as described in The Hitchhiker's Guide to the Galaxy.");
 
-            var booksCollection = _db["books"];
+            var booksCollection = _db["books"];            
             foreach (var book in new[] { book1, book2, book3, book4 })
                 booksCollection.InsertAsync(book).Wait();
 

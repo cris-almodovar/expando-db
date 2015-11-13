@@ -178,6 +178,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ContentCollectionSchema.cs" />
     <Compile Include="ContentCollection.cs" />
     <Compile Include="Content.cs" />
     <Compile Include="Database.cs" />
@@ -192,10 +193,11 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Search\SearchCriteria.cs" />
     <Compile Include="Search\SearchResult.cs" />
-    <Compile Include="Storage\ICollectionSchemaStorage.cs" />
+    <Compile Include="Storage\ISchemaStorage.cs" />
     <Compile Include="Storage\StorageExtensions.cs" />
     <Compile Include="Storage\EnumerableContents.cs" />
     <Compile Include="Storage\IContentStorage.cs" />
+    <Compile Include="Storage\SQLiteSchemaStorage.cs" />
     <Compile Include="Storage\SQLiteContentStorage.cs" />
   </ItemGroup>
   <ItemGroup>

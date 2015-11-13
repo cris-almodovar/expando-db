@@ -38,7 +38,7 @@ namespace ExpandoDB.Tests
         {
             SQLiteConnection.ClearAllPools();
             File.Delete(_dbFilePath);
-            Directory.Delete(_dbPath);
+            Directory.Delete(_dbPath, true);
         }
 
         [TestMethod]
@@ -69,10 +69,11 @@ namespace ExpandoDB.Tests
             inserted.Description = "The Hitchhiker's Guide to the Galaxy is a comedy science fiction series created by Douglas Adams. Originally a radio comedy broadcast on BBC Radio 4 in 1978, it was later adapted to other formats, and over several years it gradually became an international multi-media phenomenon.";
             inserted.RelatedTitles = new List<string> { "The Restaurant at the End of the Universe", "Life, the Universe and Everything" };
             inserted.Characters = new Dictionary<string, object> { { "Simon Jones", "Arthur Dent" }, { "Geoffrey McGivern", "Ford Prefect" } };
+            inserted.X = null;
 
             var guid = _storage.InsertAsync(inserted).Result;
             Assert.AreNotEqual<Guid>(guid, Guid.Empty);
-
+            
             dynamic retrieved = _storage.GetAsync(guid).Result;
 
             Assert.AreEqual<Guid>(inserted._id, retrieved._id);

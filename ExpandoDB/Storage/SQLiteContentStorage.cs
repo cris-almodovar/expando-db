@@ -18,11 +18,11 @@ namespace ExpandoDB.Storage
         private readonly string _connectionString;
         private readonly string _contentCollectionName;
         private readonly string _createTableSql;
-        private readonly string _insertSql;
+        private readonly string _insertOneSql;
         private readonly string _selectOneSql;
         private readonly string _selectManySql;
         private readonly string _selectCountSql;
-        private readonly string _updateSql;
+        private readonly string _updateOneSql;
         private readonly string _deleteOneSql;
         private readonly string _deleteManySql;
         private readonly string _dropTableSql;
@@ -42,17 +42,19 @@ namespace ExpandoDB.Storage
                 throw new ArgumentException("collectionName is null or blank");
             if (contentCollectionName.Any(c => c == '[' || c == ']'))
                 throw new ArgumentException("collectionName cannot contain '[' or ']'");
+            if (contentCollectionName == SQLiteSchemaStorage.SCHEMA_TABLE_NAME)
+                throw new ArgumentException(String.Format("collectionName cannot be '{0}'; this is a reserved name.", SQLiteSchemaStorage.SCHEMA_TABLE_NAME));
 
             _dbFilePath = dbFilePath;
             _contentCollectionName = contentCollectionName;
             _connectionString = String.Format(CONN_STRING_TEMPLATE, dbFilePath);
 
             _createTableSql = String.Format("CREATE TABLE IF NOT EXISTS [{0}] (id TEXT PRIMARY KEY, json TEXT)", _contentCollectionName);
-            _insertSql = String.Format("INSERT INTO [{0}] (id, json) VALUES (@id, @json)", _contentCollectionName);
+            _insertOneSql = String.Format("INSERT INTO [{0}] (id, json) VALUES (@id, @json)", _contentCollectionName);
             _selectOneSql = String.Format("SELECT json FROM [{0}] WHERE id = @id", _contentCollectionName);
             _selectManySql = String.Format("SELECT id, json FROM [{0}] WHERE id IN @ids", _contentCollectionName);
             _selectCountSql = String.Format("SELECT COUNT(*) FROM [{0}] WHERE id = @id", _contentCollectionName);
-            _updateSql = String.Format("UPDATE [{0}] SET json = @json WHERE id = @id", _contentCollectionName);
+            _updateOneSql = String.Format("UPDATE [{0}] SET json = @json WHERE id = @id", _contentCollectionName);
             _deleteOneSql = String.Format("DELETE FROM [{0}] WHERE id = @id", _contentCollectionName);
             _deleteManySql = String.Format("DELETE FROM [{0}] WHERE id IN @ids", _contentCollectionName);
             _dropTableSql = String.Format("DROP TABLE IF EXISTS [{0}]", _contentCollectionName);
@@ -61,7 +63,7 @@ namespace ExpandoDB.Storage
             EnsureCollectionTableExists();
 
             NetJSON.NetJSON.DateFormat = NetJSON.NetJSONDateFormat.ISO;
-            NetJSON.NetJSON.UseEnumString = false;
+            NetJSON.NetJSON.UseEnumString = true;
         }
 
         /// <summary>
@@ -107,7 +109,7 @@ namespace ExpandoDB.Storage
                        
             using (var conn = GetConnection())
             {  
-                if (!content._id.HasValue)
+                if (content._id == null || content._id.Value == Guid.Empty)
                     content._id = Guid.NewGuid();
 
                 content._createdTimestamp = content._modifiedTimestamp = DateTime.UtcNow;
@@ -115,7 +117,7 @@ namespace ExpandoDB.Storage
 
                 var id = content._id.ToString();
                 var json = content.ToJson();                
-                await conn.ExecuteAsync(_insertSql, new { id, json });
+                await conn.ExecuteAsync(_insertOneSql, new { id, json });
 
                 return content._id.Value;               
             }
@@ -149,7 +151,7 @@ namespace ExpandoDB.Storage
         /// Gets the Contents identified by the specified list of GUIDs.
         /// </summary>
         /// <param name="guids">A list of GUIDs identifying the Contents to be retrieved.</param>
-        /// <returns></returns>
+        /// <returns>A list of Content objects, in the same sequence as the input list of GUIDs.</returns>
         public async Task<IEnumerable<Content>> GetAsync(IList<Guid> guids)
         {
             if (guids == null)
@@ -196,13 +198,22 @@ namespace ExpandoDB.Storage
                 var id = content._id.ToString();
                 var count = await conn.ExecuteScalarAsync<int>(_selectCountSql, new { id });
                 if (count == 0)
+                    return 0;                
+
+                var result = await conn.QueryAsync<string>(_selectOneSql, new { id });
+                var existingJson = result.FirstOrDefault();
+                if (String.IsNullOrWhiteSpace(existingJson))
                     return 0;
+
+                // Make sure the _createdTimestamp is not overwritten
+                var existingContent = existingJson.ToContent();
+                content._createdTimestamp = existingContent._createdTimestamp;  
 
                 content._modifiedTimestamp = DateTime.UtcNow;
                 content.ConvertDatesToUtc();
                 
                 var json = content.ToJson();                
-                count = await conn.ExecuteAsync(_updateSql, new { id, json });                
+                count = await conn.ExecuteAsync(_updateOneSql, new { id, json });                
                 return count;
             }
         }
@@ -270,7 +281,7 @@ namespace ExpandoDB.Storage
             using (var conn = GetConnection())
             {                
                 await conn.ExecuteAsync(_dropTableSql);                
-            }
+            }            
         }
     }
 }

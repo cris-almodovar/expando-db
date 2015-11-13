@@ -18,10 +18,19 @@ namespace ExpandoDB
     {
         private readonly string _dbFilePath;
         private readonly string _indexPath;
-        private readonly IContentStorage _storage;
+        private readonly IContentStorage _contentStorage;
         private readonly LuceneIndex _luceneIndex;
-        private readonly IndexSchema _indexSchema;
+        private readonly IndexSchema _indexSchema;        
         private readonly string _name;
+
+        /// <summary>
+        /// Gets the IndexSchema associated with the ContentCollection.
+        /// </summary>
+        /// <value>
+        /// The IndexSchema object.
+        /// </value>
+        public IndexSchema IndexSchema { get { return _indexSchema; } }
+        
         /// <summary>
         /// Gets the name of the ContentCollection.
         /// </summary>
@@ -29,6 +38,14 @@ namespace ExpandoDB
         /// The name of the ContentCollection
         /// </value>
         public string Name { get { return _name; } }
+
+        /// <summary>
+        /// Gets a value indicating whether this ContentCollection has been already dropped.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this instance has already been dropped; otherwise, <c>false</c>.
+        /// </value>
+        public bool IsDropped { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ContentCollection" /> class.
@@ -54,10 +71,9 @@ namespace ExpandoDB
             if (!Directory.Exists(_indexPath))
                 Directory.CreateDirectory(_indexPath);
 
-            _storage = new SQLiteContentStorage(_dbFilePath, _name);
+            _contentStorage = new SQLiteContentStorage(_dbFilePath, _name);
 
-            _indexSchema = indexSchema ?? IndexSchema.CreateDefault();
-            _indexSchema.Name = name;
+            _indexSchema = indexSchema ?? IndexSchema.CreateDefault(name);            
             _luceneIndex = new LuceneIndex(_indexPath, _indexSchema);
         }
 
@@ -68,10 +84,12 @@ namespace ExpandoDB
         /// <returns></returns>
         public async Task<Guid> InsertAsync(Content content)
         {
+            EnsureCollectionIsNotDropped();
+
             if (content == null)
                 throw new ArgumentNullException("content");
 
-            var guid = await _storage.InsertAsync(content);
+            var guid = await _contentStorage.InsertAsync(content);
             _luceneIndex.Insert(content);
 
             return guid;
@@ -84,6 +102,8 @@ namespace ExpandoDB
         /// <returns></returns>
         public async Task<SearchResult<Content>> SearchAsync(SearchCriteria criteria)
         {
+            EnsureCollectionIsNotDropped();
+
             if (criteria == null)
                 throw new ArgumentNullException("criteria");
 
@@ -91,7 +111,7 @@ namespace ExpandoDB
             var searchResult = new SearchResult<Content>(criteria, luceneResult);            
 
             if (searchResult.HitCount > 0)            
-                searchResult.Items = await _storage.GetAsync(luceneResult.Items.ToList());            
+                searchResult.Items = await _contentStorage.GetAsync(luceneResult.Items.ToList());            
 
             return searchResult; 
         }
@@ -103,6 +123,8 @@ namespace ExpandoDB
         /// <returns></returns>
         public int Count(SearchCriteria criteria)
         {
+            EnsureCollectionIsNotDropped();
+
             if (criteria == null)
                 throw new ArgumentNullException("criteria");
 
@@ -117,10 +139,12 @@ namespace ExpandoDB
         /// <returns></returns>
         public async Task<int> UpdateAsync(Content content)
         {
+            EnsureCollectionIsNotDropped();
+
             if (content == null)
                 throw new ArgumentNullException("content");
 
-            var affected = await _storage.UpdateAsync(content);
+            var affected = await _contentStorage.UpdateAsync(content);
             if (affected > 0)
                 _luceneIndex.Update(content);
 
@@ -135,10 +159,12 @@ namespace ExpandoDB
         /// <returns></returns>
         public async Task<int> DeleteAsync(Guid guid)
         {
+            EnsureCollectionIsNotDropped();
+
             if (guid == Guid.Empty)
                 throw new ArgumentException("guid cannot be empty");
 
-            var affected = await _storage.DeleteAsync(guid);
+            var affected = await _contentStorage.DeleteAsync(guid);
             if (affected > 0)
                 _luceneIndex.Delete(guid);
 
@@ -146,15 +172,22 @@ namespace ExpandoDB
         }
 
         /// <summary>
-        /// Drops this Collection.
+        /// Drops this ContentCollection.
         /// </summary>
         /// <returns></returns>
-        public async Task DropAsync()
+        /// <remarks>Dropping a ContentCollection means dropping the underlying DB table Lucene index.</remarks>
+        public async Task<bool> DropAsync()
         {
-            await _storage.DropAsync();            
-            _luceneIndex.Dispose();
-            await Task.Delay(500);
+            EnsureCollectionIsNotDropped();
+
+            await _contentStorage.DropAsync();            
+            
+            _luceneIndex.Dispose();            
+            await Task.Delay(TimeSpan.FromMilliseconds(500));
             Directory.Delete(_indexPath, true);
+            
+            IsDropped = true;
+            return IsDropped;
         }
 
         /// <summary>
@@ -162,7 +195,39 @@ namespace ExpandoDB
         /// </summary>
         public void Dispose()
         {
+            EnsureCollectionIsNotDropped();
+
             _luceneIndex.Dispose();
+        }
+
+        /// <summary>
+        /// Raises an exception if the ContentCollection has already been dropped.
+        /// </summary>
+        /// <exception cref="System.InvalidOperationException">This ContentCollection has already been dropped.</exception>
+        private void EnsureCollectionIsNotDropped()
+        {
+            if (IsDropped)
+                throw new InvalidOperationException("This ContentCollection has already been dropped.");
+        }
+
+        internal ContentCollectionSchema GetSchema()
+        {
+            var schema = new ContentCollectionSchema(Name);
+            foreach (var fieldName in IndexSchema.Fields.Keys)
+            {
+                var field = IndexSchema.Fields[fieldName];
+                var fieldCopy = new IndexedField 
+                { 
+                    Name = field.Name, 
+                    DataType = field.DataType, 
+                    ArrayElementDataType = 
+                    field.ArrayElementDataType
+                };
+
+                schema.IndexSchema.Fields.TryAdd(fieldCopy.Name, fieldCopy);
+            }
+
+            return schema;
         }
     }
 }

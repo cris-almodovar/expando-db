@@ -3,6 +3,7 @@ using ExpandoDB.Storage;
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
+using System.Collections;
 
 namespace ExpandoDB
 {
@@ -49,6 +50,8 @@ namespace ExpandoDB
             _expandoDictionary = (IDictionary<string, object>)_expando;
 
             EnsureIdIsValid();
+            EnsureTimestampIsValid(CREATED_TIMESTAMP_FIELD_NAME);
+            EnsureTimestampIsValid(MODIFIED_TIMESTAMP_FIELD_NAME);
         }
 
         private void EnsureIdIsValid()
@@ -76,7 +79,22 @@ namespace ExpandoDB
 
             throw new Exception("The _id field contains a value that is not a GUID.");
 
-        }
+        }        
+
+        private void EnsureTimestampIsValid(string timestampFieldName)
+        {
+            if (!_expandoDictionary.ContainsKey(timestampFieldName))
+                return;
+
+            var timestamp = _expandoDictionary[timestampFieldName];
+            if (timestamp == null)
+                return;
+
+            if (IsDateTime(timestamp))
+                return;
+
+            throw new Exception(String.Format("The {0} field contains a value that is not a DateTime.", timestampFieldName));
+        }       
 
         /// <summary>
         /// Gets the Content's _id property.
@@ -177,8 +195,110 @@ namespace ExpandoDB
         /// <returns></returns>
         public override bool TrySetMember(SetMemberBinder binder, object value)
         {
+            EnsureValueIsAllowedForMember(binder.Name, value);
+
             _expandoDictionary[binder.Name] = value;
-            return true;
+            return true; 
+        }
+
+        /// <summary>
+        /// Gets or sets the value of the specified Content field.
+        /// </summary>
+        /// <value>
+        /// The <see cref="System.Object"/>.
+        /// </value>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <returns></returns>
+        public object this [string fieldName]
+        {
+            get 
+            { 
+                if (!_expandoDictionary.ContainsKey(fieldName))
+                    return null;
+
+                return _expandoDictionary[fieldName];
+            }
+            set
+            {
+                EnsureValueIsAllowedForMember(fieldName, value);
+                _expandoDictionary[fieldName] = value;
+            }
+        }
+
+        private void EnsureValueIsAllowedForMember(string memberName, object value)
+        {
+            if (value == null)
+                return;
+
+            var isAllowed = false;
+            switch (memberName)
+            {
+                case ID_FIELD_NAME:
+                    isAllowed = IsGuid(value);
+                    break;
+
+                case CREATED_TIMESTAMP_FIELD_NAME:                    
+                case MODIFIED_TIMESTAMP_FIELD_NAME:
+                    isAllowed = IsDateTime(value);
+                    break;
+
+                default:
+                    isAllowed = IsAllowedValue(value);
+                    break;
+            }
+
+            if (!isAllowed)
+                throw new InvalidOperationException(String.Format("The value '{0}' is not allowed for field '{1}'", value, memberName));
+        }
+
+        private bool IsDateTime(object value)
+        {
+            if (value == null)
+                return false;
+
+            var objectType = value.GetType();
+            return (objectType == typeof(DateTime) || objectType == typeof(DateTime?));
+        }
+
+        private bool IsGuid(object value)
+        {
+            if (value == null)
+                return false;
+
+            var objectType = value.GetType();
+            return (objectType == typeof(Guid) || objectType == typeof(Guid?));
+        }
+
+        private bool IsAllowedValue(object value)
+        {
+            if (value == null)
+                return true;
+
+            var objectType = value.GetType();
+            var objectTypeCode = Type.GetTypeCode(objectType);
+
+            switch (objectTypeCode)
+            {
+                case TypeCode.UInt16:
+                case TypeCode.UInt32:
+                case TypeCode.UInt64:
+                case TypeCode.Int16:
+                case TypeCode.Int32:
+                case TypeCode.Int64:
+                case TypeCode.Decimal:
+                case TypeCode.Double:
+                case TypeCode.Single:
+                case TypeCode.String:
+                case TypeCode.DateTime:
+                    return true;
+
+                case TypeCode.Object:
+                    if (value is IList || value is IDictionary<string, object>)
+                        return true;
+                    break;
+            }
+
+            return false;
         }
 
         /// <summary>

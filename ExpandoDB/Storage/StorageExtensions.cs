@@ -16,7 +16,7 @@ namespace ExpandoDB.Storage
         const int GUID_STRING_LENGTH = 36;             
 
         /// <summary>
-        /// Converts a Dictionary<string, object> instance to an ExpandoObject
+        /// Converts a IDictionary instance to an ExpandoObject.
         /// </summary>
         /// <param name="dictionary">The dictionary.</param>
         /// <returns></returns>        

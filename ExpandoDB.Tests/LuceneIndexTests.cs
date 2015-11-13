@@ -64,6 +64,10 @@ namespace ExpandoDB.Tests
             book.PublishDate = new DateTime(1979, 10, 12, 12, 0, 0, DateTimeKind.Utc);
             book.Rating = 10;
             book.Description = "The Hitchhiker's Guide to the Galaxy is a comedy science fiction series created by Douglas Adams. Originally a radio comedy broadcast on BBC Radio 4 in 1978, it was later adapted to other formats, and over several years it gradually became an international multi-media phenomenon.";
+            book.RelatedTitles = new List<string> { "The Restaurant at the End of the Universe", "Life, the Universe and Everything" };
+            book.Characters = new Dictionary<string, object> { { "Name", "Arthur Dent" }, { "Character", "Ford Prefect" } };
+            book.X = null;
+
             return content;
         }
 
@@ -90,7 +94,7 @@ namespace ExpandoDB.Tests
 
             var criteria = new SearchCriteria
             {
-                Query = "hitchhiker and galaxy",
+                Query = "hitchhiker AND galaxy",
                 SortByField = "BookId",
                 TopN = 10
             };           

@@ -4,6 +4,10 @@ using System.Collections.Generic;
 using System.Data.SQLite;
 using System.IO;
 using System.Reflection;
+using System.Threading.Tasks;
+using System.Threading;
+using System.Linq;
+using ExpandoDB.Storage;
 
 namespace ExpandoDB
 {
@@ -16,16 +20,13 @@ namespace ExpandoDB
         internal const string DB_DIR_NAME = "db";
         internal const string INDEX_DIR_NAME = "index";
 
-        private readonly string _dbPath;
-        public string DbPath { get { return _dbPath; } }
-
+        private readonly string _dbPath;        
         private readonly string _dbFilePath;
-        public string DbFilePath { get { return _dbFilePath; } }
-
         private readonly string _indexPath;
-        public string IndexPath { get { return _indexPath; } }
-
-        private readonly ConcurrentDictionary<string, ContentCollection> _contentCollections;        
+        private readonly ConcurrentDictionary<string, ContentCollection> _contentCollections;
+        private readonly ISchemaStorage _schemaStorage;
+        private readonly IDictionary<string, ContentCollectionSchema> _contentCollectionSchemas;
+        private readonly Timer _schemaPersistenceTimer;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Database"/> class.
@@ -47,9 +48,64 @@ namespace ExpandoDB
             EnsureIndexDirectoryExists(_indexPath);
 
             _contentCollections = new ConcurrentDictionary<string, ContentCollection>();
+            
+            _schemaStorage = new SQLiteSchemaStorage(_dbFilePath);
+            var savedSchemas = _schemaStorage.GetAllAsync().Result.ToDictionary(cs => cs.Name);
+            if (savedSchemas == null)
+                _contentCollectionSchemas = new Dictionary<string, ContentCollectionSchema>();
+            else
+                _contentCollectionSchemas = savedSchemas;
 
-            // Load collections from metadata
-                
+            foreach (var schema in _contentCollectionSchemas.Values)
+            {
+                var collection = new ContentCollection(schema.Name, _dbPath, schema.IndexSchema);
+                _contentCollections.TryAdd(schema.Name, collection);
+            }
+
+            _schemaPersistenceTimer = new Timer( async (o) =>  await PersistSchema(), null, TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(500));
+
+        }
+
+        private async Task PersistSchema()
+        {
+            if (Monitor.TryEnter(_contentCollections, TimeSpan.FromMilliseconds(10)) == false)
+                return;
+
+            try
+            {
+                foreach (var collectionName in _contentCollections.Keys)
+                {
+                    var schema = _contentCollections[collectionName].GetSchema();
+
+                    if (!_contentCollectionSchemas.ContainsKey(schema.Name))
+                    {
+                        // Save the schema of a newly created ContentCollection
+                        _contentCollectionSchemas.Add(schema.Name, schema);
+                        await _schemaStorage.InsertAsync(schema);
+                    }
+
+                    var savedSchema = _contentCollectionSchemas[schema.Name];
+                    if (savedSchema != schema)
+                    {
+                        _contentCollectionSchemas[savedSchema.Name] = schema;
+                        await _schemaStorage.UpdateAsync(schema);
+                    }
+                }
+
+                var schemasToRemove = from schemaName in _contentCollectionSchemas.Keys
+                                      where !(_contentCollections.ContainsKey(schemaName))
+                                      select schemaName;
+
+                foreach (var schemaName in schemasToRemove)
+                {
+                    _contentCollectionSchemas.Remove(schemaName);
+                    await _schemaStorage.DeleteAsync(schemaName);
+                }
+            }
+            finally
+            {
+                Monitor.Exit(_contentCollections);
+            }       
         }
 
         /// <summary>
@@ -99,6 +155,35 @@ namespace ExpandoDB
 
                 return collection;
             }
+        }
+
+        /// <summary>
+        /// Drops the ContentCollection with the specified name.
+        /// </summary>
+        /// <param name="collectionName">The name of the ContentCollection to drop.</param>
+        /// <returns></returns>
+        public async Task<bool> DropCollectionAsync(string collectionName)
+        {
+            if (!_contentCollections.ContainsKey(collectionName))
+                return false;
+
+            var isSuccessful = false;
+            ContentCollection collection = null;
+
+            if (_contentCollections.TryRemove(collectionName, out collection))            
+                isSuccessful = await collection.DropAsync();
+
+            return isSuccessful;
+        }
+
+        /// <summary>
+        /// Determines whether the Database contains a ContentCollection with the specified name.
+        /// </summary>
+        /// <param name="collectionName">The name of the ContentCollection.</param>
+        /// <returns></returns>
+        public bool ContainsCollection(string collectionName)
+        {
+            return _contentCollections.ContainsKey(collectionName);
         }
 
         /// <summary>
