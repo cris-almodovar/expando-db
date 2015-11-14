@@ -7,8 +7,8 @@
     <ProjectGuid>{24AC01CA-5F8A-47F9-ABBB-7ACE7A6C44FA}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>ExpandoDB.Service</RootNamespace>
-    <AssemblyName>ExpandoDB.Service</AssemblyName>
+    <RootNamespace>ExpandoDB.Server</RootNamespace>
+    <AssemblyName>ExpandoDB.Server</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>

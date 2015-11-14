@@ -7,7 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExpandoDB", "ExpandoDB\Expa
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExpandoDB.Tests", "ExpandoDB.Tests\ExpandoDB.Tests.csproj", "{412B8855-C637-4184-8EFE-D9827258C85F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExpandoDB.Service", "ExpandoDB.Service\ExpandoDB.Service.csproj", "{24AC01CA-5F8A-47F9-ABBB-7ACE7A6C44FA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExpandoDB.Server", "ExpandoDB.Server\ExpandoDB.Server.csproj", "{24AC01CA-5F8A-47F9-ABBB-7ACE7A6C44FA}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "lib", "lib", "{455B8E41-C9D0-46A7-BF4A-763852B989A5}"
 	ProjectSection(SolutionItems) = preProject

@@ -25,8 +25,9 @@ namespace ExpandoDB
         private readonly string _indexPath;
         private readonly ConcurrentDictionary<string, ContentCollection> _contentCollections;
         private readonly ISchemaStorage _schemaStorage;
-        private readonly IDictionary<string, ContentCollectionSchema> _contentCollectionSchemas;
+        private readonly ConcurrentDictionary<string, ContentCollectionSchema> _persistedSchemas;
         private readonly Timer _schemaPersistenceTimer;
+        private readonly object _schemaPersistenceLock = new object();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Database"/> class.
@@ -42,69 +43,78 @@ namespace ExpandoDB
 
             _dbPath = dbPath;
             _dbFilePath = Path.Combine(_dbPath, DB_FILENAME);
-            EnsureDatabaseExists(_dbPath, _dbFilePath);
+            EnsureDatabaseDirectoryExists(_dbPath, _dbFilePath);
 
             _indexPath = Path.Combine(_dbPath, INDEX_DIR_NAME);
             EnsureIndexDirectoryExists(_indexPath);
 
             _contentCollections = new ConcurrentDictionary<string, ContentCollection>();
-            
             _schemaStorage = new SQLiteSchemaStorage(_dbFilePath);
-            var savedSchemas = _schemaStorage.GetAllAsync().Result.ToDictionary(cs => cs.Name);
-            if (savedSchemas == null)
-                _contentCollectionSchemas = new Dictionary<string, ContentCollectionSchema>();
-            else
-                _contentCollectionSchemas = savedSchemas;
 
-            foreach (var schema in _contentCollectionSchemas.Values)
+            var schemas = _schemaStorage.GetAllAsync().Result.ToDictionary(cs => cs.Name);
+            if (schemas != null && schemas.Count > 0)
+                _persistedSchemas = new ConcurrentDictionary<string, ContentCollectionSchema>(schemas);
+            else
+                _persistedSchemas = new ConcurrentDictionary<string, ContentCollectionSchema>();
+
+            foreach (var schema in _persistedSchemas.Values)
             {
                 var collection = new ContentCollection(schema.Name, _dbPath, schema.IndexSchema);
                 _contentCollections.TryAdd(schema.Name, collection);
             }
 
-            _schemaPersistenceTimer = new Timer( async (o) =>  await PersistSchema(), null, TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(500));
+            _schemaPersistenceTimer = new Timer( async (o) =>  await PersistSchemas(), null, TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(500));
 
         }
 
-        private async Task PersistSchema()
+        private async Task PersistSchemas()
         {
-            if (Monitor.TryEnter(_contentCollections, TimeSpan.FromMilliseconds(10)) == false)
+            if (Monitor.TryEnter(_schemaPersistenceLock, TimeSpan.FromMilliseconds(10)) == false)
                 return;
 
             try
             {
-                foreach (var collectionName in _contentCollections.Keys)
+                var schemasToInsert = _contentCollections.Keys.Except(_persistedSchemas.Keys);
+                foreach (var schemaName in schemasToInsert)
                 {
-                    var schema = _contentCollections[collectionName].GetSchema();
+                    if (_contentCollections[schemaName] == null)
+                        continue;
 
-                    if (!_contentCollectionSchemas.ContainsKey(schema.Name))
-                    {
-                        // Save the schema of a newly created ContentCollection
-                        _contentCollectionSchemas.Add(schema.Name, schema);
-                        await _schemaStorage.InsertAsync(schema);
-                    }
-
-                    var savedSchema = _contentCollectionSchemas[schema.Name];
-                    if (savedSchema != schema)
-                    {
-                        _contentCollectionSchemas[savedSchema.Name] = schema;
-                        await _schemaStorage.UpdateAsync(schema);
-                    }
+                    var liveSchema = _contentCollections[schemaName].GetSchema();
+                    _persistedSchemas.TryAdd(liveSchema.Name, liveSchema);
+                    await _schemaStorage.InsertAsync(liveSchema);
                 }
 
-                var schemasToRemove = from schemaName in _contentCollectionSchemas.Keys
+                var schemasToUpdate = from schemaName in _contentCollections.Keys.Intersect(_persistedSchemas.Keys)
+                                      let persistedSchema = _persistedSchemas[schemaName]
+                                      let liveSchema = _contentCollections[schemaName].GetSchema()
+                                      where persistedSchema != liveSchema                                      
+                                      select schemaName;
+
+                foreach (var schemaName in schemasToUpdate)
+                {
+                    if (_contentCollections[schemaName] == null)
+                        continue;
+
+                    var liveSchema = _contentCollections[schemaName].GetSchema();
+                    _persistedSchemas[schemaName] = liveSchema;
+                    await _schemaStorage.UpdateAsync(liveSchema);
+                }
+
+                var schemasToRemove = from schemaName in _persistedSchemas.Keys
                                       where !(_contentCollections.ContainsKey(schemaName))
                                       select schemaName;
 
                 foreach (var schemaName in schemasToRemove)
                 {
-                    _contentCollectionSchemas.Remove(schemaName);
+                    ContentCollectionSchema removedSchema = null;
+                    _persistedSchemas.TryRemove(schemaName, out removedSchema);
                     await _schemaStorage.DeleteAsync(schemaName);
                 }
             }
             finally
             {
-                Monitor.Exit(_contentCollections);
+                Monitor.Exit(_schemaPersistenceLock);
             }       
         }
 
@@ -113,7 +123,7 @@ namespace ExpandoDB
         /// </summary>
         /// <param name="dbPath">The database path.</param>
         /// <param name="dbFilePath">The database file path.</param>
-        private static void EnsureDatabaseExists(string dbPath, string dbFilePath)
+        private static void EnsureDatabaseDirectoryExists(string dbPath, string dbFilePath)
         {
             if (!Directory.Exists(dbPath))
                 Directory.CreateDirectory(dbPath);

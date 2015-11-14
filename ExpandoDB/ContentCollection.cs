@@ -216,6 +216,9 @@ namespace ExpandoDB
             foreach (var fieldName in IndexSchema.Fields.Keys)
             {
                 var field = IndexSchema.Fields[fieldName];
+                if (field == null)
+                    continue;
+
                 var fieldCopy = new IndexedField 
                 { 
                     Name = field.Name, 
