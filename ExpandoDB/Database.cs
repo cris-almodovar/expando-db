@@ -59,7 +59,7 @@ namespace ExpandoDB
 
             foreach (var schema in _persistedSchemas.Values)
             {
-                var collection = new ContentCollection(schema.Name, _dbPath, schema.IndexSchema);
+                var collection = new ContentCollection(schema, _dbPath);
                 _contentCollections.TryAdd(schema.Name, collection);
             }
 
@@ -101,8 +101,7 @@ namespace ExpandoDB
                     await _schemaStorage.UpdateAsync(liveSchema);
                 }
 
-                var schemasToRemove = from schemaName in _persistedSchemas.Keys
-                                      where !(_contentCollections.ContainsKey(schemaName))
+                var schemasToRemove = from schemaName in _persistedSchemas.Keys.Except(_contentCollections.Keys)                                      
                                       select schemaName;
 
                 foreach (var schemaName in schemasToRemove)
@@ -111,6 +110,10 @@ namespace ExpandoDB
                     _persistedSchemas.TryRemove(schemaName, out removedSchema);
                     await _schemaStorage.DeleteAsync(schemaName);
                 }
+            }
+            catch (Exception e)
+            {
+                var s = e.StackTrace;
             }
             finally
             {

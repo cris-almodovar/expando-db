@@ -38,7 +38,7 @@ namespace ExpandoDB
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Content"/> class based on the given ExpandoObject.
+        /// Initializes a new instance of the <see cref="Content"/> class from an ExpandoObject instance.
         /// </summary>
         /// <param name="expando">The ExpandoObject to be used to populate the Content object.</param>
         public Content(ExpandoObject expando)
@@ -54,6 +54,12 @@ namespace ExpandoDB
             EnsureTimestampIsValid(MODIFIED_TIMESTAMP_FIELD_NAME);
         }
 
+        /// <summary>
+        /// Ensures the _id field is valid.
+        /// </summary>
+        /// <remarks>
+        /// If _id is not set, a new Guid will be assigned
+        /// </remarks>        
         private void EnsureIdIsValid()
         {
             if (!_expandoDictionary.ContainsKey(ID_FIELD_NAME))
@@ -79,8 +85,12 @@ namespace ExpandoDB
 
             throw new Exception("The _id field contains a value that is not a GUID.");
 
-        }        
+        }
 
+        /// <summary>
+        /// Ensures the timestamp field has a valid value.
+        /// </summary>
+        /// <param name="timestampFieldName">Name of the timestamp field.</param>        
         private void EnsureTimestampIsValid(string timestampFieldName)
         {
             if (!_expandoDictionary.ContainsKey(timestampFieldName))
@@ -178,7 +188,6 @@ namespace ExpandoDB
         public override bool TryGetMember(GetMemberBinder binder, out object result)
         {
             var isFound = _expandoDictionary.ContainsKey(binder.Name);
-
             if (isFound)           
                 result = _expandoDictionary[binder.Name];    
             else
@@ -196,7 +205,6 @@ namespace ExpandoDB
         public override bool TrySetMember(SetMemberBinder binder, object value)
         {
             EnsureValueIsAllowedForMember(binder.Name, value);
-
             _expandoDictionary[binder.Name] = value;
             return true; 
         }
@@ -269,6 +277,14 @@ namespace ExpandoDB
             return (objectType == typeof(Guid) || objectType == typeof(Guid?));
         }
 
+        /// <summary>
+        /// Determines whether the specified value is allowed as a Content field
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns></returns>
+        /// <remarks>
+        /// The Content object only allows String, Guid, DateTime, numeric types,
+        /// IList, and IDictionary. </remarks>
         private bool IsAllowedValue(object value)
         {
             if (value == null)

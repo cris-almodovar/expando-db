@@ -185,6 +185,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="DatabaseTests.cs" />
     <Compile Include="TestUtils.cs" />
+    <Compile Include="ContentTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ExpandoDB\ExpandoDB.csproj">

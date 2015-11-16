@@ -48,6 +48,17 @@ namespace ExpandoDB
         public bool IsDropped { get; private set; }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="ContentCollection" /> class based on a ContentCollectionSchema.
+        /// </summary>
+        /// <param name="schema">The ContentCollectionSchema.</param>
+        /// <param name="dbPath">The path to the db folder.</param>
+        public ContentCollection(ContentCollectionSchema schema, string dbPath)
+            : this ( schema.Name, dbPath, schema.GetIndexSchema() )
+        {
+
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ContentCollection" /> class.
         /// </summary>
         /// <param name="name">The name of the ContentCollection.</param>
@@ -227,7 +238,7 @@ namespace ExpandoDB
                     field.ArrayElementDataType
                 };
 
-                schema.IndexSchema.Fields.TryAdd(fieldCopy.Name, fieldCopy);
+                schema.IndexedFields.Add(fieldCopy);
             }
 
             return schema;

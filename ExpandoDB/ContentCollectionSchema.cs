@@ -9,7 +9,7 @@ namespace ExpandoDB
     public class ContentCollectionSchema : IEquatable<ContentCollectionSchema>
     {
         public string Name { get; set; }
-        public IndexSchema IndexSchema { get; set; }
+        public List<IndexedField> IndexedFields { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ContentCollectionSchema"/> class.
@@ -25,7 +25,7 @@ namespace ExpandoDB
         public ContentCollectionSchema(string name)
         {
             Name = name;
-            IndexSchema = new IndexSchema(name);
+            IndexedFields = new List<IndexedField>();
         }
 
         /// <summary>
@@ -41,10 +41,10 @@ namespace ExpandoDB
             if (Name != other.Name)
                 return false;
 
-            var thisFields = IndexSchema.Fields.Keys.ToList();
+            var thisFields = IndexedFields.Select(f => f.Name).ToList();
             thisFields.Sort();
 
-            var otherFields = other.IndexSchema.Fields.Keys.ToList();
+            var otherFields = other.IndexedFields.Select(f => f.Name).ToList();
             otherFields.Sort();
 
             if (thisFields.SequenceEqual(otherFields))
@@ -102,6 +102,30 @@ namespace ExpandoDB
                 return !Object.Equals(schema1, schema2);
 
             return ! schema1.Equals(schema2);
+        }
+
+        ///// <summary>
+        ///// Returns a hash code for this instance.
+        ///// </summary>
+        ///// <returns>
+        ///// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
+        ///// </returns>
+        //public override int GetHashCode()
+        //{
+        //    return Name.GetHashCode() + IndexedFields.GetHashCode();
+        //}
+
+        /// <summary>
+        /// Gets the IndexSchema based on the IndexedFields of this instance.
+        /// </summary>
+        /// <returns></returns>
+        public IndexSchema GetIndexSchema()
+        {
+            var indexSchema = new IndexSchema(Name);
+            foreach (var field in IndexedFields)            
+                indexSchema.Fields.TryAdd(field.Name, field);
+
+            return indexSchema;
         }
 
     }
