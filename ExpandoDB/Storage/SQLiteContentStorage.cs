@@ -51,7 +51,7 @@ namespace ExpandoDB.Storage
 
             _createTableSql = String.Format("CREATE TABLE IF NOT EXISTS [{0}] (id TEXT PRIMARY KEY, json TEXT)", _contentCollectionName);
             _insertOneSql = String.Format("INSERT INTO [{0}] (id, json) VALUES (@id, @json)", _contentCollectionName);
-            _selectOneSql = String.Format("SELECT json FROM [{0}] WHERE id = @id", _contentCollectionName);
+            _selectOneSql = String.Format("SELECT id, json FROM [{0}] WHERE id = @id", _contentCollectionName);
             _selectManySql = String.Format("SELECT id, json FROM [{0}] WHERE id IN @ids", _contentCollectionName);
             _selectCountSql = String.Format("SELECT COUNT(*) FROM [{0}] WHERE id = @id", _contentCollectionName);
             _updateOneSql = String.Format("UPDATE [{0}] SET json = @json WHERE id = @id", _contentCollectionName);
@@ -137,13 +137,13 @@ namespace ExpandoDB.Storage
             using (var conn = GetConnection())
             {
                 var id = guid.ToString();
-                var result = await conn.QueryAsync<string>(_selectOneSql, new { id });
+                var result = await conn.QueryAsync<StorageRow>(_selectOneSql, new { id });
                 
-                var json = result.FirstOrDefault();
-                if (String.IsNullOrWhiteSpace(json))    
+                var row = result.FirstOrDefault();
+                if (row == null)    
                     return null;
                 
-                return json.ToContent();
+                return row.ToContent();
             }
         }
 
@@ -160,20 +160,20 @@ namespace ExpandoDB.Storage
             using (var conn = GetConnection())
             {   
                 var ids = guids.Select(g => g.ToString()).ToList();
-                var result = await conn.QueryAsync(_selectManySql, new { ids });
+                var result = await conn.QueryAsync<StorageRow>(_selectManySql, new { ids });
                 
                 // The result will not be in the same order as the input guids.
                 // So we need re-sort the result to be in the same order as the input guids
 
                 var resultLookup = result.ToDictionary(row => row.id as string);
-                var orderedResult = new string[guids.Count];
+                var orderedResult = new List<StorageRow>();
 
-                for (var i = 0; i < guids.Count; i++)
+                for (var i = 0; i < ids.Count; i++)
                 {
                     var id = ids[i];
-                    var json = resultLookup[id].json as string;
-
-                    orderedResult[i] = json;
+                    
+                    if (resultLookup.ContainsKey(id))
+                        orderedResult.Add(resultLookup[id]);
                 }
 
                 return orderedResult.ToEnumerableContents();

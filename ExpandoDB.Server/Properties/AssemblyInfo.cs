@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("ExpandoDB.Server")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("ExpandoDB REST Micro-service")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("ExpandoDB.Server")]
-[assembly: AssemblyCopyright("Copyright ©  2015")]
+[assembly: AssemblyCopyright("Copyright ©  2015 Cris Almodovar")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

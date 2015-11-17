@@ -184,8 +184,18 @@ namespace ExpandoDB.Storage
         /// <param name="json">The JSON string to deserialize.</param>
         /// <returns></returns>
         public static Content ToContent(this string json)
-        {         
+        {
             return new Content(json.ToExpando());
+        }
+
+        /// <summary>
+        /// Deserializes the StorageRow.json string into a Content object.
+        /// </summary>
+        /// <param name="row">The StorageRow.</param>
+        /// <returns></returns>
+        public static Content ToContent(this StorageRow row)
+        {
+            return new Content(row.ToExpando());
         }
 
         /// <summary>
@@ -194,23 +204,77 @@ namespace ExpandoDB.Storage
         /// <param name="json">The JSON string to deserialize.</param>
         /// <returns></returns>
         public static ExpandoObject ToExpando(this string json)
-        {
-            if (String.IsNullOrWhiteSpace(json))
-                throw new ArgumentException("JSON string is null or empty");
-
-            var dictionary = NetJSON.NetJSON.Deserialize<IDictionary<string, object>>(json);
-            var expando = dictionary.ToExpando();
-            return expando;
+        {            
+            return json.ToDictionary().ToExpando();
         }
+
+        /// <summary>
+        /// Deserializes the StorageRow.json string into an ExpandoObject.
+        /// </summary>
+        /// <param name="row">The StorageRow.</param>
+        /// <returns></returns>
+        public static ExpandoObject ToExpando(this StorageRow row)
+        {
+            return row.ToDictionary().ToExpando();
+        }
+
+        /// <summary>
+        /// Deserializes the JSON string into an IDictionary object.
+        /// </summary>
+        /// <param name="json">The JSON string to deserialize.</param>
+        /// <returns></returns>
+        public static IDictionary<string, object> ToDictionary(this string json)
+        {
+            return ToDictionary(null, json);
+        }
+
+        /// <summary>
+        /// Deserializes the StorageRow.json string into an ExpandoObject.
+        /// </summary>
+        /// <param name="row">The StorageRow.</param>
+        /// <returns></returns>
+        public static IDictionary<string, object> ToDictionary(this StorageRow  row)
+        {
+            return ToDictionary(row.id, row.json);
+        }
+
+        /// <summary>
+        /// Deserializes the JSON string into an IDictionary object.
+        /// </summary>
+        /// <param name="json">The JSON string to deserialize.</param>
+        /// <returns></returns>
+        public static IDictionary<string, object> ToDictionary(string id, string json)
+        {
+            IDictionary<string, object> dictionary = new Dictionary<string, object>();
+            try
+            {
+                if (String.IsNullOrWhiteSpace(json))
+                    throw new ArgumentException("JSON string is null or empty");
+
+                dictionary = NetJSON.NetJSON.Deserialize<IDictionary<string, object>>(json);
+            }
+            catch (Exception ex)
+            {
+                var guid = Guid.Empty;
+                Guid.TryParse(id, out guid);
+
+                dictionary[Content.ID_FIELD_NAME] = guid;
+                dictionary[Content.ERROR_MESSAGE_FIELD_NAME] = ex.Message;
+                dictionary[Content.ERROR_JSON_FIELD_NAME] = json;
+            }
+
+            return dictionary;
+        }
+
 
         /// <summary>
         /// Deserializes the JSON results .
         /// </summary>
         /// <param name="jsonResults">The json results.</param>
         /// <returns></returns>
-        public static EnumerableContents ToEnumerableContents(this IEnumerable<string> jsonResults)
+        internal static EnumerableContents ToEnumerableContents(this IEnumerable<StorageRow> rows)
         {
-            return new EnumerableContents(jsonResults);
+            return new EnumerableContents(rows);
         }
 
         /// <summary>

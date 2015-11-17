@@ -16,7 +16,7 @@ namespace ExpandoDB
     /// </summary>
     public class Database : IDisposable
     {
-        internal const string DB_FILENAME = "expando.db";
+        internal const string DB_FILENAME = "expando-db.edf";
         internal const string DB_DIR_NAME = "db";
         internal const string INDEX_DIR_NAME = "index";
 

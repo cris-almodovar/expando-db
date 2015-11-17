@@ -100,6 +100,13 @@ namespace ExpandoDB
             if (content == null)
                 throw new ArgumentNullException("content");
 
+            if (content._id.HasValue)
+            {
+                var exists = await _contentStorage.ExistsAsync(content._id.Value);
+                if (exists)
+                    throw new InvalidOperationException("There is an existing Content with the same _id");
+            }
+            
             var guid = await _contentStorage.InsertAsync(content);
             _luceneIndex.Insert(content);
 
@@ -119,7 +126,7 @@ namespace ExpandoDB
                 throw new ArgumentNullException("criteria");
 
             var luceneResult = _luceneIndex.Search(criteria);
-            var searchResult = new SearchResult<Content>(criteria, luceneResult);            
+            var searchResult = new SearchResult<Content>(criteria, luceneResult.HitCount, luceneResult.TotalHitCount, luceneResult.PageCount);            
 
             if (searchResult.HitCount > 0)            
                 searchResult.Items = await _contentStorage.GetAsync(luceneResult.Items.ToList());            
@@ -240,6 +247,8 @@ namespace ExpandoDB
 
                 schema.IndexedFields.Add(fieldCopy);
             }
+
+            schema.IndexedFields = schema.IndexedFields.OrderBy(f => f.Name).ToList();
 
             return schema;
         }

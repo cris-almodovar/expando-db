@@ -18,7 +18,8 @@ namespace ExpandoDB.Search
         public int? PageCount { get; set; }        
         public IEnumerable<TResult> Items { get; set; }       
 
-        public SearchResult(SearchCriteria criteria, SearchResult<Guid> luceneResult = null)
+        
+        public SearchResult(SearchCriteria criteria, int? hitCount = null, int? totalHitCount = null, int? pageCount = null)
         {
             if (criteria == null)
                 throw new ArgumentNullException("criteria");
@@ -29,18 +30,9 @@ namespace ExpandoDB.Search
             ItemsPerPage = criteria.ItemsPerPage;
             PageNumber = criteria.PageNumber;
 
-            if (luceneResult != null)
-            {
-                HitCount = luceneResult.HitCount;
-                TotalHitCount = luceneResult.TotalHitCount;
-                PageCount = luceneResult.PageCount;
-            }
-            else
-            {
-                HitCount = 0;
-                TotalHitCount = 0;
-                PageCount = 0;
-            }
+            HitCount = hitCount ?? 0;
+            TotalHitCount = totalHitCount ?? 0;
+            PageCount = pageCount ?? 0;            
 
             Items = new List<TResult>();
         }

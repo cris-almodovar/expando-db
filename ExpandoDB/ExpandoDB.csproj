@@ -199,6 +199,7 @@
     <Compile Include="Storage\IContentStorage.cs" />
     <Compile Include="Storage\SQLiteSchemaStorage.cs" />
     <Compile Include="Storage\SQLiteContentStorage.cs" />
+    <Compile Include="Storage\StorageRow.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -7,15 +7,19 @@ using System.Threading.Tasks;
 using Nancy.Bootstrapper;
 using Nancy.TinyIoc;
 using Nancy.Json;
+using log4net;
 
 namespace ExpandoDB.Server.Web
 {
     public class Bootstrapper : DefaultNancyBootstrapper
     {
+        private readonly ILog _log = LogManager.GetLogger(typeof(Bootstrapper).Name);
+
         protected override void ApplicationStartup(TinyIoCContainer container, IPipelines pipelines)
         {
             base.ApplicationStartup(container, pipelines);
 
+            //_log.Info("Configuring CORS headers");
             pipelines.AfterRequest.AddItemToEndOfPipeline(ctx =>
             {
                 if (ctx.Request.Headers.Keys.Contains("Origin"))
@@ -39,6 +43,8 @@ namespace ExpandoDB.Server.Web
                 }
             });
 
+            
+
             JsonSettings.RetainCasing = true;
             JsonSettings.ISO8601DateFormat = true;
         }
@@ -48,8 +54,9 @@ namespace ExpandoDB.Server.Web
             base.ConfigureApplicationContainer(container);
 
             var db = new Database();
-            container.Register<Database>(db);
-        }
-
+            container.Register<Database>(db);                       
+        }   
+     
+        
     }
 }

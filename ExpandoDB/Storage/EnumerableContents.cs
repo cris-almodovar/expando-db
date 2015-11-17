@@ -9,18 +9,18 @@ namespace ExpandoDB.Storage
     /// </summary>
     public class EnumerableContents : IEnumerable<Content>
     {
-        private IEnumerable<string> _jsonResults;
+        private IEnumerable<StorageRow> _rows;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EnumerableContents"/> class.
         /// </summary>
-        /// <param name="jsonResults">The list of JSON strings</param>
-        public EnumerableContents(IEnumerable<string> jsonResults)
+        /// <param name="rows">The list of JSON strings</param>
+        public EnumerableContents(IEnumerable<StorageRow> rows)
         {
-            if (jsonResults == null)
-                throw new ArgumentNullException("jsonResults");
+            if (rows == null)
+                throw new ArgumentNullException("rows");
 
-            _jsonResults = jsonResults;
+            _rows = rows;
         }
 
         /// <summary>
@@ -31,13 +31,8 @@ namespace ExpandoDB.Storage
         /// </returns>
         public IEnumerator<Content> GetEnumerator()
         {
-            foreach (var json in _jsonResults)
-            {
-                if (String.IsNullOrWhiteSpace(json))
-                    continue;
-                
-                yield return json.ToContent();
-            }
+            foreach (var row in _rows)           
+                yield return row.ToContent();            
         }
 
         /// <summary>

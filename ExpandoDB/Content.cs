@@ -15,9 +15,11 @@ namespace ExpandoDB
         public const string ID_FIELD_NAME = "_id";
         public const string CREATED_TIMESTAMP_FIELD_NAME = "_createdTimestamp";
         public const string MODIFIED_TIMESTAMP_FIELD_NAME = "_modifiedTimestamp";
+        public const string ERROR_MESSAGE_FIELD_NAME = "_errorMessage";
+        public const string ERROR_JSON_FIELD_NAME = "_errorJson";
 
         private readonly dynamic _expando;
-        private readonly IDictionary<string, object> _expandoDictionary;
+        private readonly IDictionary<string, object> _expandoDictionary;        
 
 
         /// <summary>
@@ -36,6 +38,15 @@ namespace ExpandoDB
             : this (json.ToExpando())
         {
         }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Content"/> class from a Dictionary object.
+        /// </summary>
+        /// <param name="dictionary">The dictionary.</param>
+        public Content(IDictionary<string, object> dictionary)
+            : this (dictionary.ToExpando())
+        {
+        }        
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Content"/> class from an ExpandoObject instance.
@@ -78,8 +89,12 @@ namespace ExpandoDB
             var idType = idValue.GetType();
             if (idType == typeof(Guid))
             {
-                if ((Guid)idValue == Guid.Empty)
+                if ((Guid)idValue == Guid.Empty &&
+                    !_expandoDictionary.ContainsKey(ERROR_MESSAGE_FIELD_NAME) &&
+                    !_expandoDictionary.ContainsKey(ERROR_JSON_FIELD_NAME))
+                {
                     _expandoDictionary[ID_FIELD_NAME] = Guid.NewGuid();
+                }
                 return;
             }
 
