@@ -60,8 +60,8 @@ namespace ExpandoDB.Server.Web
                 throw new InvalidOperationException("The collection parameter is null or empty");
 
             var excludedFields = new[] { "collection" };
-            var dictionary = this.Bind<DynamicDictionary>(excludedFields);
-            var content = new Content(dictionary.ToDictionary());
+            var dictionary = this.Bind<DynamicDictionary>(excludedFields).ToDictionary();
+            var content = new Content(dictionary);
             
             var collection = _db[collectionName];
             var guid = await collection.InsertAsync(content);
