@@ -200,13 +200,13 @@ namespace ExpandoDB.Storage
                 if (count == 0)
                     return 0;                
 
-                var result = await conn.QueryAsync<string>(_selectOneSql, new { id });
-                var existingJson = result.FirstOrDefault();
-                if (String.IsNullOrWhiteSpace(existingJson))
+                var result = await conn.QueryAsync<StorageRow>(_selectOneSql, new { id });
+                var row = result.FirstOrDefault();
+                if (row == null)
                     return 0;
 
                 // Make sure the _createdTimestamp is not overwritten
-                var existingContent = existingJson.ToContent();
+                var existingContent = row.ToContent();
                 content._createdTimestamp = existingContent._createdTimestamp;  
 
                 content._modifiedTimestamp = DateTime.UtcNow;
