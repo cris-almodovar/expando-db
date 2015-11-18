@@ -37,6 +37,7 @@ namespace ExpandoDB.Tests
         public void Cleanup()
         {
             SQLiteConnection.ClearAllPools();
+            Thread.Sleep(1000);
             File.Delete(_dbFilePath);
             Directory.Delete(_dbPath, true);
         }
