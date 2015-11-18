@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ExpandoDB.Server.Web
+namespace ExpandoDB.Server.Web.DTO
 {
     public class SearchResponseDto : SearchResult<ExpandoObject>
     {

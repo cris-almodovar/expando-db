@@ -27,7 +27,7 @@ namespace ExpandoDB.Tests
             if (!Directory.Exists(_dbPath))
                 Directory.CreateDirectory(_dbPath);
 
-            _dbFilePath = Path.Combine(_dbPath, Guid.NewGuid().ToString() + ".db");
+            _dbFilePath = Path.Combine(_dbPath, Guid.NewGuid().ToString() + ".sdb3");
             if (File.Exists(_dbFilePath))
                 File.Delete(_dbFilePath);
 
@@ -47,7 +47,7 @@ namespace ExpandoDB.Tests
         [TestCategory("Content Storage tests")]
         public void Database_file_is_auto_created()        
         {            
-            var dbFilePath = Path.Combine(_dbPath, Guid.NewGuid().ToString() + ".db");
+            var dbFilePath = Path.Combine(_dbPath, Guid.NewGuid().ToString() + ".sdb3");
             if (File.Exists(dbFilePath))
                 File.Delete(dbFilePath);
 

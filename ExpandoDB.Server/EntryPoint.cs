@@ -14,19 +14,21 @@ namespace ExpandoDB.Server
     {        
         static void Main(string[] args)
         {
-            HostFactory.Run(hc =>
-            {
-                hc.Service<ServiceApp>(sc =>
+            HostFactory.Run(
+                hc =>
                 {
-                    sc.ConstructUsing(() => new ServiceApp());
-                    sc.WhenStarted(sa => sa.Start());
-                    sc.WhenStopped(sa => sa.Stop());
+                    hc.Service<ServiceApp>(
+                        sc =>
+                        {
+                            sc.ConstructUsing(() => new ServiceApp());
+                            sc.WhenStarted(sa => sa.Start());
+                            sc.WhenStopped(sa => sa.Stop());
+                        }
+                    );
+                    hc.UseAssemblyInfoForServiceInfo();
+                    hc.RunAsLocalSystem();
+                    hc.StartAutomatically();
                 }
-                );
-                hc.UseAssemblyInfoForServiceInfo();
-                hc.RunAsLocalSystem();
-                hc.StartAutomatically();
-            }
             );
         }
     }

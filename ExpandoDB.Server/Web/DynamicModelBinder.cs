@@ -80,8 +80,10 @@ namespace ExpandoDB.Server.Web
                 throw new ArgumentException("The JSON string is empty");
 
             var dictionary = NetJSON.NetJSON.Deserialize<IDictionary<string, object>>(json);
-            ParseDateTimeStrings(dictionary);
+            if (dictionary == null)
+                return new Dictionary<string, object>();
 
+            ParseDateTimeStrings(dictionary);
             return dictionary;
         }
 

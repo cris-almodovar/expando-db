@@ -55,7 +55,6 @@ namespace ExpandoDB
         public ContentCollection(ContentCollectionSchema schema, string dbPath)
             : this ( schema.Name, dbPath, schema.GetIndexSchema() )
         {
-
         }
 
         /// <summary>
@@ -135,6 +134,26 @@ namespace ExpandoDB
         }
 
         /// <summary>
+        /// Gets the Content identified by the specified guid.
+        /// </summary>
+        /// <param name="guid">The Content's unique identifier.</param>
+        /// <returns></returns>        
+        /// <remarks>
+        /// This method bypasses the Lucene index and
+        /// tries to retrieve the Content from storage.
+        /// </remarks>
+        public async Task<Content> GetAsync(Guid guid)
+        {
+            EnsureCollectionIsNotDropped();
+
+            if (guid == Guid.Empty)
+                throw new ArgumentException("guid cannot be empty");
+            
+            var content = await _contentStorage.GetAsync(guid);
+            return content;
+        }
+
+        /// <summary>
         /// Counts the Contents that match the specified search criteria.
         /// </summary>
         /// <param name="criteria">The search criteria.</param>
@@ -182,9 +201,8 @@ namespace ExpandoDB
             if (guid == Guid.Empty)
                 throw new ArgumentException("guid cannot be empty");
 
-            var affected = await _contentStorage.DeleteAsync(guid);
-            if (affected > 0)
-                _luceneIndex.Delete(guid);
+            var affected = await _contentStorage.DeleteAsync(guid);            
+            _luceneIndex.Delete(guid);
 
             return affected;
         }

@@ -9,6 +9,7 @@ namespace ExpandoDB.Tests
     public class ContentTests
     {
         [TestMethod]
+        [TestCategory("Content tests")]
         public void Create_content_auto_generates_id()
         {
             var content = new Content();
@@ -18,6 +19,7 @@ namespace ExpandoDB.Tests
 
         [TestMethod]
         [ExpectedException(typeof(InvalidOperationException))]
+        [TestCategory("Content tests")]
         public void id_accepts_guid_only()
         {
             dynamic content = new Content();
@@ -29,13 +31,15 @@ namespace ExpandoDB.Tests
 
         [TestMethod]
         [ExpectedException(typeof(InvalidOperationException))]
+        [TestCategory("Content tests")]
         public void Content_does_not_allow_anon_type()
         {
             dynamic content = new Content();
             content.X = new { Name = "name", Value = "value" };
         }
 
-        [TestMethod]     
+        [TestMethod]
+        [TestCategory("Content tests")]
         public void Content_allows_string_number_datetime_guid_list_and_dictionary()
         {
             dynamic content = new Content();
