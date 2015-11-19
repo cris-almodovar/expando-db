@@ -22,8 +22,7 @@ namespace ExpandoDB.Search
         private const int DEFAULT_SEARCH_ITEMS_PER_PAGE = 10;
         private readonly Directory _indexDirectory;
         private readonly Analyzer _compositeAnalyzer;
-        private readonly IndexWriter _writer;
-        private readonly QueryParser _queryParser;        
+        private readonly IndexWriter _writer;                
         private SearcherManager _searcherManager;
         private object _searcherManagerLock = new object();
         private readonly Timer _autoRefreshTimer;
@@ -54,8 +53,7 @@ namespace ExpandoDB.Search
             var config = new IndexWriterConfig(_compositeAnalyzer);
             _writer = new IndexWriter(_indexDirectory, config);
 
-            _searcherManager = new SearcherManager(_writer, true, null);
-            _queryParser = new LuceneQueryParser(LuceneField.FULL_TEXT_FIELD_NAME, _compositeAnalyzer, _indexSchema);
+            _searcherManager = new SearcherManager(_writer, true, null);            
 
             _autoRefreshTimer = new Timer(o => Refresh(), null, TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(500));         
         }        
@@ -143,7 +141,8 @@ namespace ExpandoDB.Search
             criteria.Validate();
 
             var result = new SearchResult<Guid>(criteria);
-            var query = _queryParser.Parse(criteria.Query);
+            var queryParser = new LuceneQueryParser(LuceneField.FULL_TEXT_FIELD_NAME, _compositeAnalyzer, _indexSchema);
+            var query = queryParser.Parse(criteria.Query);
 
             var searcher = _searcherManager.Acquire() as IndexSearcher;
             if (searcher != null)

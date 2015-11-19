@@ -10,6 +10,7 @@ namespace ExpandoDB.Server.Web.DTO
     public class ContentResposeDto
     {
         public string Elapsed { get; set; }
+        public string FromCollection { get; set; }
         public ExpandoObject Content { get; set; }
     }
 }

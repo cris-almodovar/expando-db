@@ -26,8 +26,11 @@ namespace ExpandoDB.Server.Web
             Post["/{collection}", true] = OnInsertContentAsync;
 
             Get["/{collection}", true] = OnSearchContentsAsync;
+
             Get["/{collection}/schema"] = OnGetCollectionSchema;
+
             Get["/{collection}/count"] = OnGetCount;
+
             Get["/{collection}/{id:guid}", true] = OnGetContentAsync;
 
             Put["/{collection}/{id:guid}", true] = OnUpdateContentAsync;
@@ -69,12 +72,12 @@ namespace ExpandoDB.Server.Web
             if (content == null)
                 return HttpStatusCode.NotFound;
 
-            var valuesToPatch = contentPatch.AsDictionary();
+            var patchDictionary = contentPatch.AsDictionary();
             var contentDictionary = content.AsDictionary();
 
-            var keysToUpdate = valuesToPatch.Keys.Except(new[] { "collection", Content.ID_FIELD_NAME, Content.CREATED_TIMESTAMP_FIELD_NAME, Content.MODIFIED_TIMESTAMP_FIELD_NAME });
+            var keysToUpdate = patchDictionary.Keys.Except(new[] { "collection", Content.ID_FIELD_NAME, Content.CREATED_TIMESTAMP_FIELD_NAME, Content.MODIFIED_TIMESTAMP_FIELD_NAME });
             foreach (var key in keysToUpdate)            
-                contentDictionary[key] = valuesToPatch[key];
+                contentDictionary[key] = patchDictionary[key];
 
             var affected = await collection.UpdateAsync(content);
 
@@ -83,6 +86,7 @@ namespace ExpandoDB.Server.Web
             var responseDto = new UpdateResponseDto
             {
                 Elapsed = stopwatch.Elapsed.ToString(),
+                FromCollection = collectionName,
                 AffectedCount = affected
             };
 
@@ -102,9 +106,8 @@ namespace ExpandoDB.Server.Web
                 return HttpStatusCode.NotFound;            
 
             var collection = _db[collectionName];
-            var excludedFields = new[] { "SortByField", "TopN", "ItemsPerPage", "PageNumber" };
-            var searchCriteria = this.Bind<SearchCriteria>();
-            searchCriteria.TopN = Int32.MaxValue;
+            var countRequestDto = this.Bind<CountRequestDto>();
+            var searchCriteria = countRequestDto.ToSearchCriteria();            
             var count = collection.Count(searchCriteria);
 
             stopwatch.Stop();
@@ -112,6 +115,8 @@ namespace ExpandoDB.Server.Web
             var responseDto = new CountResponseDto
             {
                 Elapsed = stopwatch.Elapsed.ToString(),
+                FromCollection = collectionName,
+                Where = countRequestDto.Where,
                 Count = count
             };
 
@@ -147,6 +152,7 @@ namespace ExpandoDB.Server.Web
             var responseDto = new UpdateResponseDto
             {
                 Elapsed = stopwatch.Elapsed.ToString(),
+                FromCollection = collectionName,
                 AffectedCount = affected
             };
 
@@ -169,20 +175,18 @@ namespace ExpandoDB.Server.Web
             if (guid == Guid.Empty)
                 throw new ArgumentException("id cannot be Guid.Empty");
 
+            var collection = _db[collectionName];
+            var count = collection.Count(new SearchCriteria { Query = "_id:" + guid.ToString() });
+            if (count == 0)
+                return HttpStatusCode.NotFound;
+
             var excludedFields = new[] { "collection", "id" };
             var dictionary = this.Bind<DynamicDictionary>(excludedFields).ToDictionary();
             if (dictionary == null || dictionary.Count == 0)
                 throw new InvalidOperationException("There is no data for this operation");
 
             var content = new Content(dictionary);  
-            content._id = guid;
-
-            var collection = _db[collectionName];
-
-            var count = collection.Count(new SearchCriteria { Query = "_id:" + guid.ToString() });
-            if (count == 0)
-                return HttpStatusCode.NotFound;
-
+            content._id = guid;        
             var affected = await collection.UpdateAsync(content);
 
             stopwatch.Stop();
@@ -190,6 +194,7 @@ namespace ExpandoDB.Server.Web
             var responseDto = new UpdateResponseDto
             {
                 Elapsed = stopwatch.Elapsed.ToString(),
+                FromCollection = collectionName,
                 AffectedCount = affected
             };
 
@@ -222,6 +227,7 @@ namespace ExpandoDB.Server.Web
             var responseDto = new ContentResposeDto
             {
                 Elapsed = stopwatch.Elapsed.ToString(),
+                FromCollection = collectionName,
                 Content = content.AsExpando()
             };
 
@@ -264,17 +270,14 @@ namespace ExpandoDB.Server.Web
                 return HttpStatusCode.NotFound;
                         
             var collection = _db[collectionName];
-            var searchCriteria = this.Bind<SearchCriteria>();
+            var searchRequest = this.Bind<SearchRequestDto>();
+            var searchCriteria = searchRequest.ToSearchCriteria();
+            var selectedFields = searchRequest.Select.ToList();
             var result = await collection.SearchAsync(searchCriteria);
 
             stopwatch.Stop();
 
-            var responseDto = new SearchResponseDto(searchCriteria, result.HitCount, result.TotalHitCount, result.PageCount)
-            {
-                Elapsed = stopwatch.Elapsed.ToString(),
-                Items = result.Items.Select(c => c.AsExpando())
-            };           
-
+            var responseDto = new SearchResponseDto(collectionName, searchRequest, result) { Elapsed = stopwatch.Elapsed.ToString() };    
             return responseDto;            
         }
 
@@ -301,6 +304,7 @@ namespace ExpandoDB.Server.Web
             var responseDto = new InsertResponseDto
             {
                 _id = guid,
+                FromCollection = collectionName,
                 Elapsed = stopwatch.Elapsed.ToString()
             };
 

@@ -72,7 +72,10 @@
   <ItemGroup>
     <Compile Include="EntryPoint.cs" />
     <Compile Include="Web\DTO\ContentResposeDto.cs" />
+    <Compile Include="Web\DTO\CountRequestDto.cs" />
     <Compile Include="Web\DTO\CountResponseDto.cs" />
+    <Compile Include="Web\DTO\DtoExtensions.cs" />
+    <Compile Include="Web\DTO\SearchRequestDto.cs" />
     <Compile Include="Web\DynamicModelBinder.cs" />
     <Compile Include="ServiceApp.cs" />
     <Compile Include="Web\Bootstrapper.cs" />

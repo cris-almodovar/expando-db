@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace ExpandoDB.Search
 {
     public class SearchResult<TResult>
-    {
+    {           
         public string Query { get; set; }
         public string SortByField { get; set; }
         public int? TopN { get; set; }
@@ -23,7 +23,7 @@ namespace ExpandoDB.Search
         {
             if (criteria == null)
                 throw new ArgumentNullException("criteria");
-
+                   
             Query = criteria.Query;
             SortByField = criteria.SortByField;
             TopN = criteria.TopN;
