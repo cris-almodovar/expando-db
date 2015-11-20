@@ -10,16 +10,16 @@ namespace ExpandoDB.Search
     {           
         public string Query { get; set; }
         public string SortByField { get; set; }
-        public int? TopN { get; set; }
-        public int? HitCount { get; set; }
-        public int? TotalHitCount { get; set; }        
-        public int? PageCount { get; set; }
-        public int? PageNumber { get; set; }
-        public int? ItemsPerPage { get; set; }
+        public int TopN { get; set; }
+        public int ItemCount { get; set; }
+        public int TotalHits { get; set; }        
+        public int PageCount { get; set; }
+        public int PageNumber { get; set; }
+        public int ItemsPerPage { get; set; }
         public IEnumerable<TResult> Items { get; set; }       
 
         
-        public SearchResult(SearchCriteria criteria, int? hitCount = null, int? totalHitCount = null, int? pageCount = null)
+        public SearchResult(SearchCriteria criteria, int itemCount = 0, int totalHits = 0, int pageCount = 0)
         {
             if (criteria == null)
                 throw new ArgumentNullException("criteria");
@@ -30,9 +30,9 @@ namespace ExpandoDB.Search
             ItemsPerPage = criteria.ItemsPerPage;
             PageNumber = criteria.PageNumber;
 
-            HitCount = hitCount ?? 0;
-            TotalHitCount = totalHitCount ?? 0;
-            PageCount = pageCount ?? 0;            
+            ItemCount = itemCount;
+            TotalHits = totalHits;
+            PageCount = pageCount;            
 
             Items = new List<TResult>();
         }

@@ -125,9 +125,9 @@ namespace ExpandoDB
                 throw new ArgumentNullException("criteria");
 
             var luceneResult = _luceneIndex.Search(criteria);
-            var searchResult = new SearchResult<Content>(criteria, luceneResult.HitCount, luceneResult.TotalHitCount, luceneResult.PageCount);            
+            var searchResult = new SearchResult<Content>(criteria, luceneResult.ItemCount, luceneResult.TotalHits, luceneResult.PageCount);            
 
-            if (searchResult.HitCount > 0)            
+            if (searchResult.ItemCount > 0)            
                 searchResult.Items = await _contentStorage.GetAsync(luceneResult.Items.ToList());            
 
             return searchResult; 
@@ -166,7 +166,7 @@ namespace ExpandoDB
                 throw new ArgumentNullException("criteria");
 
             var luceneResult = _luceneIndex.Search(criteria);
-            return luceneResult.TotalHitCount ?? 0;
+            return luceneResult.TotalHits;
         }
 
         /// <summary>

@@ -34,41 +34,45 @@ namespace ExpandoDB.Server.Web.DTO
             return searchCriteria;
         }
 
-        public static SearchResponseDto Populate(this SearchResponseDto dto, SearchResult<Content> searchResult, IList<string> selectedFields)
+        public static SearchResponseDto Populate(this SearchResponseDto responseDto, SearchRequestDto searchRequestDto, string collectionName, SearchResult<Content> searchResult)
         {
-            if (dto == null)
-                throw new ArgumentNullException("dto");
+            if (searchRequestDto == null)
+                throw new ArgumentNullException("searchRequestDto");
             if (searchResult == null)
                 throw new ArgumentNullException("searchResult");
 
-            dto.Where = searchResult.Query;
-            dto.SortBy = searchResult.SortByField;
-            dto.TopN = searchResult.TopN;
-            dto.HitCount = searchResult.HitCount;
-            dto.TotalHitCount = searchResult.TotalHitCount;
-            dto.PageCount = searchResult.PageCount;
-            dto.PageNumber = searchResult.PageNumber;            
-            dto.ItemsPerPage = searchResult.ItemsPerPage;
-            dto.Contents = searchResult.Items.Select(c => c.Project(selectedFields).AsExpando());
+            responseDto.Select = searchRequestDto.Select;
+            responseDto.FromCollection = collectionName;
+            responseDto.Where = searchRequestDto.Where;
+            responseDto.SortBy = searchRequestDto.SortBy;
+            responseDto.TopN = searchResult.TopN;
+            responseDto.ItemCount = searchResult.ItemCount;
+            responseDto.TotalHits = searchResult.TotalHits;
+            responseDto.PageCount = searchResult.PageCount;
+            responseDto.PageNumber = searchResult.PageNumber;
+            responseDto.ItemsPerPage = searchResult.ItemsPerPage;
 
-            return dto;
+            var selectedFields = searchRequestDto.Select.ToList();
+            responseDto.Contents = searchResult.Items.Select(c => c.Select(selectedFields).AsExpando()).ToList();
+
+            return responseDto;
         }
 
-        public static Content Project(this Content content, IList<string> projectedFields)
+        public static Content Select(this Content content, IList<string> selectedFields)
         {
             if (content == null)
                 throw new ArgumentNullException("content");
-            if (projectedFields == null)
-                throw new ArgumentNullException("projectedFields");
+            if (selectedFields == null)
+                throw new ArgumentNullException("selectedFields");
 
-            if (projectedFields.Count == 0)
+            if (selectedFields.Count == 0)
                 return content;
 
             var contentDictionary = content.AsDictionary();
 
-            // Remove fields that are not in the projectedFields
+            // Remove fields that are not in the selectedFields
             contentDictionary.Keys.Except(new[] { Content.ID_FIELD_NAME })
-                             .Where(fieldName => !projectedFields.Contains(fieldName))
+                             .Where(fieldName => !selectedFields.Contains(fieldName))
                              .ToList()
                              .ForEach(fieldName => contentDictionary.Remove(fieldName));
 

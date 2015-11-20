@@ -41,9 +41,7 @@ namespace ExpandoDB.Server.Web
                         }
                     }
                 }
-            });
-
-            
+            });            
 
             JsonSettings.RetainCasing = true;
             JsonSettings.ISO8601DateFormat = true;
@@ -55,8 +53,6 @@ namespace ExpandoDB.Server.Web
 
             var db = new Database();
             container.Register<Database>(db);                       
-        }   
-     
-        
+        }     
     }
 }

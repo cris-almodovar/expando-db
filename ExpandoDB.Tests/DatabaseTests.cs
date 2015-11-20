@@ -63,8 +63,8 @@ namespace ExpandoDB.Tests
             var criteria = new SearchCriteria { Query = "Author:Douglas", SortByField = "-Title", TopN = 1 };
             var result = _db["books"].SearchAsync(criteria).Result;
 
-            Assert.AreEqual<int?>(1, result.HitCount);
-            Assert.AreEqual<int?>(5, result.TotalHitCount);
+            Assert.AreEqual<int?>(1, result.ItemCount);
+            Assert.AreEqual<int?>(5, result.TotalHits);
 
             dynamic firstItem = result.Items.First();
             Assert.AreEqual<string>("The Restaurant at the End of the Universe", firstItem.Title);
@@ -80,8 +80,8 @@ namespace ExpandoDB.Tests
             var criteria = new SearchCriteria { Query = "Author:Douglas", SortByField = "-Title", TopN = 1 };
             var result = _db["books"].SearchAsync(criteria).Result;
 
-            Assert.AreEqual<int?>(1, result.HitCount);
-            Assert.AreEqual<int?>(5, result.TotalHitCount);
+            Assert.AreEqual<int?>(1, result.ItemCount);
+            Assert.AreEqual<int?>(5, result.TotalHits);
 
             dynamic firstItem = result.Items.First();
             Assert.AreEqual<string>("The Restaurant at the End of the Universe", firstItem.Title);

@@ -135,9 +135,9 @@ namespace ExpandoDB.Search
                 throw new ArgumentNullException("criteria");
 
             criteria.Query = String.IsNullOrWhiteSpace(criteria.Query) ? "*:*" : criteria.Query;
-            criteria.TopN = criteria.TopN ?? DEFAULT_SEARCH_TOP_N;
-            criteria.ItemsPerPage = criteria.ItemsPerPage ?? DEFAULT_SEARCH_ITEMS_PER_PAGE;
-            criteria.PageNumber = criteria.PageNumber ?? 1;
+            criteria.TopN = criteria.TopN > 0 ? criteria.TopN : DEFAULT_SEARCH_TOP_N;
+            criteria.ItemsPerPage = criteria.ItemsPerPage > 0 ? criteria.ItemsPerPage : DEFAULT_SEARCH_ITEMS_PER_PAGE;
+            criteria.PageNumber = criteria.PageNumber > 0 ? criteria.PageNumber : 1;
             criteria.Validate();
 
             var result = new SearchResult<Guid>(criteria);
@@ -150,7 +150,7 @@ namespace ExpandoDB.Search
                 try
                 {
                     var sort = GetSortCriteria(criteria.SortByField);
-                    var topFieldDocs = searcher.Search(query, criteria.TopN.Value, sort);
+                    var topFieldDocs = searcher.Search(query, criteria.TopN, sort);
                     result.PopulateWith(topFieldDocs, id => searcher.Doc(id));
                 }
                 finally

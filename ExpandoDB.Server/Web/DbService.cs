@@ -118,7 +118,7 @@ namespace ExpandoDB.Server.Web
                 FromCollection = collectionName,
                 Where = countRequestDto.Where,
                 Count = count
-            };
+            };            
 
             return responseDto;
         }
@@ -277,7 +277,9 @@ namespace ExpandoDB.Server.Web
 
             stopwatch.Stop();
 
-            var responseDto = new SearchResponseDto(collectionName, searchRequest, result) { Elapsed = stopwatch.Elapsed.ToString() };    
+            var responseDto = new SearchResponseDto().Populate(searchRequest, collectionName, result);
+            responseDto.Elapsed = stopwatch.Elapsed.ToString();           
+
             return responseDto;            
         }
 

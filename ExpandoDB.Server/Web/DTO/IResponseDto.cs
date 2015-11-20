@@ -6,9 +6,7 @@ using System.Threading.Tasks;
 
 namespace ExpandoDB.Server.Web.DTO
 {
-    public class SchemaResponseDto : IResponseDto
-    {
-        public string Elapsed { get; set; }
-        public ContentCollectionSchema Schema { get; set; }
+    public interface IResponseDto
+    {        
     }
 }

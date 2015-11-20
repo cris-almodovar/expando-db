@@ -44,6 +44,7 @@ namespace ExpandoDB.Server
 
             NetJSON.NetJSON.DateFormat = NetJSON.NetJSONDateFormat.ISO;
             NetJSON.NetJSON.UseEnumString = false;
+            NetJSON.NetJSON.SkipDefaultValue = false;
         }
 
         /// <summary>

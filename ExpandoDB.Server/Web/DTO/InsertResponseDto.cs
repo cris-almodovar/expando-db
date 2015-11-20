@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ExpandoDB.Server.Web.DTO
 {
-    public class InsertResponseDto
+    public class InsertResponseDto : IResponseDto
     {
         public string Elapsed { get; set; }
         public string FromCollection { get; set; }

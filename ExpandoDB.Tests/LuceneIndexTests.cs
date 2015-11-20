@@ -101,8 +101,8 @@ namespace ExpandoDB.Tests
 
             var result = _luceneIndex.Search(criteria);
 
-            Assert.AreEqual<int?>(result.HitCount, 10);
-            Assert.AreEqual<int?>(result.HitCount, result.TotalHitCount);
+            Assert.AreEqual<int?>(result.ItemCount, 10);
+            Assert.AreEqual<int?>(result.ItemCount, result.TotalHits);
             Assert.IsTrue(result.Items.SequenceEqual(contentIds));
         }
     }

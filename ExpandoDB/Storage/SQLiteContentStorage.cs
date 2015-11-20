@@ -14,6 +14,7 @@ namespace ExpandoDB.Storage
     public class SQLiteContentStorage : IContentStorage
     {
         private const string CONN_STRING_TEMPLATE = "Data Source={0}; Version=3; Pooling=true; Max Pool Size=100; DateTimeKind=UTC; Enlist=N; Compress=True";
+        private const int SQLITE_MAX_VARIABLE_NUMBER = 999;
         private readonly string _dbFilePath;
         private readonly string _connectionString;
         private readonly string _contentCollectionName;
@@ -64,6 +65,7 @@ namespace ExpandoDB.Storage
 
             NetJSON.NetJSON.DateFormat = NetJSON.NetJSONDateFormat.ISO;
             NetJSON.NetJSON.UseEnumString = true;
+            NetJSON.NetJSON.SkipDefaultValue = false;
         }
 
         /// <summary>
@@ -159,24 +161,33 @@ namespace ExpandoDB.Storage
 
             using (var conn = GetConnection())
             {   
-                var ids = guids.Select(g => g.ToString()).ToList();
-                var result = await conn.QueryAsync<StorageRow>(_selectManySql, new { ids });
-                
-                // The result will not be in the same order as the input guids.
-                // So we need re-sort the result to be in the same order as the input guids
+                var idList = guids.Select(g => g.ToString()).ToList();                
+                var result = new List<StorageRow>();
 
-                var resultLookup = result.ToDictionary(row => row.id as string);
-                var orderedResult = new List<StorageRow>();
+                // SQLite can only handle SQLITE_MAX_VARIABLE_NUMBER number of variables per SQL statement
+                // so we need to break up the idList into pages of SQLITE_MAX_VARIABLE_NUMBER ids each.
+                var itemsPerPage = SQLITE_MAX_VARIABLE_NUMBER;
+                var pageCount = ComputePageCount(idList.Count, itemsPerPage);
 
-                for (var i = 0; i < ids.Count; i++)
+                for (var pageNumber = 0; pageNumber < pageCount; pageNumber++)
                 {
-                    var id = ids[i];
-                    
-                    if (resultLookup.ContainsKey(id))
-                        orderedResult.Add(resultLookup[id]);
+                    var subList = idList.Skip(pageNumber * itemsPerPage).Take(itemsPerPage).ToList();
+                    var subResult = await conn.QueryAsync<StorageRow>(_selectManySql, new { ids = subList });
+
+                    // The result will not be in the same order as the input guids.
+                    // So we need re-sort the result to be in the same order as the input guids
+
+                    var subResultLookup = subResult.ToDictionary(row => row.id as string);
+                    for (var i = 0; i < subList.Count; i++)
+                    {
+                        var id = subList[i];
+
+                        if (subResultLookup.ContainsKey(id))
+                            result.Add(subResultLookup[id]);
+                    }
                 }
 
-                return orderedResult.ToEnumerableContents();
+                return result.ToEnumerableContents();
             }
         }
 
@@ -282,6 +293,20 @@ namespace ExpandoDB.Storage
             {                
                 await conn.ExecuteAsync(_dropTableSql);                
             }            
+        }
+
+        private static int ComputePageCount(int totalCount, int itemsPerPage)
+        {
+            var pageCount = 0;
+            if (totalCount > 0 && itemsPerPage > 0)
+            {
+                pageCount = totalCount / itemsPerPage;
+                var remainder = totalCount % itemsPerPage;
+                if (remainder > 0)
+                    pageCount += 1;
+            }
+
+            return pageCount;
         }
     }
 }

@@ -110,11 +110,7 @@ namespace ExpandoDB
                     _persistedSchemas.TryRemove(schemaName, out removedSchema);
                     await _schemaStorage.DeleteAsync(schemaName);
                 }
-            }
-            catch (Exception e)
-            {
-                var s = e.StackTrace;
-            }
+            }            
             finally
             {
                 Monitor.Exit(_schemaPersistenceLock);

@@ -47,7 +47,7 @@
       <HintPath>..\packages\Nancy.Hosting.Self.1.4.1\lib\net40\Nancy.Hosting.Self.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="NetJSON, Version=1.0.14.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="NetJSON, Version=1.0.15.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\lib\NetJSON.dll</HintPath>
     </Reference>
@@ -75,6 +75,7 @@
     <Compile Include="Web\DTO\CountRequestDto.cs" />
     <Compile Include="Web\DTO\CountResponseDto.cs" />
     <Compile Include="Web\DTO\DtoExtensions.cs" />
+    <Compile Include="Web\DTO\IResponseDto.cs" />
     <Compile Include="Web\DTO\SearchRequestDto.cs" />
     <Compile Include="Web\DynamicModelBinder.cs" />
     <Compile Include="ServiceApp.cs" />
@@ -85,6 +86,7 @@
     <Compile Include="Web\DTO\SchemaResponseDto.cs" />
     <Compile Include="Web\DTO\SearchResponseDto.cs" />
     <Compile Include="Web\DTO\UpdateResponseDto.cs" />
+    <Compile Include="Web\NetJSONSerrializer.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

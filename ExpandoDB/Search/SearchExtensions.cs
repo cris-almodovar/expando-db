@@ -79,13 +79,13 @@ namespace ExpandoDB.Search
             if (getDoc == null)
                 throw new ArgumentNullException("getDoc");
 
-            result.HitCount = topFieldDocs.ScoreDocs.Length;
-            result.TotalHitCount = topFieldDocs.TotalHits;
+            result.ItemCount = topFieldDocs.ScoreDocs.Length;
+            result.TotalHits = topFieldDocs.TotalHits;
 
-            if (result.HitCount > 0)
+            if (result.ItemCount > 0)
             {
-                var itemsToSkip = (result.PageNumber.Value - 1) * result.ItemsPerPage.Value;
-                var itemsToTake = result.ItemsPerPage.Value;
+                var itemsToSkip = (result.PageNumber - 1) * result.ItemsPerPage;
+                var itemsToTake = result.ItemsPerPage;
 
                 var scoreDocs = topFieldDocs.ScoreDocs
                                             .Skip(itemsToSkip)
@@ -107,7 +107,7 @@ namespace ExpandoDB.Search
                 }
 
                 result.Items = contentIds;
-                result.PageCount = ComputePageCount(result.HitCount.Value, result.ItemsPerPage.Value);
+                result.PageCount = ComputePageCount(result.ItemCount, result.ItemsPerPage);
             }
         }
 
