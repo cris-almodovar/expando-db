@@ -13,7 +13,8 @@ namespace Nancy.Serialization.NetJSON
     /// </summary>
     public class NetJSONSerializer : ISerializer
     {
-        private readonly Json.JavaScriptSerializer _defaultSerializer = new Json.JavaScriptSerializer();
+        private readonly Json.JavaScriptSerializer _defaultSerializer = new Json.JavaScriptSerializer { RetainCasing = true, ISO8601DateFormat = true };
+        private readonly Type _typeOfIResponseDto = typeof(IResponseDto);
 
         #region Implementation of ISerializer
 
@@ -43,7 +44,7 @@ namespace Nancy.Serialization.NetJSON
                 var modelType = model.GetType();
                 var json = String.Empty;
 
-                if (modelType is IResponseDto)
+                if (_typeOfIResponseDto.IsAssignableFrom(modelType))
                     json = global::NetJSON.NetJSON.Serialize(modelType, model);
                 else
                     json = _defaultSerializer.Serialize(model); 
