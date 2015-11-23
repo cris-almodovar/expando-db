@@ -177,7 +177,7 @@ namespace ExpandoDB.Search
                 return Sort.RELEVANCE;
 
             var sortFields = new List<SortField>();            
-            var sortFieldName = sortByField.Trim();
+            var sortFieldName = sortByField.Trim().TrimStart('+');
             var reverse = sortFieldName.StartsWith("-", StringComparison.InvariantCulture);
             if (reverse)
                 sortFieldName = sortFieldName.TrimStart('-');
