@@ -13,11 +13,11 @@ namespace ExpandoDB.Server.Web.DTO
         {
             var searchCriteria = new SearchCriteria
             {
-                Query = dto.Where,
-                SortByField = dto.SortBy,
-                TopN = dto.TopN,
-                ItemsPerPage = dto.ItemsPerPage,
-                PageNumber = dto.PageNumber
+                Query = dto.where,
+                SortByField = dto.sortBy,
+                TopN = dto.topN,
+                ItemsPerPage = dto.itemsPerPage,
+                PageNumber = dto.pageNumber
             };
 
             return searchCriteria;
@@ -27,7 +27,7 @@ namespace ExpandoDB.Server.Web.DTO
         {
             var searchCriteria = new SearchCriteria
             {
-                Query = dto.Where,
+                Query = dto.where,
                 TopN = int.MaxValue
             };
 
@@ -41,19 +41,19 @@ namespace ExpandoDB.Server.Web.DTO
             if (searchResult == null)
                 throw new ArgumentNullException("searchResult");
 
-            responseDto.Select = searchRequestDto.Select;
-            responseDto.FromCollection = collectionName;
-            responseDto.Where = searchRequestDto.Where;
-            responseDto.SortBy = searchRequestDto.SortBy;
-            responseDto.TopN = searchResult.TopN;
-            responseDto.ItemCount = searchResult.ItemCount;
-            responseDto.TotalHits = searchResult.TotalHits;
-            responseDto.PageCount = searchResult.PageCount;
-            responseDto.PageNumber = searchResult.PageNumber;
-            responseDto.ItemsPerPage = searchResult.ItemsPerPage;
+            responseDto.select = searchRequestDto.select;
+            responseDto.fromCollection = collectionName;
+            responseDto.where = searchRequestDto.where;
+            responseDto.sortBy = searchRequestDto.sortBy;
+            responseDto.topN = searchResult.TopN;
+            responseDto.itemCount = searchResult.ItemCount;
+            responseDto.totalHits = searchResult.TotalHits;
+            responseDto.pageCount = searchResult.PageCount;
+            responseDto.pageNumber = searchResult.PageNumber;
+            responseDto.itemsPerPage = searchResult.ItemsPerPage;
 
-            var selectedFields = searchRequestDto.Select.ToList();
-            responseDto.Contents = searchResult.Items.Select(c => c.Select(selectedFields).AsExpando()).ToList();
+            var selectedFields = searchRequestDto.select.ToList();
+            responseDto.items = searchResult.Items.Select(c => c.Select(selectedFields).AsExpando()).ToList();
 
             return responseDto;
         }

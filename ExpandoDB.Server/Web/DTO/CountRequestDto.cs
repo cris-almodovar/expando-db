@@ -8,6 +8,6 @@ namespace ExpandoDB.Server.Web.DTO
 {
     public class CountRequestDto
     {
-        public string Where { get; set; }
+        public string where { get; set; }
     }
 }

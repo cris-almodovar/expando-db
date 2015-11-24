@@ -10,17 +10,17 @@ namespace ExpandoDB.Server.Web.DTO
 {
     public class SearchResponseDto : IResponseDto
     {
-        public string Elapsed { get; set; }
-        public string Select { get; set; }
-        public string FromCollection { get; set; }
-        public string Where { get; set; }
-        public string SortBy { get; set; }
-        public int TopN { get; set; }
-        public int ItemCount { get; set; }
-        public int TotalHits { get; set; }
-        public int PageCount { get; set; }
-        public int PageNumber { get; set; }
-        public int ItemsPerPage { get; set; }
-        public List<ExpandoObject> Contents { get; set; }        
+        public string elapsed { get; set; }
+        public string select { get; set; }
+        public string fromCollection { get; set; }
+        public string where { get; set; }
+        public string sortBy { get; set; }
+        public int topN { get; set; }
+        public int itemCount { get; set; }
+        public int totalHits { get; set; }
+        public int pageCount { get; set; }
+        public int pageNumber { get; set; }
+        public int itemsPerPage { get; set; }
+        public List<ExpandoObject> items { get; set; }        
     }
 }

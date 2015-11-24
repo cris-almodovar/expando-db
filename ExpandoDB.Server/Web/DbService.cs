@@ -85,9 +85,9 @@ namespace ExpandoDB.Server.Web
 
             var responseDto = new UpdateResponseDto
             {
-                Elapsed = stopwatch.Elapsed.ToString(),
-                FromCollection = collectionName,
-                AffectedCount = affected
+                elapsed = stopwatch.Elapsed.ToString(),
+                fromCollection = collectionName,
+                affectedCount = affected
             };
 
             return responseDto;
@@ -114,10 +114,10 @@ namespace ExpandoDB.Server.Web
 
             var responseDto = new CountResponseDto
             {
-                Elapsed = stopwatch.Elapsed.ToString(),
-                FromCollection = collectionName,
-                Where = countRequestDto.Where,
-                Count = count
+                elapsed = stopwatch.Elapsed.ToString(),
+                fromCollection = collectionName,
+                where = countRequestDto.where,
+                count = count
             };            
 
             return responseDto;
@@ -151,9 +151,9 @@ namespace ExpandoDB.Server.Web
 
             var responseDto = new UpdateResponseDto
             {
-                Elapsed = stopwatch.Elapsed.ToString(),
-                FromCollection = collectionName,
-                AffectedCount = affected
+                elapsed = stopwatch.Elapsed.ToString(),
+                fromCollection = collectionName,
+                affectedCount = affected
             };
 
             return responseDto;
@@ -193,9 +193,9 @@ namespace ExpandoDB.Server.Web
 
             var responseDto = new UpdateResponseDto
             {
-                Elapsed = stopwatch.Elapsed.ToString(),
-                FromCollection = collectionName,
-                AffectedCount = affected
+                elapsed = stopwatch.Elapsed.ToString(),
+                fromCollection = collectionName,
+                affectedCount = affected
             };
 
             return responseDto;
@@ -226,9 +226,9 @@ namespace ExpandoDB.Server.Web
 
             var responseDto = new ContentResposeDto
             {
-                Elapsed = stopwatch.Elapsed.ToString(),
-                FromCollection = collectionName,
-                Content = content.AsExpando()
+                elapsed = stopwatch.Elapsed.ToString(),
+                fromCollection = collectionName,
+                content = content.AsExpando()
             };
 
             return responseDto;
@@ -253,8 +253,8 @@ namespace ExpandoDB.Server.Web
 
             var responseDto = new SchemaResponseDto
             {
-                Elapsed = stopwatch.Elapsed.ToString(),
-                Schema = schema
+                elapsed = stopwatch.Elapsed.ToString(),
+                schema = schema
             };
 
             return responseDto;
@@ -270,15 +270,15 @@ namespace ExpandoDB.Server.Web
                 return HttpStatusCode.NotFound;
                         
             var collection = _db[collectionName];
-            var searchRequest = this.Bind<SearchRequestDto>();
-            var searchCriteria = searchRequest.ToSearchCriteria();
-            var selectedFields = searchRequest.Select.ToList();
+            var requestDto = this.Bind<SearchRequestDto>();
+            var searchCriteria = requestDto.ToSearchCriteria();
+            var selectedFields = requestDto.select.ToList();
             var result = await collection.SearchAsync(searchCriteria);
 
             stopwatch.Stop();
 
-            var responseDto = new SearchResponseDto().Populate(searchRequest, collectionName, result);
-            responseDto.Elapsed = stopwatch.Elapsed.ToString();           
+            var responseDto = new SearchResponseDto().Populate(requestDto, collectionName, result);
+            responseDto.elapsed = stopwatch.Elapsed.ToString();           
 
             return responseDto;            
         }
@@ -306,8 +306,8 @@ namespace ExpandoDB.Server.Web
             var responseDto = new InsertResponseDto
             {
                 _id = guid,
-                FromCollection = collectionName,
-                Elapsed = stopwatch.Elapsed.ToString()
+                fromCollection = collectionName,
+                elapsed = stopwatch.Elapsed.ToString()
             };
 
             return responseDto;

@@ -8,8 +8,8 @@ namespace ExpandoDB.Server.Web.DTO
 {
     public class UpdateResponseDto : IResponseDto
     {
-        public string Elapsed { get; set; }
-        public string FromCollection { get; set; }
-        public int AffectedCount { get; set; }
+        public string elapsed { get; set; }
+        public string fromCollection { get; set; }
+        public int affectedCount { get; set; }
     }
 }

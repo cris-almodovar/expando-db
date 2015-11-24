@@ -8,11 +8,11 @@ namespace ExpandoDB.Server.Web.DTO
 {
     public class SearchRequestDto
     {
-        public string Select { get; set; }
-        public string Where { get; set; }
-        public string SortBy { get; set; }
-        public int TopN { get; set; }
-        public int ItemsPerPage { get; set; }
-        public int PageNumber { get; set; }
+        public string select { get; set; }
+        public string where { get; set; }
+        public string sortBy { get; set; }
+        public int topN { get; set; }
+        public int itemsPerPage { get; set; }
+        public int pageNumber { get; set; }
     }
 }

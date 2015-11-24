@@ -9,8 +9,8 @@ namespace ExpandoDB.Server.Web.DTO
 {
     public class ContentResposeDto : IResponseDto
     {
-        public string Elapsed { get; set; }
-        public string FromCollection { get; set; }
-        public ExpandoObject Content { get; set; }
+        public string elapsed { get; set; }
+        public string fromCollection { get; set; }
+        public ExpandoObject content { get; set; }
     }
 }
