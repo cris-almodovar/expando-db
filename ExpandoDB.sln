@@ -7,12 +7,16 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExpandoDB", "ExpandoDB\Expa
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExpandoDB.Tests", "ExpandoDB.Tests\ExpandoDB.Tests.csproj", "{412B8855-C637-4184-8EFE-D9827258C85F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExpandoDB.Server", "ExpandoDB.Server\ExpandoDB.Server.csproj", "{24AC01CA-5F8A-47F9-ABBB-7ACE7A6C44FA}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "lib", "lib", "{455B8E41-C9D0-46A7-BF4A-763852B989A5}"
 	ProjectSection(SolutionItems) = preProject
 		lib\NetJSON.dll = lib\NetJSON.dll
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExpandoDB.AspNet", "ExpandoDB.AspNet\ExpandoDB.AspNet.csproj", "{B1AD03FF-EF37-4D2F-93A9-689C6EE65BFA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExpandoDB.Rest", "ExpandoDB.Rest\ExpandoDB.Rest.csproj", "{805057EC-2405-4FDA-B2D9-65FDA56591DF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExpandoDB.Service", "ExpandoDB.Service\ExpandoDB.Service.csproj", "{24AC01CA-5F8A-47F9-ABBB-7ACE7A6C44FA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -28,6 +32,14 @@ Global
 		{412B8855-C637-4184-8EFE-D9827258C85F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{412B8855-C637-4184-8EFE-D9827258C85F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{412B8855-C637-4184-8EFE-D9827258C85F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B1AD03FF-EF37-4D2F-93A9-689C6EE65BFA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B1AD03FF-EF37-4D2F-93A9-689C6EE65BFA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B1AD03FF-EF37-4D2F-93A9-689C6EE65BFA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B1AD03FF-EF37-4D2F-93A9-689C6EE65BFA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{805057EC-2405-4FDA-B2D9-65FDA56591DF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{805057EC-2405-4FDA-B2D9-65FDA56591DF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{805057EC-2405-4FDA-B2D9-65FDA56591DF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{805057EC-2405-4FDA-B2D9-65FDA56591DF}.Release|Any CPU.Build.0 = Release|Any CPU
 		{24AC01CA-5F8A-47F9-ABBB-7ACE7A6C44FA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{24AC01CA-5F8A-47F9-ABBB-7ACE7A6C44FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{24AC01CA-5F8A-47F9-ABBB-7ACE7A6C44FA}.Release|Any CPU.ActiveCfg = Release|Any CPU

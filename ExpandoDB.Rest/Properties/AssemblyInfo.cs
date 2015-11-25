@@ -5,8 +5,8 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("ExpandoDB")]
-[assembly: AssemblyDescription("ExpandoDB Core Library")]
+[assembly: AssemblyTitle("ExpandoDB.Rest")]
+[assembly: AssemblyDescription("ExpandoDB REST Micro-service Library")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("ExpandoDB")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("fab731b0-3894-475c-b2b7-1b602647130f")]
+[assembly: Guid("805057ec-2405-4fda-b2d9-65fda56591df")]
 
 // Version information for an assembly consists of the following four values:
 //
@@ -34,4 +34,3 @@ using System.Runtime.InteropServices;
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("0.8.5.0")]
 [assembly: AssemblyFileVersion("0.8.5.0")]
-[assembly: InternalsVisibleTo("ExpandoDB.Rest")]
