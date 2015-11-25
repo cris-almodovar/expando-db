@@ -144,10 +144,13 @@
   </Target>
   <Import Project="..\packages\System.Data.SQLite.Core.1.0.98.1\build\net45\System.Data.SQLite.Core.targets" Condition="Exists('..\packages\System.Data.SQLite.Core.1.0.98.1\build\net45\System.Data.SQLite.Core.targets')" />
   <PropertyGroup>
-    <PostBuildEvent>
-      if not exist "$(WebProjectOutputDir)\bin\Roslyn" md "$(WebProjectOutputDir)\bin\Roslyn"
-      start /MIN xcopy /s /y /R "$(OutDir)roslyn\*.*" "$(WebProjectOutputDir)\bin\Roslyn"
-    </PostBuildEvent>
+    <PostBuildEvent>if not exist "$(WebProjectOutputDir)\bin\Roslyn" md "$(WebProjectOutputDir)\bin\Roslyn"
+start /MIN xcopy /s /y /R "$(OutDir)roslyn\*.*" "$(WebProjectOutputDir)\bin\Roslyn"
+if not exist "$(WebProjectOutputDir)\bin\x64" md "$(WebProjectOutputDir)\bin\x64"
+start /MIN xcopy /s /y /R "$(OutDir)x64\*.*" "$(WebProjectOutputDir)\bin\x64"
+if not exist "$(WebProjectOutputDir)\bin\x86" md "$(WebProjectOutputDir)\bin\x86"
+start /MIN xcopy /s /y /R "$(OutDir)x86\*.*" "$(WebProjectOutputDir)\bin\x86"
+</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
@@ -156,5 +159,4 @@
   <Target Name="AfterBuild">
   </Target>
   -->
-  
 </Project>
