@@ -14,7 +14,7 @@ namespace ExpandoDB.Service.DTO
             var searchCriteria = new SearchCriteria
             {
                 Query = dto.where,
-                SortByField = dto.sortBy,
+                SortByField = dto.orderBy,
                 TopN = dto.topN,
                 ItemsPerPage = dto.itemsPerPage,
                 PageNumber = dto.pageNumber
@@ -42,9 +42,9 @@ namespace ExpandoDB.Service.DTO
                 throw new ArgumentNullException("searchResult");
 
             responseDto.select = searchRequestDto.select;
-            responseDto.fromCollection = collectionName;
+            responseDto.from = collectionName;
             responseDto.where = searchRequestDto.where;
-            responseDto.sortBy = searchRequestDto.sortBy;
+            responseDto.orderBy = searchRequestDto.orderBy;
             responseDto.topN = searchResult.TopN;
             responseDto.itemCount = searchResult.ItemCount;
             responseDto.totalHits = searchResult.TotalHits;

@@ -10,11 +10,12 @@ namespace ExpandoDB.Service.DTO
 {
     public class SearchResponseDto : IResponseDto
     {
-        public string elapsed { get; set; }
+        public DateTime timestamp { get; set; }
+        public string elapsed { get; set; }        
         public string select { get; set; }
-        public string fromCollection { get; set; }
+        public string from { get; set; }
         public string where { get; set; }
-        public string sortBy { get; set; }
+        public string orderBy { get; set; }
         public int topN { get; set; }
         public int itemCount { get; set; }
         public int totalHits { get; set; }

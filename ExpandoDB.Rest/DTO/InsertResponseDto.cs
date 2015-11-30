@@ -8,8 +8,9 @@ namespace ExpandoDB.Service.DTO
 {
     public class InsertResponseDto : IResponseDto
     {
-        public string elapsed { get; set; }
-        public string fromCollection { get; set; }
+        public DateTime timestamp { get; set; }
+        public string elapsed { get; set; }       
+        public string from { get; set; }
         public Guid _id { get; set; }        
     }
 }

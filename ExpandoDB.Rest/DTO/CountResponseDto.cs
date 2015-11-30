@@ -8,8 +8,9 @@ namespace ExpandoDB.Service.DTO
 {
     public class CountResponseDto : IResponseDto
     {
-        public string elapsed { get; set; }
-        public string fromCollection { get; set; }
+        public DateTime timestamp { get; set; }
+        public string elapsed { get; set; }        
+        public string from { get; set; }
         public string where { get; set; }
         public int count { get; set; }        
     }

@@ -8,7 +8,8 @@ namespace ExpandoDB.Service.DTO
 {
     public class SchemaResponseDto : IResponseDto
     {
-        public string elapsed { get; set; }
+        public DateTime timestamp { get; set; }
+        public string elapsed { get; set; }        
         public ContentCollectionSchema schema { get; set; }
     }
 }
