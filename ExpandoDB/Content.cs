@@ -321,6 +321,7 @@ namespace ExpandoDB
                 case TypeCode.Single:
                 case TypeCode.String:
                 case TypeCode.DateTime:
+                case TypeCode.Boolean:
                     return true;
 
                 case TypeCode.Object:
