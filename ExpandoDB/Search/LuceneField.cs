@@ -56,6 +56,18 @@ namespace ExpandoDB.Search
                         luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(numberString)));                    
                     break;
 
+                case TypeCode.Boolean:
+                    if (indexedField.DataType == FieldDataType.Unknown)
+                        indexedField.DataType = FieldDataType.Boolean;
+
+                    var booleanString = value.ToString().ToLower();
+                    luceneFields.Add(new StringField(fieldName, booleanString, Field.Store.NO));
+
+                    if (indexedField.DataType != FieldDataType.Array)
+                        luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(booleanString)));
+                    break;
+
+
                 case TypeCode.String:                    
                     var stringValue = (string)value;                    
                     var countOfWhiteSpaces = Regex.Matches(stringValue, @"\s").Count;

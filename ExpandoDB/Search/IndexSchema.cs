@@ -52,6 +52,7 @@ namespace ExpandoDB
         String,
         Text,
         Number,
+        Boolean,
         DateTime,
         Array,
         Object
