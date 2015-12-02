@@ -34,7 +34,7 @@ namespace ExpandoDB.Service.DTO
             return searchCriteria;
         }
 
-        public static SearchResponseDto Populate(this SearchResponseDto responseDto, SearchRequestDto searchRequestDto, string collectionName, SearchResult<Content> searchResult)
+        public static SearchResponseDto PopulateWith(this SearchResponseDto responseDto, SearchRequestDto searchRequestDto, string collectionName, SearchResult<Content> searchResult)
         {
             if (searchRequestDto == null)
                 throw new ArgumentNullException("searchRequestDto");
@@ -52,8 +52,8 @@ namespace ExpandoDB.Service.DTO
             responseDto.pageNumber = searchResult.PageNumber;
             responseDto.itemsPerPage = searchResult.ItemsPerPage;
 
-            var selectedFields = searchRequestDto.select.ToList();
-            responseDto.items = searchResult.Items.Select(c => c.Select(selectedFields).AsExpando()).ToList();
+            var fieldsToSelect = searchRequestDto.select.ToList();
+            responseDto.items = searchResult.Items.Select(c => c.Select(fieldsToSelect).AsExpando()).ToList();
 
             return responseDto;
         }

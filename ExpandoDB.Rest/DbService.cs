@@ -23,6 +23,8 @@ namespace ExpandoDB.Service
         {
             _db = db;
 
+            // add support for null values in content  ?? -- NULL_TOKEN
+
             Post["/{collection}", true] = OnInsertContentAsync;
 
             Get["/{collection}", true] = OnSearchContentsAsync;
@@ -283,7 +285,7 @@ namespace ExpandoDB.Service
 
             stopwatch.Stop();
 
-            var responseDto = new SearchResponseDto().Populate(requestDto, collectionName, result);
+            var responseDto = new SearchResponseDto().PopulateWith(requestDto, collectionName, result);
             responseDto.timestamp = DateTime.UtcNow;
             responseDto.elapsed = stopwatch.Elapsed.ToString();           
 

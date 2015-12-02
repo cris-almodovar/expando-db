@@ -162,6 +162,9 @@ namespace ExpandoDB.Search
                 case TypeCode.Single:
                     return FieldDataType.Number;
 
+                case TypeCode.Boolean:
+                    return FieldDataType.Boolean;
+
                 case TypeCode.String:
                     var stringValue = (string)value;
                     var countOfWhiteSpaces = Regex.Matches(stringValue, @"\s").Count;
@@ -371,6 +374,10 @@ namespace ExpandoDB.Search
                 case TypeCode.Double:
                 case TypeCode.Single:
                     buffer.AppendFormat("{0}\r\n", value.ToString());
+                    break;
+
+                case TypeCode.Boolean:
+                    buffer.AppendFormat("{0}\r\n", value.ToString().ToLower());
                     break;
 
                 case TypeCode.DateTime:
