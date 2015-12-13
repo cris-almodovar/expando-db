@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ExpandoDB.Service.DTO
+namespace ExpandoDB.Rest.DTO
 {
     public class SearchResponseDto : IResponseDto
     {

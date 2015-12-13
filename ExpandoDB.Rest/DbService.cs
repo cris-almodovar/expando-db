@@ -10,9 +10,9 @@ using System.Threading;
 using Nancy.ModelBinding;
 using ExpandoDB.Search;
 using System.Diagnostics;
-using ExpandoDB.Service.DTO;
+using ExpandoDB.Rest.DTO;
 
-namespace ExpandoDB.Service
+namespace ExpandoDB.Rest
 {
     public class DbService : NancyModule
     {

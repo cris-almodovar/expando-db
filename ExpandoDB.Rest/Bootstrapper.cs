@@ -9,9 +9,9 @@ using Nancy.TinyIoc;
 using Nancy.Json;
 using log4net;
 using System.Configuration;
-using ExpandoDB.Rest;
+using ExpandoDB;
 
-namespace ExpandoDB.Service
+namespace ExpandoDB.Rest
 {
     public class Bootstrapper : DefaultNancyBootstrapper
     {

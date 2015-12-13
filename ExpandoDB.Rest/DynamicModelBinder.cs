@@ -8,7 +8,7 @@ using Nancy.ModelBinding;
 using Nancy.Extensions;
 using System.Text.RegularExpressions;
 
-namespace ExpandoDB.Service
+namespace ExpandoDB.Rest
 {
     public class DynamicModelBinder : IModelBinder
     {

@@ -12,7 +12,7 @@ using Topshelf.ServiceConfigurators;
 
 [assembly: log4net.Config.XmlConfigurator(ConfigFile = "log4net.config", Watch = true)]
 
-namespace ExpandoDB.Service
+namespace ExpandoDB.Rest
 {
 
     /// <summary>

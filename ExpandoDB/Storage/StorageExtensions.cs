@@ -12,7 +12,7 @@ namespace ExpandoDB.Storage
     /// </summary>
     public static class StorageExtensions
     {
-        const string ISO_DATE_TIME_FORMAT = "yyyy-MM-ddTHH:mm:ss.fffffffZ";
+        const string ISO_UTC_DATE_TIME_FORMAT = "yyyy-MM-ddTHH:mm:ss.fffffffZ";
         const int GUID_STRING_LENGTH = 36;             
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace ExpandoDB.Storage
                     DateTime dateValue = DateTime.MinValue;
                     Guid guidValue = Guid.Empty;
 
-                    if (TryParseIsoDateTime(value, ref dateValue))
+                    if (TryParseIsoUtcDateTime(value, ref dateValue))
                         expandoDictionary.Add(kvp.Key, dateValue);
                     else if (TryParseGuid(value, ref guidValue))
                         expandoDictionary.Add(kvp.Key, guidValue);
@@ -59,10 +59,10 @@ namespace ExpandoDB.Storage
             return expando;
         }
 
-        private static bool TryParseIsoDateTime(string value, ref DateTime dateValue)
+        private static bool TryParseIsoUtcDateTime(string value, ref DateTime dateValue)
         {
-            return IsIsoDateTime(value) &&
-                   DateTime.TryParseExact(value, ISO_DATE_TIME_FORMAT, null, DateTimeStyles.AdjustToUniversal, out dateValue);                  
+            return IsIsoUtcDateTime(value) &&
+                   DateTime.TryParseExact(value, ISO_UTC_DATE_TIME_FORMAT, null, DateTimeStyles.AdjustToUniversal, out dateValue);                  
         }
 
         private static bool TryParseGuid(string value, ref Guid guid)
@@ -96,7 +96,7 @@ namespace ExpandoDB.Storage
                     var value = item as string;
                     DateTime dateValue = DateTime.MinValue;
 
-                    if (TryParseIsoDateTime(value, ref dateValue))
+                    if (TryParseIsoUtcDateTime(value, ref dateValue))
                         itemList.Add(dateValue);
                     else
                         itemList.Add(value);
@@ -110,9 +110,9 @@ namespace ExpandoDB.Storage
             return itemList;
         }
 
-        private static bool IsIsoDateTime(string value)
+        private static bool IsIsoUtcDateTime(string value)
         {
-            return (value.Length == ISO_DATE_TIME_FORMAT.Length &&
+            return (value.Length == ISO_UTC_DATE_TIME_FORMAT.Length &&
                     Char.IsNumber(value[0]) && Char.IsNumber(value[1]) && Char.IsNumber(value[2]) && Char.IsNumber(value[3]) &&
                     value[4] == '-' &&
                     Char.IsNumber(value[5]) && Char.IsNumber(value[6]) &&
@@ -122,7 +122,7 @@ namespace ExpandoDB.Storage
                     value.EndsWith("Z", StringComparison.InvariantCulture));
         }
 
-        internal static void ConvertDatesToUtc(this IDictionary<string, object> dictionary)
+        internal static void ConvertDatesToIsoUtc(this IDictionary<string, object> dictionary)
         {
             var keysToProcess = 
                     dictionary.Where(kvp => kvp.Value is DateTime || kvp.Value is IDictionary<string, object> || kvp.Value is IList)
@@ -135,11 +135,11 @@ namespace ExpandoDB.Storage
 
                 if (value is IDictionary<string, object>)
                 {
-                    (value as IDictionary<string, object>).ConvertDatesToUtc();
+                    (value as IDictionary<string, object>).ConvertDatesToIsoUtc();
                 }
                 else if (value is IList)
                 {                    
-                    (value as IList).ConvertDatesToUtc();
+                    (value as IList).ConvertDatesToIsoUtc();
                 }
                 else if (value is DateTime)
                 {
@@ -153,18 +153,18 @@ namespace ExpandoDB.Storage
             }            
         }               
 
-        private static void ConvertDatesToUtc(this IList list)
+        private static void ConvertDatesToIsoUtc(this IList list)
         {
             for (var i = 0; i < list.Count; i++)
             {
                 var item = list[i];
                 if (item is IDictionary<string, object>)
                 {
-                    (item as IDictionary<string, object>).ConvertDatesToUtc();
+                    (item as IDictionary<string, object>).ConvertDatesToIsoUtc();
                 }
                 else if (item is IList)
                 {                    
-                    (item as IList).ConvertDatesToUtc();
+                    (item as IList).ConvertDatesToIsoUtc();
                 }
                 else if (item is DateTime)
                 {
@@ -259,8 +259,8 @@ namespace ExpandoDB.Storage
                 Guid.TryParse(id, out guid);
 
                 dictionary[Content.ID_FIELD_NAME] = guid;
-                dictionary[Content.ERROR_MESSAGE_FIELD_NAME] = ex.Message;
-                dictionary[Content.ERROR_JSON_FIELD_NAME] = json;
+                dictionary[Content.PARSE_ERROR_MESSAGE_FIELD_NAME] = ex.Message;
+                dictionary[Content.PARSE_ERROR_JSON_FIELD_NAME] = json;
             }
 
             return dictionary;
@@ -281,9 +281,9 @@ namespace ExpandoDB.Storage
         /// Converts all dates inside the Content to UTC format.
         /// </summary>
         /// <param name="content">The content to process.</param>
-        public static void ConvertDatesToUtc(this Content content)
+        public static void ConvertDatesToIsoUtc(this Content content)
         {
-            content.AsDictionary().ConvertDatesToUtc();
+            content.AsDictionary().ConvertDatesToIsoUtc();
         }
 
         /// <summary>

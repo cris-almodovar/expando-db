@@ -33,10 +33,7 @@ namespace ExpandoDB.Search
                     indexSchema.Fields.TryAdd(fieldName, indexedField);
                 }
 
-                var fieldValue = dictionary[fieldName];
-                if (fieldValue == null)
-                    continue;
-                
+                var fieldValue = dictionary[fieldName];                
                 var luceneFields = fieldValue.ToLuceneFields(indexedField);
                 foreach (var luceneField in luceneFields)
                     luceneDocument.Add(luceneField);

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using Nancy.IO;
 using System;
-using ExpandoDB.Service.DTO;
+using ExpandoDB.Rest.DTO;
 
 namespace Nancy.Serialization.NetJSON
 {

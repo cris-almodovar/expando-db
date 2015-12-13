@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Topshelf;
 
-namespace ExpandoDB.Service
+namespace ExpandoDB.Rest
 {
     /// <summary>
     /// Contains the application's Main() method.

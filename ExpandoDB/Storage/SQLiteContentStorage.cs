@@ -115,7 +115,7 @@ namespace ExpandoDB.Storage
                     content._id = Guid.NewGuid();
 
                 content._createdTimestamp = content._modifiedTimestamp = DateTime.UtcNow;
-                content.ConvertDatesToUtc();
+                content.ConvertDatesToIsoUtc();
 
                 var id = content._id.ToString();
                 var json = content.ToJson();                
@@ -165,17 +165,17 @@ namespace ExpandoDB.Storage
                 var result = new List<StorageRow>();
 
                 // SQLite can only handle SQLITE_MAX_VARIABLE_NUMBER number of variables per SQL statement
-                // so we need to break up the idList into pages of SQLITE_MAX_VARIABLE_NUMBER ids each.
-                var itemsPerPage = SQLITE_MAX_VARIABLE_NUMBER;
-                var pageCount = ComputePageCount(idList.Count, itemsPerPage);
+                // so we need to break up the idList into batches of SQLITE_MAX_VARIABLE_NUMBER ids each.
+                var itemsPerBatch = SQLITE_MAX_VARIABLE_NUMBER;
+                var batchCount = ComputeBatchCount(idList.Count, itemsPerBatch);
 
-                for (var pageNumber = 0; pageNumber < pageCount; pageNumber++)
+                for (var batchNumber = 0; batchNumber < batchCount; batchNumber++)
                 {
-                    var subList = idList.Skip(pageNumber * itemsPerPage).Take(itemsPerPage).ToList();
+                    var subList = idList.Skip(batchNumber * itemsPerBatch).Take(itemsPerBatch).ToList();
                     var subResult = await conn.QueryAsync<StorageRow>(_selectManySql, new { ids = subList });
 
-                    // The result will not be in the same order as the input guids.
-                    // So we need re-sort the result to be in the same order as the input guids
+                    // The result will *NOT* be in the same order as the input guids;
+                    // we need re-sort the result to be in the same order as the input guids
 
                     var subResultLookup = subResult.ToDictionary(row => row.id as string);
                     for (var i = 0; i < subList.Count; i++)
@@ -217,11 +217,15 @@ namespace ExpandoDB.Storage
                     return 0;
 
                 // Make sure the _createdTimestamp is not overwritten
+                // Copy the value from the existing Content.
                 var existingContent = row.ToContent();
                 content._createdTimestamp = existingContent._createdTimestamp;  
 
+                // Always set the _modifiedTimestamp to the current UTC date/time.
                 content._modifiedTimestamp = DateTime.UtcNow;
-                content.ConvertDatesToUtc();
+
+                // Make sure all date/times are in ISO UTC format.
+                content.ConvertDatesToIsoUtc();
                 
                 var json = content.ToJson();                
                 count = await conn.ExecuteAsync(_updateOneSql, new { id, json });                
@@ -259,6 +263,7 @@ namespace ExpandoDB.Storage
 
             using (var conn = GetConnection())
             {
+                // TODO: delete in batches of SQLITE_MAX_VARIABLE_NUMBER each.
                 var ids = guids.Select(g => g.ToString());
                 var count = await conn.ExecuteAsync(_deleteManySql, new { ids });
                 return count;
@@ -295,18 +300,18 @@ namespace ExpandoDB.Storage
             }            
         }
 
-        private static int ComputePageCount(int totalCount, int itemsPerPage)
+        private static int ComputeBatchCount(int totalCount, int itemsPerBatch)
         {
-            var pageCount = 0;
-            if (totalCount > 0 && itemsPerPage > 0)
+            var batchCount = 0;
+            if (totalCount > 0 && itemsPerBatch > 0)
             {
-                pageCount = totalCount / itemsPerPage;
-                var remainder = totalCount % itemsPerPage;
+                batchCount = totalCount / itemsPerBatch;
+                var remainder = totalCount % itemsPerBatch;
                 if (remainder > 0)
-                    pageCount += 1;
+                    batchCount += 1;
             }
 
-            return pageCount;
+            return batchCount;
         }
     }
 }

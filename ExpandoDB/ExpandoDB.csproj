@@ -178,11 +178,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Config.cs" />
     <Compile Include="ContentCollectionSchema.cs" />
     <Compile Include="ContentCollection.cs" />
     <Compile Include="Content.cs" />
     <Compile Include="Database.cs" />
     <Compile Include="Search\CompositeAnalyzer.cs" />
+    <Compile Include="Search\IndexSchemaException.cs" />
     <Compile Include="Search\LuceneField.cs" />
     <Compile Include="Search\LuceneQueryParser.cs" />
     <Compile Include="Search\SearchExtensions.cs" />

@@ -68,6 +68,9 @@ namespace ExpandoDB.Search
         {
             try
             {
+                if (_writer.HasUncommittedChanges())
+                    _writer.Commit();
+
                 _searcherManager.MaybeRefresh();
             }
             catch { }
@@ -84,8 +87,7 @@ namespace ExpandoDB.Search
             
             var document = content.ToLuceneDocument(_indexSchema);
             
-            _writer.AddDocument(document);
-            _writer.Commit();            
+            _writer.AddDocument(document);                        
         }
 
         /// <summary>
@@ -98,8 +100,7 @@ namespace ExpandoDB.Search
                 throw new ArgumentException("guid cannot be empty");
 
             var idTerm = new Term("_id", guid.ToString());
-            _writer.DeleteDocuments(idTerm);
-            _writer.Commit();
+            _writer.DeleteDocuments(idTerm);            
         }
 
         /// <summary>
@@ -120,8 +121,7 @@ namespace ExpandoDB.Search
             var id = content._id.ToString();
             var idTerm = new Term("_id", id);
             
-            _writer.UpdateDocument(idTerm, document);
-            _writer.Commit();
+            _writer.UpdateDocument(idTerm, document);           
         }
 
         /// <summary>

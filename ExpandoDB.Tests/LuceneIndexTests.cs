@@ -104,6 +104,6 @@ namespace ExpandoDB.Tests
             Assert.AreEqual<int?>(result.ItemCount, 10);
             Assert.AreEqual<int?>(result.ItemCount, result.TotalHits);
             Assert.IsTrue(result.Items.SequenceEqual(contentIds));
-        }
+        }       
     }
 }
