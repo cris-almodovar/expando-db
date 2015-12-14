@@ -21,9 +21,7 @@ namespace ExpandoDB.Rest
 
         public DbService(Database db) : base("/db")
         {
-            _db = db;
-
-            // add support for null values in content  ?? -- NULL_TOKEN
+            _db = db;            
 
             Post["/{collection}", true] = OnInsertContentAsync;
 

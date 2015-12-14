@@ -71,12 +71,12 @@ namespace ExpandoDB.Rest.DTO
             var contentDictionary = content.AsDictionary();
 
             // Remove fields that are not in the selectedFields
-            contentDictionary.Keys.Except(new[] { Content.ID_FIELD_NAME })
+            contentDictionary.Keys
                              .Where(fieldName => !selectedFields.Contains(fieldName))
                              .ToList()
                              .ForEach(fieldName => contentDictionary.Remove(fieldName));
 
-            // Content should now only contain the fields in the projectedFields list, plus the _id field (which is always included)
+            // Content should now only contain the fields in the selectedFields list
             return content;
         }
 

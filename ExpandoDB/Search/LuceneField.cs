@@ -156,7 +156,7 @@ namespace ExpandoDB.Search
         { 
             if (indexedField.DataType != dataType)
             {
-                var message = String.Format("The field {0} is indexed as {1}. Data type cannot be changed to {2}.", indexedField.Name, indexedField.DataType, dataType);
+                var message = String.Format("Cannot change the data type of the field '{0}' from {1} to {2}.", indexedField.Name, indexedField.DataType, dataType);
                 throw new IndexSchemaException(message);
             }
         }
@@ -185,13 +185,8 @@ namespace ExpandoDB.Search
                 case TypeCode.Boolean:
                     return FieldDataType.Boolean;
 
-                case TypeCode.String:
-                    var stringValue = (string)value;                    
-                    var containsWhitespace = Regex.IsMatch(stringValue.TrimStart(), @"\s+",RegexOptions.None, TimeSpan.FromSeconds(10));                    
-                    if (containsWhitespace == false)
-                        return FieldDataType.String;
-                    else
-                        return FieldDataType.Text;
+                case TypeCode.String:                   
+                    return FieldDataType.Text;
 
                 case TypeCode.DateTime:
                     return FieldDataType.DateTime;
@@ -332,8 +327,14 @@ namespace ExpandoDB.Search
         /// <param name="number">The number.</param>
         /// <returns></returns>
         public static string ToLuceneNumberString(this double number)
-        { 
-            // Handle NaN, PositiveInfinity, NegativeInfinity
+        {
+            if (Double.IsNaN(number))
+                number = 0;
+            else if (Double.IsPositiveInfinity(number))
+                number = Double.MaxValue;
+            else if (Double.IsNegativeInfinity(number))
+                number = Double.MinValue;
+
             var numberString = number.ToString(NUMBER_FORMAT);
             if (numberString.StartsWith("-", StringComparison.InvariantCulture))
             {

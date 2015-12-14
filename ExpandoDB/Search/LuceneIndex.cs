@@ -26,6 +26,7 @@ namespace ExpandoDB.Search
         private SearcherManager _searcherManager;
         private object _searcherManagerLock = new object();
         private readonly Timer _autoRefreshTimer;
+        private readonly Timer _autoCommitTimer;
         private readonly IndexSchema _indexSchema;
         public IndexSchema Schema { get { return _indexSchema; } }       
 
@@ -55,9 +56,27 @@ namespace ExpandoDB.Search
 
             _searcherManager = new SearcherManager(_writer, true, null);            
 
-            _autoRefreshTimer = new Timer(o => Refresh(), null, TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(500));         
-        }        
-        
+            _autoRefreshTimer = new Timer(o => Refresh(), null, TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(500));
+            _autoCommitTimer = new Timer(o => Commit(), null, TimeSpan.FromMilliseconds(1000), TimeSpan.FromMilliseconds(1000));
+        }
+
+        /// <summary>
+        /// Commits the latest insertions and deletions on the index.
+        /// </summary>  
+        /// <remarks>
+        /// The LuceneIndex auto-invokes this method automatically every 1000 milliseconds.
+        /// </remarks>      
+        public void Commit()
+        {
+            try
+            {
+                if (_writer.HasUncommittedChanges())
+                    _writer.Commit();               
+            }
+            catch { }
+
+        }
+
         /// <summary>
         /// Refreshes the Lucene index so that Search() reflects the latest insertions and deletions.
         /// </summary>
@@ -67,10 +86,7 @@ namespace ExpandoDB.Search
         public void Refresh()
         {
             try
-            {
-                if (_writer.HasUncommittedChanges())
-                    _writer.Commit();
-
+            {  
                 _searcherManager.MaybeRefresh();
             }
             catch { }
@@ -194,7 +210,9 @@ namespace ExpandoDB.Search
         {
             _searcherManager.Close();
             _writer.Close();
-            _autoRefreshTimer.Dispose();            
+
+            _autoRefreshTimer.Dispose();
+            _autoCommitTimer.Dispose();       
         }
     }
 }
