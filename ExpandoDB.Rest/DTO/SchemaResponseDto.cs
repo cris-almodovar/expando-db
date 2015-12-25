@@ -6,10 +6,8 @@ using System.Threading.Tasks;
 
 namespace ExpandoDB.Rest.DTO
 {
-    public class SchemaResponseDto : IResponseDto
-    {
-        public DateTime timestamp { get; set; }
-        public string elapsed { get; set; }        
+    public class SchemaResponseDto : ResponseDto
+    {          
         public ContentCollectionSchema schema { get; set; }
     }
 }

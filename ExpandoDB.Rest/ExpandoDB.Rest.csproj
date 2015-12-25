@@ -60,7 +60,7 @@
     <Compile Include="DTO\CountResponseDto.cs" />
     <Compile Include="DTO\DtoExtensions.cs" />
     <Compile Include="DTO\InsertResponseDto.cs" />
-    <Compile Include="DTO\IResponseDto.cs" />
+    <Compile Include="DTO\ResponseDto.cs" />
     <Compile Include="DTO\SchemaResponseDto.cs" />
     <Compile Include="DTO\SearchRequestDto.cs" />
     <Compile Include="DTO\SearchResponseDto.cs" />

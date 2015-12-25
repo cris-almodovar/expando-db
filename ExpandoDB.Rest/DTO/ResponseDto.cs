@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 
 namespace ExpandoDB.Rest.DTO
 {
-    public interface IResponseDto
+    public abstract class ResponseDto
     {        
+        public DateTime timestamp { get; set; }
+        public string elapsed { get; set; }
     }
 }

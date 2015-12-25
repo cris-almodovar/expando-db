@@ -6,10 +6,8 @@ using System.Threading.Tasks;
 
 namespace ExpandoDB.Rest.DTO
 {
-    public class CountResponseDto : IResponseDto
-    {
-        public DateTime timestamp { get; set; }
-        public string elapsed { get; set; }        
+    public class CountResponseDto : ResponseDto
+    {          
         public string from { get; set; }
         public string where { get; set; }
         public int count { get; set; }        

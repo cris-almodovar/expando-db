@@ -14,7 +14,7 @@ namespace Nancy.Serialization.NetJSON
     public class NetJSONSerializer : ISerializer
     {
         private readonly Json.JavaScriptSerializer _defaultSerializer = new Json.JavaScriptSerializer { RetainCasing = true, ISO8601DateFormat = true };
-        private readonly Type _typeOfIResponseDto = typeof(IResponseDto);
+        private readonly Type _typeOfIResponseDto = typeof(ResponseDto);
 
         #region Implementation of ISerializer
 
