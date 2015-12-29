@@ -59,7 +59,7 @@ namespace ExpandoDB.Search
         /// </summary>
         /// <param name="fieldName">Name of the field.</param>
         /// <returns></returns>
-        protected override Analyzer getWrappedAnalyzer(string fieldName)
+        protected override Analyzer GetWrappedAnalyzer(string fieldName)
         {
             if (String.IsNullOrWhiteSpace(fieldName))
                 throw new ArgumentException("fieldName cannot be null or blank");

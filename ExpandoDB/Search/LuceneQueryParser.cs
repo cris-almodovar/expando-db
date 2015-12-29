@@ -26,7 +26,7 @@ namespace ExpandoDB.Search
             _indexSchema = indexSchema;
         }       
 
-        protected override Query getRangeQuery(string fieldName, string part1, string part2, bool startInclusive, bool endInclusive)
+        protected override Query GetRangeQuery(string fieldName, string part1, string part2, bool startInclusive, bool endInclusive)
         {
             if (_indexSchema.Fields.ContainsKey(fieldName))
             {
@@ -42,10 +42,10 @@ namespace ExpandoDB.Search
                     part2 = part2.PadRight(LuceneField.DATE_TIME_FORMAT.Length, '0');
                 }
             }
-            return base.getRangeQuery(fieldName, part1, part2, startInclusive, endInclusive);
+            return base.GetRangeQuery(fieldName, part1, part2, startInclusive, endInclusive);
         }
 
-        protected override Query getFieldQuery(string fieldName, string queryText, bool quoted)
+        protected override Query GetFieldQuery(string fieldName, string queryText, bool quoted)
         {
             if (_indexSchema.Fields.ContainsKey(fieldName))
             {
@@ -55,7 +55,7 @@ namespace ExpandoDB.Search
                 else if (indexedField.DataType == FieldDataType.DateTime)
                     queryText = queryText.PadRight(LuceneField.DATE_TIME_FORMAT.Length, '0');
             }
-            return base.getFieldQuery(fieldName, queryText, quoted);
+            return base.GetFieldQuery(fieldName, queryText, quoted);
         }
 
         private static string FormatAsLuceneNumberString(string part)

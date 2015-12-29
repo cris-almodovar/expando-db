@@ -35,13 +35,14 @@ namespace ExpandoDB.Search
             _enableStemming = enableStemming;
             _ignoreCase = ignoreCase;
             _separatorChars = separatorChars;
-        }
+        }        
+
         /// <summary>
         /// Creates the components.
         /// </summary>
         /// <param name="fieldName">Name of the field.</param>
         /// <returns></returns>
-        protected override TokenStreamComponents createComponents(string fieldName)
+        protected override AnalyzerTokenStreamComponents CreateComponents(string fieldName)
         {
             if (String.IsNullOrWhiteSpace(fieldName))
                 throw new ArgumentException("fieldName cannot be null or blank");
@@ -53,7 +54,7 @@ namespace ExpandoDB.Search
             if (_enableStemming)
                 stream = new PorterStemFilter(stream);
 
-            return new TokenStreamComponents(tokenizer, stream);
+            return new AnalyzerTokenStreamComponents(tokenizer, stream);
         }
 
         /// <summary>
@@ -78,7 +79,7 @@ namespace ExpandoDB.Search
                 {
                     var attrib = stream.AddAttribute(java.lang.Class.forName("FlexLucene.Analysis.Tokenattributes.CharTermAttribute")) as CharTermAttribute;
                     stream.Reset();
-                    while (stream.incrementToken())
+                    while (stream.IncrementToken())
                     {
                         yield return attrib.ToString();
                     }

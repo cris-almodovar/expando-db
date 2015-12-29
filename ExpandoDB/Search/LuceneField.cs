@@ -38,7 +38,7 @@ namespace ExpandoDB.Search
                 if (String.IsNullOrWhiteSpace(Config.LuceneNullToken) == false)
                 {
                     var nullString = Config.LuceneNullToken;
-                    luceneFields.Add(new StringField(fieldName, nullString, Field.Store.NO));
+                    luceneFields.Add(new StringField(fieldName, nullString, FieldStore.NO));
                 }
             }
             else
@@ -61,7 +61,7 @@ namespace ExpandoDB.Search
                             EnsureSameFieldDataType(indexedField, FieldDataType.Number);
 
                         var numberString = Convert.ToDouble(value).ToLuceneNumberString();
-                        luceneFields.Add(new StringField(fieldName, numberString, Field.Store.NO));
+                        luceneFields.Add(new StringField(fieldName, numberString, FieldStore.NO));
 
                         if (indexedField.DataType != FieldDataType.Array)
                             luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(numberString)));
@@ -74,7 +74,7 @@ namespace ExpandoDB.Search
                             EnsureSameFieldDataType(indexedField, FieldDataType.Boolean);
 
                         var booleanString = value.ToString().ToLower();
-                        luceneFields.Add(new StringField(fieldName, booleanString, Field.Store.NO));
+                        luceneFields.Add(new StringField(fieldName, booleanString, FieldStore.NO));
 
                         if (indexedField.DataType != FieldDataType.Array)
                             luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(booleanString)));
@@ -90,7 +90,7 @@ namespace ExpandoDB.Search
                         else if (indexedField.DataType != FieldDataType.Array)
                             EnsureSameFieldDataType(indexedField, FieldDataType.Text);                        
 
-                        luceneFields.Add(new TextField(fieldName, stringValue, Field.Store.NO));
+                        luceneFields.Add(new TextField(fieldName, stringValue, FieldStore.NO));
                         if (countOfWhiteSpaces <= 10 && indexedField.DataType != FieldDataType.Array)
                         {
                             var stringValueForSorting = stringValue.Trim().ToLowerInvariant();
@@ -105,7 +105,7 @@ namespace ExpandoDB.Search
                             EnsureSameFieldDataType(indexedField, FieldDataType.DateTime);
 
                         var dateValue = ((DateTime)value).ToLuceneDateString();
-                        luceneFields.Add(new StringField(fieldName, dateValue, Field.Store.NO));
+                        luceneFields.Add(new StringField(fieldName, dateValue, FieldStore.NO));
 
                         if (indexedField.DataType != FieldDataType.Array)
                             luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(dateValue)));
@@ -120,7 +120,7 @@ namespace ExpandoDB.Search
                                 EnsureSameFieldDataType(indexedField, FieldDataType.String);
 
                             var idValue = ((Guid)value).ToString();
-                            luceneFields.Add(new StringField(fieldName, idValue, Field.Store.YES));
+                            luceneFields.Add(new StringField(fieldName, idValue, FieldStore.YES));
 
                             if (indexedField.DataType != FieldDataType.Array)
                                 luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(idValue)));

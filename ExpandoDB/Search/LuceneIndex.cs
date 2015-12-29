@@ -23,8 +23,7 @@ namespace ExpandoDB.Search
         private readonly Directory _indexDirectory;
         private readonly Analyzer _compositeAnalyzer;
         private readonly IndexWriter _writer;                
-        private SearcherManager _searcherManager;
-        private object _searcherManagerLock = new object();
+        private readonly SearcherManager _searcherManager;        
         private readonly Timer _autoRefreshTimer;
         private readonly Timer _autoCommitTimer;
         private readonly IndexSchema _indexSchema;
@@ -177,14 +176,6 @@ namespace ExpandoDB.Search
             }
 
             return result;
-        }        
-
-        private void InitializeSearcherManager()
-        {
-            lock (_searcherManagerLock)
-            {
-                _searcherManager = new SearcherManager(_writer, true, null);
-            }
         }
 
         private Sort GetSortCriteria(string sortByField = null)
@@ -198,7 +189,7 @@ namespace ExpandoDB.Search
             if (reverse)
                 sortFieldName = sortFieldName.TrimStart('-');
 
-            sortFields.Add(new SortField(sortFieldName, SortField.Type.STRING, reverse));            
+            sortFields.Add(new SortField(sortFieldName, SortFieldType.STRING, reverse));            
 
             return new Sort(sortFields.ToArray());
         }       
@@ -208,11 +199,16 @@ namespace ExpandoDB.Search
         /// </summary>
         public void Dispose()
         {
-            _searcherManager.Close();
-            _writer.Close();
-
             _autoRefreshTimer.Dispose();
-            _autoCommitTimer.Dispose();       
+            _autoCommitTimer.Dispose();
+
+            _searcherManager.Close();
+
+            if (_writer.HasUncommittedChanges())
+                _writer.Commit();
+
+            _writer.Close();
+                  
         }
     }
 }

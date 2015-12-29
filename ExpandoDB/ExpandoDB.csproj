@@ -43,8 +43,8 @@
       <HintPath>..\packages\Dapper.1.42\lib\net45\Dapper.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="FlexLucene, Version=5.3.1.1, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\FlexLucene.5.3.1.1\lib\net40\FlexLucene.dll</HintPath>
+    <Reference Include="FlexLucene, Version=5.4.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\FlexLucene.5.4.0.0\lib\net40\FlexLucene.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="IKVM.AWT.WinForms, Version=8.1.5717.0, Culture=neutral, PublicKeyToken=13235d27fcbfff58, processorArchitecture=MSIL">
@@ -159,7 +159,7 @@
       <HintPath>..\packages\IKVM.8.1.5717.0\lib\IKVM.Runtime.JNI.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="NetJSON, Version=1.0.15.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="NetJSON, Version=1.0.15.5, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\lib\NetJSON.dll</HintPath>
     </Reference>
@@ -204,6 +204,7 @@
     <Compile Include="Storage\StorageRow.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

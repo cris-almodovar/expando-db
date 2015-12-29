@@ -293,7 +293,7 @@ namespace ExpandoDB.Storage
         /// <returns></returns>
         public static string ToJson(this Content content)
         {
-            var json = NetJSON.NetJSON.Serialize(content.AsExpando());
+            var json = NetJSON.NetJSON.Serialize(content.AsExpando()); 
             return json;
         }
     }

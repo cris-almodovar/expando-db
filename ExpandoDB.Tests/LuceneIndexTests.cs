@@ -47,7 +47,7 @@ namespace ExpandoDB.Tests
             var content = CreateContent();
             var luceneDocument = content.ToLuceneDocument();
             var idField = luceneDocument.GetField(LuceneField.ID_FIELD_NAME);            
-            var id = idField.stringValue();
+            var id = idField.StringValue();
 
             Assert.AreEqual<string>(content._id.ToString(), id);
         }
