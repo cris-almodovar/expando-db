@@ -67,13 +67,9 @@ namespace ExpandoDB.Storage
 
         private static bool TryParseGuid(string value, ref Guid guid)
         {
-            return IsGuidString(value) && Guid.TryParse(value, out guid);
-        }
-
-        private static bool IsGuidString(string value)
-        {
-            return value.Length == GUID_STRING_LENGTH &&
-                   value.Count(c => c == '-') == 4;
+            return value.Length == GUID_STRING_LENGTH && 
+                   value.Count(c => c == '-') == 4 && 
+                   Guid.TryParse(value, out guid);
         }
 
         private static List<object> ParseList(IList list)
