@@ -46,11 +46,7 @@ namespace ExpandoDB.Rest
             });            
 
             JsonSettings.RetainCasing = true;
-            JsonSettings.ISO8601DateFormat = true;
-
-            NetJSON.NetJSON.DateFormat = NetJSON.NetJSONDateFormat.ISO;
-            NetJSON.NetJSON.UseEnumString = false;
-            NetJSON.NetJSON.SkipDefaultValue = false;
+            JsonSettings.ISO8601DateFormat = true;            
         }
 
         protected override void ConfigureApplicationContainer(TinyIoCContainer container)

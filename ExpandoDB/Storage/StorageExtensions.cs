@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ExpandoDB.Serialization;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Dynamic;
@@ -13,6 +14,7 @@ namespace ExpandoDB.Storage
     public static class StorageExtensions
     {
         const string ISO_UTC_DATE_TIME_FORMAT = "yyyy-MM-ddTHH:mm:ss.fffffffZ";
+        const string ISO_UTC_DATE_TIME_SHORT_FORMAT = "yyyy-MM-ddTHH:mm:ssZ";
         const int GUID_STRING_LENGTH = 36;             
 
         /// <summary>
@@ -59,13 +61,20 @@ namespace ExpandoDB.Storage
             return expando;
         }
 
-        private static bool TryParseIsoUtcDateTime(string value, ref DateTime dateValue)
+        static bool TryParseIsoUtcDateTime(string value, ref DateTime dateValue)
         {
-            return IsIsoUtcDateTime(value) &&
-                   DateTime.TryParseExact(value, ISO_UTC_DATE_TIME_FORMAT, null, DateTimeStyles.AdjustToUniversal, out dateValue);                  
-        }
+            if (!IsIsoUtcDateTime(value))
+                return false;
 
-        private static bool TryParseGuid(string value, ref Guid guid)
+            if (value.Length == ISO_UTC_DATE_TIME_FORMAT.Length)
+                return DateTime.TryParseExact(value, ISO_UTC_DATE_TIME_FORMAT, null, DateTimeStyles.AdjustToUniversal, out dateValue);
+            else if (value.Length == ISO_UTC_DATE_TIME_SHORT_FORMAT.Length)
+                return DateTime.TryParseExact(value, ISO_UTC_DATE_TIME_SHORT_FORMAT, null, DateTimeStyles.AdjustToUniversal, out dateValue);
+
+            return false;
+        }        
+
+        internal static bool TryParseGuid(string value, ref Guid guid)
         {
             return value.Length == GUID_STRING_LENGTH && 
                    value.Count(c => c == '-') == 4 && 
@@ -74,18 +83,18 @@ namespace ExpandoDB.Storage
 
         private static List<object> ParseList(IList list)
         {
-            var itemList = new List<object>();
+            var parsedItems = new List<object>();
             foreach (var item in list)
             {
                 if (item is IDictionary<string, object>)
                 {
-                    var expandoItem = ((IDictionary<string, object>)item).ToExpando();
-                    itemList.Add(expandoItem);
+                    var expando = ((IDictionary<string, object>)item).ToExpando();
+                    parsedItems.Add(expando);
                 }
                 else if (item is IList)
                 {
-                    var itemList2 = ParseList(item as IList);
-                    itemList.Add(itemList2);
+                    var list2 = ParseList(item as IList);
+                    parsedItems.Add(list2);
                 }
                 else if (item is string)
                 {
@@ -93,22 +102,22 @@ namespace ExpandoDB.Storage
                     DateTime dateValue = DateTime.MinValue;
 
                     if (TryParseIsoUtcDateTime(value, ref dateValue))
-                        itemList.Add(dateValue);
+                        parsedItems.Add(dateValue);
                     else
-                        itemList.Add(value);
+                        parsedItems.Add(value);
                 }
                 else
                 {
-                    itemList.Add(item);
+                    parsedItems.Add(item);
                 }
             }
 
-            return itemList;
+            return parsedItems;
         }
 
         private static bool IsIsoUtcDateTime(string value)
         {
-            return (value.Length == ISO_UTC_DATE_TIME_FORMAT.Length &&
+            return ((value.Length == ISO_UTC_DATE_TIME_FORMAT.Length || value.Length == ISO_UTC_DATE_TIME_SHORT_FORMAT.Length) &&
                     Char.IsNumber(value[0]) && Char.IsNumber(value[1]) && Char.IsNumber(value[2]) && Char.IsNumber(value[3]) &&
                     value[4] == '-' &&
                     Char.IsNumber(value[5]) && Char.IsNumber(value[6]) &&
@@ -247,7 +256,7 @@ namespace ExpandoDB.Storage
                 if (String.IsNullOrWhiteSpace(json))
                     throw new ArgumentException("JSON string is null or empty");
 
-                dictionary = NetJSON.NetJSON.Deserialize<IDictionary<string, object>>(json);
+                dictionary = json.DeserializeDictionary();
             }
             catch (Exception ex)
             {
@@ -289,7 +298,7 @@ namespace ExpandoDB.Storage
         /// <returns></returns>
         public static string ToJson(this Content content)
         {
-            var json = NetJSON.NetJSON.Serialize(content.AsExpando()); 
+            var json = DynamicSerializer.Serialize(content); 
             return json;
         }
     }

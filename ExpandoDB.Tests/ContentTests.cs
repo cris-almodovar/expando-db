@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
 using System.Collections;
+using Jil;
 
 namespace ExpandoDB.Tests
 {
@@ -14,7 +15,7 @@ namespace ExpandoDB.Tests
         {
             var content = new Content();
 
-            Assert.IsTrue(content._id.HasValue);
+            Assert.IsTrue(content._id.HasValue);            
         }
 
         [TestMethod]

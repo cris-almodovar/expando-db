@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Dapper;
+using ExpandoDB.Serialization;
 
 namespace ExpandoDB.Storage
 {
@@ -40,10 +41,7 @@ namespace ExpandoDB.Storage
             _deleteOneSql = String.Format("DELETE FROM [{0}] WHERE name = @name", SCHEMA_TABLE_NAME);
 
             EnsureDatabaseExists();
-            EnsureSchemaTableExists();
-
-            NetJSON.NetJSON.DateFormat = NetJSON.NetJSONDateFormat.ISO;
-            NetJSON.NetJSON.UseEnumString = true;           
+            EnsureSchemaTableExists();                 
         }
 
         /// <summary>
@@ -86,7 +84,7 @@ namespace ExpandoDB.Storage
                 foreach (var schemaName in resultLookup.Keys)
                 {
                     var json = resultLookup[schemaName].json as string;
-                    var schema = NetJSON.NetJSON.Deserialize<ContentCollectionSchema>(json);
+                    var schema = DynamicSerializer.Deserialize<ContentCollectionSchema>(json);
                     collectionSchemas.Add(schema);
                 }
 
@@ -102,7 +100,7 @@ namespace ExpandoDB.Storage
             using (var conn = GetConnection())
             {
                 var name = collectionSchema.Name;
-                var json = NetJSON.NetJSON.Serialize(collectionSchema);
+                var json = DynamicSerializer.Serialize(collectionSchema);
                 await conn.ExecuteAsync(_insertOneSql, new { name, json });
 
                 return name;
@@ -117,7 +115,7 @@ namespace ExpandoDB.Storage
             using (var conn = GetConnection())
             {
                 var name = collectionSchema.Name;
-                var json = NetJSON.NetJSON.Serialize(collectionSchema);
+                var json = DynamicSerializer.Serialize(collectionSchema);
                 var count = await conn.ExecuteAsync(_updateOneSql, new { name, json });
 
                 return count;

@@ -86,7 +86,7 @@ namespace ExpandoDB.Rest
             var responseDto = new UpdateResponseDto
             {
                 timestamp = DateTime.UtcNow,
-                elapsed = stopwatch.Elapsed,
+                elapsed = stopwatch.Elapsed.ToString(),
                 from = collectionName,
                 affectedCount = affected
             };
@@ -116,7 +116,7 @@ namespace ExpandoDB.Rest
             var responseDto = new CountResponseDto
             {
                 timestamp = DateTime.UtcNow,
-                elapsed = stopwatch.Elapsed,
+                elapsed = stopwatch.Elapsed.ToString(),
                 from = collectionName,
                 where = countRequestDto.where,
                 count = count
@@ -154,7 +154,7 @@ namespace ExpandoDB.Rest
             var responseDto = new UpdateResponseDto
             {
                 timestamp = DateTime.UtcNow,
-                elapsed = stopwatch.Elapsed,
+                elapsed = stopwatch.Elapsed.ToString(),
                 from = collectionName,
                 affectedCount = affected
             };
@@ -197,7 +197,7 @@ namespace ExpandoDB.Rest
             var responseDto = new UpdateResponseDto
             {
                 timestamp = DateTime.UtcNow,
-                elapsed = stopwatch.Elapsed,
+                elapsed = stopwatch.Elapsed.ToString(),
                 from = collectionName,
                 affectedCount = affected
             };
@@ -231,7 +231,7 @@ namespace ExpandoDB.Rest
             var responseDto = new ContentResposeDto
             {
                 timestamp = DateTime.UtcNow,
-                elapsed = stopwatch.Elapsed,
+                elapsed = stopwatch.Elapsed.ToString(),
                 from = collectionName,
                 content = content.AsExpando()
             };
@@ -259,7 +259,7 @@ namespace ExpandoDB.Rest
             var responseDto = new SchemaResponseDto
             {
                 timestamp = DateTime.UtcNow,
-                elapsed = stopwatch.Elapsed,
+                elapsed = stopwatch.Elapsed.ToString(),
                 schema = schema
             };
 
@@ -285,7 +285,7 @@ namespace ExpandoDB.Rest
 
             var responseDto = new SearchResponseDto().PopulateWith(requestDto, collectionName, result);
             responseDto.timestamp = DateTime.UtcNow;
-            responseDto.elapsed = stopwatch.Elapsed;           
+            responseDto.elapsed = stopwatch.Elapsed.ToString();           
 
             return responseDto;            
         }
@@ -313,7 +313,7 @@ namespace ExpandoDB.Rest
             var responseDto = new InsertResponseDto
             {
                 timestamp = DateTime.UtcNow,
-                elapsed = stopwatch.Elapsed,                
+                elapsed = stopwatch.Elapsed.ToString(),                
                 from = collectionName,
                 _id = guid
             };

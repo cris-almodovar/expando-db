@@ -61,11 +61,7 @@ namespace ExpandoDB.Storage
             _dropTableSql = String.Format("DROP TABLE IF EXISTS [{0}]", _contentCollectionName);
 
             EnsureDatabaseExists();
-            EnsureCollectionTableExists();
-
-            NetJSON.NetJSON.DateFormat = NetJSON.NetJSONDateFormat.ISO;
-            NetJSON.NetJSON.UseEnumString = true;
-            NetJSON.NetJSON.SkipDefaultValue = false;
+            EnsureCollectionTableExists();            
         }
 
         /// <summary>
