@@ -200,6 +200,7 @@
     <Compile Include="Search\SearchCriteria.cs" />
     <Compile Include="Search\SearchResult.cs" />
     <Compile Include="Serialization\DynamicSerializer.cs" />
+    <Compile Include="Serialization\SerializationException.cs" />
     <Compile Include="Storage\ISchemaStorage.cs" />
     <Compile Include="Storage\StorageExtensions.cs" />
     <Compile Include="Storage\EnumerableContents.cs" />

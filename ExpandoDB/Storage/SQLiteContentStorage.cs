@@ -111,7 +111,7 @@ namespace ExpandoDB.Storage
                     content._id = Guid.NewGuid();
 
                 content._createdTimestamp = content._modifiedTimestamp = DateTime.UtcNow;
-                content.ConvertDatesToIsoUtc();
+                content.ConvertDatesToUtc();
 
                 var id = content._id.ToString();
                 var json = content.ToJson();                
@@ -221,7 +221,7 @@ namespace ExpandoDB.Storage
                 content._modifiedTimestamp = DateTime.UtcNow;
 
                 // Make sure all date/times are in ISO UTC format.
-                content.ConvertDatesToIsoUtc();
+                content.ConvertDatesToUtc();
                 
                 var json = content.ToJson();                
                 count = await conn.ExecuteAsync(_updateOneSql, new { id, json });                

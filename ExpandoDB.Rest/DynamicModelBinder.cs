@@ -84,7 +84,7 @@ namespace ExpandoDB.Rest
             if (String.IsNullOrWhiteSpace(json))
                 throw new ArgumentException("The JSON string is empty");
 
-            var dictionary = DynamicSerializer.DeserializeDictionary(json);
+            var dictionary = DynamicSerializer.Deserialize<IDictionary<string, object>>(json);
             if (dictionary == null)
                 return new Dictionary<string, object>();
             

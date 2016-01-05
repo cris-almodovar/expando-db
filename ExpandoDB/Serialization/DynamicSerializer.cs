@@ -7,6 +7,7 @@ using Jil;
 using System.IO;
 using System.ComponentModel;
 using System.Collections;
+using ExpandoDB.Storage;
 
 namespace ExpandoDB.Serialization
 {
@@ -34,28 +35,36 @@ namespace ExpandoDB.Serialization
 
         public static Content Deserialize(string json)
         {
-            return new Content(json.DeserializeDictionary());
-        }
-
-        public static Dictionary<string, object> DeserializeDictionary(this string json)
-        {
-            if (String.IsNullOrWhiteSpace(json))
-                throw new ArgumentNullException("json");
-            
-            var dictionary = JSON.Deserialize<Dictionary<string, object>>(json);                                     
-
-            return dictionary.Unwrap();
+            var dictionary = Deserialize<IDictionary<string, object>>(json);
+            return new Content(dictionary);
         }
 
         public static T Deserialize<T>(string json)
         {
+            if (typeof(T) == typeof(IDictionary<string, object>))
+            {
+                var dictionary = JSON.Deserialize<T>(json) as IDictionary<string, object>;
+                return (T)dictionary.Unwrap();
+            }
+
             return JSON.Deserialize<T>(json);
         }
 
-        private static Dictionary<string, object> Unwrap(this IDictionary<string, object> dictionary)
+        public static T Deserialize<T>(TextReader reader)
+        {
+            if (typeof(T) == typeof(IDictionary<string, object>))
+            {
+                var dictionary = JSON.Deserialize<T>(reader) as IDictionary<string, object>;
+                return (T)dictionary.Unwrap();
+            }
+
+            return JSON.Deserialize<T>(reader);
+        }       
+
+        private static IDictionary<string, object> Unwrap(this IDictionary<string, object> dictionary)
         {
             if (dictionary == null)
-                throw new ArgumentNullException("dictionary");           
+                throw new ArgumentNullException("dictionary");
 
             var unwrappedDictionary = new Dictionary<string, object>();
             foreach (var kvp in dictionary)
@@ -78,7 +87,7 @@ namespace ExpandoDB.Serialization
 
             var destinationType = converter.GetDestinationType(value);
             if (destinationType == null)
-                return null;            
+                return null;
 
             if (destinationType == typeof(IDictionary<string, object>))
             {
@@ -90,11 +99,24 @@ namespace ExpandoDB.Serialization
                 var enumerable = converter.ConvertTo(value, destinationType) as IEnumerable;
                 return enumerable.Unwrap();
             }
+            else if (destinationType == typeof(string))
+            {
+                var stringValue = converter.ConvertTo(value, destinationType) as string;                
+                DateTime dateValue = DateTime.MinValue;
+                Guid guidValue = Guid.Empty;
 
-            return converter.ConvertTo(value, destinationType); 
+                if (StorageExtensions.TryParseDateTime(stringValue, ref dateValue))
+                    return dateValue;
+                else if (StorageExtensions.TryParseGuid(stringValue, ref guidValue))
+                    return guidValue;
+                else
+                    return stringValue;
+            }
+
+            return converter.ConvertTo(value, destinationType);
         }
 
-        private static List<object> Unwrap(this IEnumerable enumerable)
+        private static IList<object> Unwrap(this IEnumerable enumerable)
         {
             var list = new List<object>();
             foreach (var item in enumerable)
@@ -117,14 +139,13 @@ namespace ExpandoDB.Serialization
             if (converter.CanConvertTo(typeof(DateTime)))
                 return typeof(DateTime);
             if (converter.CanConvertTo(typeof(IDictionary<string, object>)))
-                return typeof(IDictionary<string, object>);
+                return typeof(IDictionary<string, object>);         
             if (converter.CanConvertTo(typeof(IEnumerable)))
                 return typeof(IEnumerable);
             if (converter.CanConvertTo(typeof(string)))
                 return typeof(string);
 
-
-            return null;
+            throw new SerializationException("Unsupported data type: " + value.GetType().Name);
         }
     }
 }
