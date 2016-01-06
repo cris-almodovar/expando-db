@@ -25,7 +25,7 @@ namespace ExpandoDB
         private readonly string _indexPath;
         private readonly ConcurrentDictionary<string, ContentCollection> _contentCollections;
         private readonly ISchemaStorage _schemaStorage;
-        private readonly ConcurrentDictionary<string, ContentCollectionSchema> _persistedSchemas;
+        private readonly ConcurrentDictionary<string, ContentCollectionSchema> _schemaCache;
         private readonly Timer _schemaPersistenceTimer;
         private readonly object _schemaPersistenceLock = new object();
 
@@ -53,11 +53,11 @@ namespace ExpandoDB
 
             var schemas = _schemaStorage.GetAllAsync().Result.ToDictionary(cs => cs.Name);
             if (schemas != null && schemas.Count > 0)
-                _persistedSchemas = new ConcurrentDictionary<string, ContentCollectionSchema>(schemas);
+                _schemaCache = new ConcurrentDictionary<string, ContentCollectionSchema>(schemas);
             else
-                _persistedSchemas = new ConcurrentDictionary<string, ContentCollectionSchema>();
+                _schemaCache = new ConcurrentDictionary<string, ContentCollectionSchema>();
 
-            foreach (var schema in _persistedSchemas.Values)
+            foreach (var schema in _schemaCache.Values)
             {
                 var collection = new ContentCollection(schema, _dbPath);
                 _contentCollections.TryAdd(schema.Name, collection);
@@ -74,19 +74,19 @@ namespace ExpandoDB
 
             try
             {
-                var schemasToInsert = _contentCollections.Keys.Except(_persistedSchemas.Keys);
-                foreach (var schemaName in schemasToInsert)
+                var newSchemasToInsert = _contentCollections.Keys.Except(_schemaCache.Keys);
+                foreach (var schemaName in newSchemasToInsert)
                 {
                     if (_contentCollections[schemaName] == null)
                         continue;
 
-                    var liveSchema = _contentCollections[schemaName].GetSchema();
-                    _persistedSchemas.TryAdd(liveSchema.Name, liveSchema);
-                    await _schemaStorage.InsertAsync(liveSchema);
+                    var newSchema = _contentCollections[schemaName].GetSchema();
+                    _schemaCache.TryAdd(newSchema.Name, newSchema);
+                    await _schemaStorage.InsertAsync(newSchema);
                 }
 
-                var schemasToUpdate = from schemaName in _contentCollections.Keys.Intersect(_persistedSchemas.Keys)
-                                      let persistedSchema = _persistedSchemas[schemaName]
+                var schemasToUpdate = from schemaName in _contentCollections.Keys.Intersect(_schemaCache.Keys)
+                                      let persistedSchema = _schemaCache[schemaName]
                                       let liveSchema = _contentCollections[schemaName].GetSchema()
                                       where persistedSchema != liveSchema                                      
                                       select schemaName;
@@ -96,18 +96,18 @@ namespace ExpandoDB
                     if (_contentCollections[schemaName] == null)
                         continue;
 
-                    var liveSchema = _contentCollections[schemaName].GetSchema();
-                    _persistedSchemas[schemaName] = liveSchema;
-                    await _schemaStorage.UpdateAsync(liveSchema);
+                    var updatedSchema = _contentCollections[schemaName].GetSchema();
+                    _schemaCache[schemaName] = updatedSchema;
+                    await _schemaStorage.UpdateAsync(updatedSchema);
                 }
 
-                var schemasToRemove = from schemaName in _persistedSchemas.Keys.Except(_contentCollections.Keys)                                      
+                var schemasToRemove = from schemaName in _schemaCache.Keys.Except(_contentCollections.Keys)                                      
                                       select schemaName;
 
                 foreach (var schemaName in schemasToRemove)
                 {
                     ContentCollectionSchema removedSchema = null;
-                    _persistedSchemas.TryRemove(schemaName, out removedSchema);
+                    _schemaCache.TryRemove(schemaName, out removedSchema);
                     await _schemaStorage.DeleteAsync(schemaName);
                 }
             }            
@@ -181,6 +181,9 @@ namespace ExpandoDB
 
             if (_contentCollections.TryRemove(collectionName, out collection))            
                 isSuccessful = await collection.DropAsync();
+
+            if (isSuccessful)
+                await PersistSchemas();
 
             return isSuccessful;
         }
