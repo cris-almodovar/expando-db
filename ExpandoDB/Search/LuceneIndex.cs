@@ -18,8 +18,8 @@ namespace ExpandoDB.Search
     /// </summary>
     public class LuceneIndex : IDisposable
     {
-        private const int DEFAULT_SEARCH_TOP_N = 100000;
-        private const int DEFAULT_SEARCH_ITEMS_PER_PAGE = 10;
+        public const int DEFAULT_SEARCH_TOP_N = 100000;
+        public const int DEFAULT_SEARCH_ITEMS_PER_PAGE = 10;
         private readonly Directory _indexDirectory;
         private readonly Analyzer _compositeAnalyzer;
         private readonly IndexWriter _writer;                

@@ -15,9 +15,9 @@ namespace ExpandoDB.Rest.DTO
             {
                 Query = dto.where,
                 SortByField = dto.orderBy,
-                TopN = dto.topN,
-                ItemsPerPage = dto.itemsPerPage,
-                PageNumber = dto.pageNumber
+                TopN = dto.topN ?? LuceneIndex.DEFAULT_SEARCH_TOP_N,
+                ItemsPerPage = dto.itemsPerPage ?? LuceneIndex.DEFAULT_SEARCH_ITEMS_PER_PAGE,
+                PageNumber = dto.pageNumber ?? 1 
             };
 
             return searchCriteria;
