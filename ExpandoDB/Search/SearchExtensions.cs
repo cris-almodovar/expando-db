@@ -53,12 +53,12 @@ namespace ExpandoDB.Search
         /// <param name="criteria">The search criteria.</param>
         public static void Validate(this SearchCriteria criteria)
         {
-            if (criteria.TopN == null || criteria.TopN <= 0)
-                throw new ArgumentException("topN cannot be null or <= zero");
-            if (criteria.ItemsPerPage == null || criteria.ItemsPerPage <= 0)
-                throw new ArgumentException("itemsPerPage cannot be null or <= zero");
-            if (criteria.PageNumber == null || criteria.PageNumber <= 0)
-                throw new ArgumentException("pageNumber cannot be null or <= zero");
+            if (criteria.TopN <= 0)
+                throw new ArgumentException("topN cannot be <= zero");
+            if (criteria.ItemsPerPage <= 0)
+                throw new ArgumentException("itemsPerPage cannot be <= zero");
+            if (criteria.PageNumber <= 0)
+                throw new ArgumentException("pageNumber cannot be <= zero");
         }
 
         /// <summary>
