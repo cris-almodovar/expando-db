@@ -251,9 +251,9 @@ namespace ExpandoDB.Serialization
                ))
                 return false;
 
-            if (!(length > DATE_TIME_FORMAT_DATE_ONLY.Length &&
-                  value[10] == 'T'
-               ))
+            if (length > DATE_TIME_FORMAT_DATE_ONLY.Length &&
+                  value[10] != 'T'
+               )
                 return false;
 
             if (length == DATE_TIME_FORMAT_ROUNDTRIP_UTC.Length ||
