@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Collections;
+using ExpandoDB.Serialization;
 
 namespace ExpandoDB
 {
@@ -35,7 +36,7 @@ namespace ExpandoDB
         /// </summary>
         /// <param name="json">The JSON string to be used to populate the Content object.</param>
         public Content(string json)
-            : this (json.ToExpando())
+            : this (json.ToDictionary().ToExpando())
         {
         }
 

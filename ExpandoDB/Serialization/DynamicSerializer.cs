@@ -8,37 +8,74 @@ using System.IO;
 using System.ComponentModel;
 using System.Collections;
 using ExpandoDB.Storage;
+using System.Dynamic;
+using System.Globalization;
 
 namespace ExpandoDB.Serialization
 {
+    /// <summary>
+    /// Provides methods for serializing/deserializing dynamic Content object to/from JSON.
+    /// </summary>
     public static class DynamicSerializer
     {
+        const string DATE_TIME_FORMAT_ROUNDTRIP_UTC = "yyyy-MM-ddTHH:mm:ss.fffffffZ";
+        const string DATE_TIME_FORMAT_ROUNDTRIP_TIMEZONE = "yyyy-MM-ddTHH:mm:ss.fffffffzzz";
+        const string DATE_TIME_FORMAT_DATE_ONLY = "yyyy-MM-dd";
+        const string DATE_TIME_FORMAT_DATE_HHMM = "yyyy-MM-ddTHH:mm";
+        const string DATE_TIME_FORMAT_DATE_HHMM_UTC = "yyyy-MM-ddTHH:mmZ";
+        const string DATE_TIME_FORMAT_DATE_HHMM_TIMEZONE = "yyyy-MM-ddTHH:mmzzz";
+        const string DATE_TIME_FORMAT_DATE_HHMMSS = "yyyy-MM-ddTHH:mm:ss";
+        const string DATE_TIME_FORMAT_DATE_HHMMSS_UTC = "yyyy-MM-ddTHH:mm:ssZ";
+        const string DATE_TIME_FORMAT_DATE_HHMMSS_TIMEZONE = "yyyy-MM-ddTHH:mm:sszzz";
+        const int GUID_STRING_LENGTH = 36;
+
+        /// <summary>
+        /// Serializes the specified Content object to JSON.
+        /// </summary>
+        /// <param name="content">The Content object.</param>
+        /// <returns></returns>
         public static string Serialize(Content content)
         {
             return JSON.SerializeDynamic(content.AsExpando(), Options.ISO8601IncludeInherited);
         }
 
-        public static void Serialize(Content content, TextWriter output)
+        /// <summary>
+        /// Serializes the specified Content object to JSON and writes to the provided TextWriter.
+        /// </summary>
+        /// <param name="content">The Content object.</param>
+        /// <param name="writer">The TextWriter object.</param>
+        public static void Serialize(Content content, TextWriter writer)
         {
-            JSON.SerializeDynamic(content.AsExpando(), output, Options.ISO8601IncludeInherited);
+            JSON.SerializeDynamic(content.AsExpando(), writer, Options.ISO8601IncludeInherited);
         }
 
+        /// <summary>
+        /// Serializes the specified data object to JSON.
+        /// </summary>
+        /// <param name="data">The data object.</param>
+        /// <returns></returns>
         public static string Serialize(object data)
         {
             return JSON.SerializeDynamic(data, Options.ISO8601IncludeInherited);
         }
 
-        public static void Serialize(object data, TextWriter output)
+        /// <summary>
+        /// Serializes the specified data object to JSON and writes to the provided TextWriter.
+        /// </summary>
+        /// <param name="data">The data object.</param>
+        /// <param name="writer">The TextWriter object.</param>
+        public static void Serialize(object data, TextWriter writer)
         {
-            JSON.SerializeDynamic(data, output, Options.ISO8601IncludeInherited);
+            JSON.SerializeDynamic(data, writer, Options.ISO8601IncludeInherited);
         }
 
-        public static Content Deserialize(string json)
-        {
-            var dictionary = Deserialize<IDictionary<string, object>>(json);
-            return new Content(dictionary);
-        }
 
+        /// <summary>
+        /// Deserializes the specified JSON into an object.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="json">The JSON string.</param>
+        /// <returns></returns>
         public static T Deserialize<T>(string json)
         {
             if (typeof(T) == typeof(IDictionary<string, object>))
@@ -50,6 +87,12 @@ namespace ExpandoDB.Serialization
             return JSON.Deserialize<T>(json);
         }
 
+        /// <summary>
+        /// Deserializes JSON from the specified TextReader.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="reader">The TextReader.</param>
+        /// <returns></returns>
         public static T Deserialize<T>(TextReader reader)
         {
             if (typeof(T) == typeof(IDictionary<string, object>))
@@ -76,6 +119,16 @@ namespace ExpandoDB.Serialization
             }
 
             return unwrappedDictionary;
+        }
+
+        private static IList<object> Unwrap(this IEnumerable enumerable)
+        {
+            var list = new List<object>();
+            foreach (var item in enumerable)
+            {
+                list.Add(item.Unwrap());
+            }
+            return list;
         }
 
         private static object Unwrap(this object value)
@@ -105,26 +158,16 @@ namespace ExpandoDB.Serialization
                 DateTime dateValue = DateTime.MinValue;
                 Guid guidValue = Guid.Empty;
 
-                if (StorageExtensions.TryParseDateTime(stringValue, ref dateValue))
+                if (TryParseDateTime(stringValue, ref dateValue))
                     return dateValue;
-                else if (StorageExtensions.TryParseGuid(stringValue, ref guidValue))
+                else if (TryParseGuid(stringValue, ref guidValue))
                     return guidValue;
                 else
                     return stringValue;
             }
 
             return converter.ConvertTo(value, destinationType);
-        }
-
-        private static IList<object> Unwrap(this IEnumerable enumerable)
-        {
-            var list = new List<object>();
-            foreach (var item in enumerable)
-            {
-                list.Add(item.Unwrap());
-            }
-            return list;
-        }
+        }        
 
         private static Type GetDestinationType(this TypeConverter converter, object value)
         {
@@ -147,5 +190,82 @@ namespace ExpandoDB.Serialization
 
             throw new SerializationException("Unsupported data type: " + value.GetType().Name);
         }
+        
+
+        public static bool TryParseDateTime(string value, ref DateTime dateValue)
+        {
+            if (!IsDateTimeString(value))
+                return false;
+
+            var length = value.Length;
+            if (length == DATE_TIME_FORMAT_ROUNDTRIP_UTC.Length)
+                return DateTime.TryParseExact(value, DATE_TIME_FORMAT_ROUNDTRIP_UTC, null, DateTimeStyles.AdjustToUniversal, out dateValue);
+            else if (length == DATE_TIME_FORMAT_ROUNDTRIP_UTC.Length + 5)
+                return DateTime.TryParseExact(value, DATE_TIME_FORMAT_ROUNDTRIP_TIMEZONE, null, DateTimeStyles.AdjustToUniversal, out dateValue);
+            else if (length == DATE_TIME_FORMAT_DATE_ONLY.Length)
+                return DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_ONLY, null, DateTimeStyles.AssumeLocal, out dateValue);
+            else if (length == DATE_TIME_FORMAT_DATE_HHMM.Length)
+                return DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMM, null, DateTimeStyles.AssumeLocal, out dateValue);
+            else if (length == DATE_TIME_FORMAT_DATE_HHMM_UTC.Length)
+                return DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMM_UTC, null, DateTimeStyles.AdjustToUniversal, out dateValue);
+            else if (length == DATE_TIME_FORMAT_DATE_HHMM_UTC.Length + 5)
+                return DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMM_TIMEZONE, null, DateTimeStyles.AdjustToUniversal, out dateValue);
+            else if (length == DATE_TIME_FORMAT_DATE_HHMMSS.Length)
+                return DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMMSS, null, DateTimeStyles.AssumeLocal, out dateValue);
+            else if (length == DATE_TIME_FORMAT_DATE_HHMMSS_UTC.Length)
+                return DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMMSS_UTC, null, DateTimeStyles.AdjustToUniversal, out dateValue);
+            else if (length == DATE_TIME_FORMAT_DATE_HHMMSS_UTC.Length + 5)
+                return DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMMSS_TIMEZONE, null, DateTimeStyles.AdjustToUniversal, out dateValue);
+
+            return false;
+        }
+
+        public static bool TryParseGuid(string value, ref Guid guid)
+        {
+            return value.Length == GUID_STRING_LENGTH &&
+                   value.Count(c => c == '-') == 4 &&
+                   Guid.TryParse(value, out guid);
+        }        
+
+        private static bool IsDateTimeString(string value)
+        {
+            var length = value.Length;
+
+            if (!(length == DATE_TIME_FORMAT_ROUNDTRIP_UTC.Length ||
+                  length == DATE_TIME_FORMAT_ROUNDTRIP_UTC.Length + 5 ||
+                  length == DATE_TIME_FORMAT_DATE_ONLY.Length ||
+                  length == DATE_TIME_FORMAT_DATE_HHMM.Length ||
+                  length == DATE_TIME_FORMAT_DATE_HHMM_UTC.Length ||
+                  length == DATE_TIME_FORMAT_DATE_HHMM_UTC.Length + 5 ||
+                  length == DATE_TIME_FORMAT_DATE_HHMMSS.Length ||
+                  length == DATE_TIME_FORMAT_DATE_HHMMSS_UTC.Length ||
+                  length == DATE_TIME_FORMAT_DATE_HHMMSS_UTC.Length + 5
+               ))
+                return false;
+
+            if (!(Char.IsNumber(value[0]) && Char.IsNumber(value[1]) && Char.IsNumber(value[2]) && Char.IsNumber(value[3]) &&
+                  value[4] == '-' &&
+                  Char.IsNumber(value[5]) && Char.IsNumber(value[6]) &&
+                  value[7] == '-' &&
+                  Char.IsNumber(value[8]) && Char.IsNumber(value[9])
+               ))
+                return false;
+
+            if (!(length > DATE_TIME_FORMAT_DATE_ONLY.Length &&
+                  value[10] == 'T'
+               ))
+                return false;
+
+            if (length == DATE_TIME_FORMAT_ROUNDTRIP_UTC.Length ||
+                length == DATE_TIME_FORMAT_DATE_HHMM_UTC.Length ||
+                length == DATE_TIME_FORMAT_DATE_HHMMSS_UTC.Length)
+            {
+                if (!value.EndsWith("Z", StringComparison.InvariantCulture))
+                    return false;
+            }
+
+            return true;
+        }    
+        
     }
 }

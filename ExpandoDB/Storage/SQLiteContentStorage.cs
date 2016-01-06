@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using ExpandoDB.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Data.SQLite;
