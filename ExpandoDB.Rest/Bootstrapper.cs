@@ -10,6 +10,7 @@ using Nancy.Json;
 using log4net;
 using System.Configuration;
 using ExpandoDB;
+using ExpandoDB.Rest.DTO;
 
 namespace ExpandoDB.Rest
 {
@@ -20,8 +21,9 @@ namespace ExpandoDB.Rest
         protected override void ApplicationStartup(TinyIoCContainer container, IPipelines pipelines)
         {
             base.ApplicationStartup(container, pipelines);
+            StaticConfiguration.DisableErrorTraces = false;
 
-            //_log.Info("Configuring CORS headers");
+            _log.Info("Configuring CORS headers");
             pipelines.AfterRequest.AddItemToEndOfPipeline(ctx =>
             {
                 if (ctx.Request.Headers.Keys.Contains("Origin"))
@@ -43,10 +45,21 @@ namespace ExpandoDB.Rest
                         }
                     }
                 }
-            });            
+            });                
 
             JsonSettings.RetainCasing = true;
             JsonSettings.ISO8601DateFormat = true;            
+        }
+
+        protected override void RequestStartup(TinyIoCContainer container, IPipelines pipelines, NancyContext context)
+        {
+            pipelines.OnError.AddItemToEndOfPipeline((ctx, ex) =>
+            {
+                _log.Error(ex);
+                return new ErrorResponseDto { timestamp = DateTime.UtcNow, message = ex.Message, statusCode = HttpStatusCode.InternalServerError };
+            }
+            );
+            base.RequestStartup(container, pipelines, context);
         }
 
         protected override void ConfigureApplicationContainer(TinyIoCContainer container)

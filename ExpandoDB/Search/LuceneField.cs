@@ -81,9 +81,7 @@ namespace ExpandoDB.Search
                         break;
 
                     case TypeCode.String:
-                        var stringValue = (string)value;
-                        var regexInput = stringValue.Length > 256 ? stringValue.Substring(0, 256) : stringValue;
-                        var countOfWhiteSpaces = Regex.Matches(regexInput.TrimStart(), @"\s+", RegexOptions.None, TimeSpan.FromSeconds(10)).Count;                        
+                        var stringValue = (string)value;                                              
                             
                         if (indexedField.DataType == FieldDataType.Unknown)
                             indexedField.DataType = FieldDataType.Text;
@@ -91,9 +89,9 @@ namespace ExpandoDB.Search
                             EnsureSameFieldDataType(indexedField, FieldDataType.Text);                        
 
                         luceneFields.Add(new TextField(fieldName, stringValue, FieldStore.NO));
-                        if (countOfWhiteSpaces <= 10 && indexedField.DataType != FieldDataType.Array)
+                        if (indexedField.DataType != FieldDataType.Array)
                         {
-                            var stringValueForSorting = stringValue.Trim().ToLowerInvariant();
+                            var stringValueForSorting = (stringValue.Length > 256 ? stringValue.Substring(0, 256) : stringValue).Trim().ToLowerInvariant();
                             luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(stringValueForSorting)));
                         }                       
                         break;

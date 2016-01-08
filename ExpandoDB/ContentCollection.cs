@@ -223,6 +223,7 @@ namespace ExpandoDB
             await Task.Delay(TimeSpan.FromMilliseconds(500));
 
             Directory.Delete(_indexPath, true);
+            // TODO: Check that the index directory has been deleted successfully
 
             IsDropped = true;
             return IsDropped;
