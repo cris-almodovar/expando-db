@@ -20,7 +20,7 @@ namespace ExpandoDB
         private readonly string _indexPath;
         private readonly IContentStorage _contentStorage;
         private readonly LuceneIndex _luceneIndex;
-        private readonly IndexSchema _indexSchema;        
+        private readonly IndexSchema _indexSchema;
         private readonly string _name;
 
         /// <summary>
@@ -30,7 +30,7 @@ namespace ExpandoDB
         /// The IndexSchema object.
         /// </value>
         public IndexSchema IndexSchema { get { return _indexSchema; } }
-        
+
         /// <summary>
         /// Gets the name of the ContentCollection.
         /// </summary>
@@ -53,7 +53,7 @@ namespace ExpandoDB
         /// <param name="schema">The ContentCollectionSchema.</param>
         /// <param name="dbPath">The path to the db folder.</param>
         public ContentCollection(ContentCollectionSchema schema, string dbPath)
-            : this ( schema.Name, dbPath, schema.GetIndexSchema() )
+            : this(schema.Name, dbPath, schema.GetIndexSchema())
         {
         }
 
@@ -83,7 +83,7 @@ namespace ExpandoDB
 
             _contentStorage = new SQLiteContentStorage(_dbFilePath, _name);
 
-            _indexSchema = indexSchema ?? IndexSchema.CreateDefault(name);            
+            _indexSchema = indexSchema ?? IndexSchema.CreateDefault(name);
             _luceneIndex = new LuceneIndex(_indexPath, _indexSchema);
         }
 
@@ -105,7 +105,7 @@ namespace ExpandoDB
                 if (exists)
                     throw new InvalidOperationException("There is an existing Content with the same _id");
             }
-            
+
             var guid = await _contentStorage.InsertAsync(content);
             _luceneIndex.Insert(content);
 
@@ -125,12 +125,12 @@ namespace ExpandoDB
                 throw new ArgumentNullException("criteria");
 
             var luceneResult = _luceneIndex.Search(criteria);
-            var searchResult = new SearchResult<Content>(criteria, luceneResult.ItemCount, luceneResult.TotalHits, luceneResult.PageCount);            
+            var searchResult = new SearchResult<Content>(criteria, luceneResult.ItemCount, luceneResult.TotalHits, luceneResult.PageCount);
 
-            if (searchResult.ItemCount > 0)            
-                searchResult.Items = await _contentStorage.GetAsync(luceneResult.Items.ToList());            
+            if (searchResult.ItemCount > 0)
+                searchResult.Items = await _contentStorage.GetAsync(luceneResult.Items.ToList());
 
-            return searchResult; 
+            return searchResult;
         }
 
         /// <summary>
@@ -139,8 +139,8 @@ namespace ExpandoDB
         /// <param name="guid">The Content's unique identifier.</param>
         /// <returns></returns>        
         /// <remarks>
-        /// This method bypasses the Lucene index and
-        /// tries to retrieve the Content from storage.
+        /// This method bypasses the Lucene index, retrieving the Content 
+        /// directly from storage.
         /// </remarks>
         public async Task<Content> GetAsync(Guid guid)
         {
@@ -148,7 +148,7 @@ namespace ExpandoDB
 
             if (guid == Guid.Empty)
                 throw new ArgumentException("guid cannot be empty");
-            
+
             var content = await _contentStorage.GetAsync(guid);
             return content;
         }
@@ -201,7 +201,7 @@ namespace ExpandoDB
             if (guid == Guid.Empty)
                 throw new ArgumentException("guid cannot be empty");
 
-            var affected = await _contentStorage.DeleteAsync(guid);            
+            var affected = await _contentStorage.DeleteAsync(guid);
             _luceneIndex.Delete(guid);
 
             return affected;
@@ -211,17 +211,19 @@ namespace ExpandoDB
         /// Drops this ContentCollection.
         /// </summary>
         /// <returns></returns>
-        /// <remarks>Dropping a ContentCollection means dropping the underlying DB table Lucene index.</remarks>
+        /// <remarks>Dropping a ContentCollection means dropping the underlying storage table Lucene index.</remarks>
         public async Task<bool> DropAsync()
         {
             EnsureCollectionIsNotDropped();
 
-            await _contentStorage.DropAsync();            
-            
-            _luceneIndex.Dispose();            
+            await _contentStorage.DropAsync();
+            _luceneIndex.Dispose();
+
+            // Wait half a second before deleting the Lucene index
             await Task.Delay(TimeSpan.FromMilliseconds(500));
+
             Directory.Delete(_indexPath, true);
-            
+
             IsDropped = true;
             return IsDropped;
         }
@@ -255,11 +257,11 @@ namespace ExpandoDB
                 if (field == null)
                     continue;
 
-                var fieldCopy = new IndexedField 
-                { 
-                    Name = field.Name, 
-                    DataType = field.DataType, 
-                    ArrayElementDataType = 
+                var fieldCopy = new IndexedField
+                {
+                    Name = field.Name,
+                    DataType = field.DataType,
+                    ArrayElementDataType =
                     field.ArrayElementDataType
                 };
 

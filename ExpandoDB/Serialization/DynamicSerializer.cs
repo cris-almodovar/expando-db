@@ -27,6 +27,9 @@ namespace ExpandoDB.Serialization
         const string DATE_TIME_FORMAT_DATE_HHMMSS = "yyyy-MM-ddTHH:mm:ss";
         const string DATE_TIME_FORMAT_DATE_HHMMSS_UTC = "yyyy-MM-ddTHH:mm:ssZ";
         const string DATE_TIME_FORMAT_DATE_HHMMSS_TIMEZONE = "yyyy-MM-ddTHH:mm:sszzz";
+        const string DATE_TIME_FORMAT_DATE_HHMMSSFF = "yyyy-MM-ddTHH:mm:ss.ff";
+        const string DATE_TIME_FORMAT_DATE_HHMMSSFF_UTC = "yyyy-MM-ddTHH:mm:ss.ffZ";
+        const string DATE_TIME_FORMAT_DATE_HHMMSSFF_TIMEZONE = "yyyy-MM-ddTHH:mm:ss.ffzzz";
         const int GUID_STRING_LENGTH = 36;
 
         /// <summary>
@@ -216,7 +219,13 @@ namespace ExpandoDB.Serialization
                 return DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMMSS_UTC, null, DateTimeStyles.AdjustToUniversal, out dateValue);
             else if (length == DATE_TIME_FORMAT_DATE_HHMMSS_UTC.Length + 5)
                 return DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMMSS_TIMEZONE, null, DateTimeStyles.AdjustToUniversal, out dateValue);
-
+            else if (length == DATE_TIME_FORMAT_DATE_HHMMSSFF.Length)
+                return DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMMSSFF, null, DateTimeStyles.AssumeLocal, out dateValue);
+            else if (length == DATE_TIME_FORMAT_DATE_HHMMSSFF_UTC.Length)
+                return DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMMSSFF_UTC, null, DateTimeStyles.AdjustToUniversal, out dateValue);
+            else if (length == DATE_TIME_FORMAT_DATE_HHMMSSFF_UTC.Length + 5)
+                return DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMMSSFF_TIMEZONE, null, DateTimeStyles.AdjustToUniversal, out dateValue);
+            
             return false;
         }
 
@@ -239,7 +248,10 @@ namespace ExpandoDB.Serialization
                   length == DATE_TIME_FORMAT_DATE_HHMM_UTC.Length + 5 ||
                   length == DATE_TIME_FORMAT_DATE_HHMMSS.Length ||
                   length == DATE_TIME_FORMAT_DATE_HHMMSS_UTC.Length ||
-                  length == DATE_TIME_FORMAT_DATE_HHMMSS_UTC.Length + 5
+                  length == DATE_TIME_FORMAT_DATE_HHMMSS_UTC.Length + 5 ||
+                  length == DATE_TIME_FORMAT_DATE_HHMMSSFF.Length ||
+                  length == DATE_TIME_FORMAT_DATE_HHMMSSFF_UTC.Length ||
+                  length == DATE_TIME_FORMAT_DATE_HHMMSSFF_UTC.Length + 5
                ))
                 return false;
 
@@ -258,7 +270,8 @@ namespace ExpandoDB.Serialization
 
             if (length == DATE_TIME_FORMAT_ROUNDTRIP_UTC.Length ||
                 length == DATE_TIME_FORMAT_DATE_HHMM_UTC.Length ||
-                length == DATE_TIME_FORMAT_DATE_HHMMSS_UTC.Length)
+                length == DATE_TIME_FORMAT_DATE_HHMMSS_UTC.Length ||
+                length == DATE_TIME_FORMAT_DATE_HHMMSSFF_UTC.Length)
             {
                 if (!value.EndsWith("Z", StringComparison.InvariantCulture))
                     return false;
