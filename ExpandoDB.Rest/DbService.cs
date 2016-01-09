@@ -1,16 +1,13 @@
-﻿using Nancy;
-using System;
-using System.Collections.Generic;
-using System.Dynamic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using log4net;
-using System.Threading;
-using Nancy.ModelBinding;
+﻿using ExpandoDB.Rest.DTO;
 using ExpandoDB.Search;
+using log4net;
+using Nancy;
+using Nancy.ModelBinding;
+using System;
 using System.Diagnostics;
-using ExpandoDB.Rest.DTO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ExpandoDB.Rest
 {

@@ -1,9 +1,9 @@
-﻿using System;
-using System.IO;
-using System.Reflection;
-using ExpandoDB.Search;
+﻿using ExpandoDB.Search;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 
 namespace ExpandoDB.Tests

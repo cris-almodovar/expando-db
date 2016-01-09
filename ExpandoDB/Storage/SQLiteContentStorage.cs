@@ -1,5 +1,4 @@
 ﻿using Dapper;
-using ExpandoDB.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Data.SQLite;
@@ -104,7 +103,7 @@ namespace ExpandoDB.Storage
         public async Task<Guid> InsertAsync(Content content)
         {
             if (content == null)
-                throw new ArgumentNullException("content");
+                throw new ArgumentNullException(nameof(content));
                        
             using (var conn = GetConnection())
             {  
@@ -154,7 +153,7 @@ namespace ExpandoDB.Storage
         public async Task<IEnumerable<Content>> GetAsync(IList<Guid> guids)
         {
             if (guids == null)
-                throw new ArgumentNullException("guids");
+                throw new ArgumentNullException(nameof(guids));
 
             using (var conn = GetConnection())
             {   
@@ -196,7 +195,7 @@ namespace ExpandoDB.Storage
         public async Task<int> UpdateAsync(Content content)
         {
             if (content == null)
-                throw new ArgumentNullException("content");            
+                throw new ArgumentNullException(nameof(content));            
             
             if (content._id == null || content._id == Guid.Empty)
                 throw new Exception("The content does not have an _id field"); 
@@ -256,7 +255,7 @@ namespace ExpandoDB.Storage
         public async Task<int> DeleteAsync(IList<Guid> guids)
         {
             if (guids == null)
-                throw new ArgumentNullException("guids");
+                throw new ArgumentNullException(nameof(guids));
 
             using (var conn = GetConnection())
             {

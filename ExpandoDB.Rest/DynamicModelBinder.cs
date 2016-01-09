@@ -1,22 +1,15 @@
-﻿using System;
+﻿using ExpandoDB.Serialization;
+using Nancy;
+using Nancy.Extensions;
+using Nancy.ModelBinding;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Nancy;
-using Nancy.ModelBinding;
-using Nancy.Extensions;
-using System.Text.RegularExpressions;
-using ExpandoDB.Serialization;
-using System.Collections;
-using ExpandoDB.Storage;
 
 namespace ExpandoDB.Rest
 {
     public class DynamicModelBinder : IModelBinder
     {
-        const string DATE_TIME_PATTERN = @"^\d{4}-\d{2}-\d{2}";
-
         public object Bind(NancyContext context, Type modelType, object instance, BindingConfig configuration, params string[] blackListedProperties)
         {
             var data =
@@ -31,7 +24,7 @@ namespace ExpandoDB.Rest
         private static IDictionary<string, object> GetDataFields(NancyContext context, params string[] blackListedProperties)
         {
             if (context == null)
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
 
             return Merge
             (
@@ -49,7 +42,7 @@ namespace ExpandoDB.Rest
         private static IDictionary<string, object> Merge(IEnumerable<IDictionary<string, object>> dictionaries, params string[] blackListedProperties)
         {
             if (dictionaries == null)
-                throw new ArgumentNullException("dictionaries");
+                throw new ArgumentNullException(nameof(dictionaries));
 
             var output =
                 new Dictionary<string, object>(StringComparer.InvariantCultureIgnoreCase);
@@ -71,7 +64,7 @@ namespace ExpandoDB.Rest
         private static IDictionary<string, object> ConvertDynamicDictionary(DynamicDictionary dictionary)
         {
             if (dictionary == null)
-                throw new ArgumentNullException("dictionary");
+                throw new ArgumentNullException(nameof(dictionary));
 
             return dictionary.GetDynamicMemberNames().ToDictionary(
                     memberName => memberName,

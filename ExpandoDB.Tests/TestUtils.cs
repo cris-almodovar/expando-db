@@ -1,8 +1,7 @@
 ﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ExpandoDB.Tests
-{   
+{
     public static class TestUtils
     {
         public static Content CreateBook(string title, string author, DateTime publishDate, int rating, string description)

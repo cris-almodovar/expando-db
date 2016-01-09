@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using FlexLucene.Analysis;
+﻿using FlexLucene.Analysis;
 using FlexLucene.Queryparser.Classic;
 using FlexLucene.Search;
+using System;
 
 namespace ExpandoDB.Search
 {
@@ -19,9 +15,9 @@ namespace ExpandoDB.Search
             if (String.IsNullOrWhiteSpace(defaultFieldName))
                 throw new ArgumentException("defaultFieldName cannot be null or blank");
             if (analyzer == null)
-                throw new ArgumentNullException("analyzer");
+                throw new ArgumentNullException(nameof(analyzer));
             if (indexSchema == null)
-                throw new ArgumentNullException("indexSchema");
+                throw new ArgumentNullException(nameof(indexSchema));
 
             _indexSchema = indexSchema;
         }       

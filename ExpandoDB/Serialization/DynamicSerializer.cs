@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Jil;
-using System.IO;
-using System.ComponentModel;
+﻿using Jil;
+using System;
 using System.Collections;
-using ExpandoDB.Storage;
-using System.Dynamic;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
+using System.IO;
+using System.Linq;
 
 namespace ExpandoDB.Serialization
 {
@@ -141,7 +137,7 @@ namespace ExpandoDB.Serialization
         private static IDictionary<string, object> Unwrap(this IDictionary<string, object> dictionary)
         {
             if (dictionary == null)
-                throw new ArgumentNullException("dictionary");
+                throw new ArgumentNullException(nameof(dictionary));
 
             var unwrappedDictionary = new Dictionary<string, object>();
             foreach (var kvp in dictionary)

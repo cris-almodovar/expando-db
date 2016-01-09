@@ -1,7 +1,6 @@
 ﻿using ExpandoDB.Search;
 using ExpandoDB.Storage;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -97,7 +96,7 @@ namespace ExpandoDB
             EnsureCollectionIsNotDropped();
 
             if (content == null)
-                throw new ArgumentNullException("content");
+                throw new ArgumentNullException(nameof(content));
 
             if (content._id.HasValue)
             {
@@ -122,7 +121,7 @@ namespace ExpandoDB
             EnsureCollectionIsNotDropped();
 
             if (criteria == null)
-                throw new ArgumentNullException("criteria");
+                throw new ArgumentNullException(nameof(criteria));
 
             var luceneResult = _luceneIndex.Search(criteria);
             var searchResult = new SearchResult<Content>(criteria, luceneResult.ItemCount, luceneResult.TotalHits, luceneResult.PageCount);
@@ -163,7 +162,7 @@ namespace ExpandoDB
             EnsureCollectionIsNotDropped();
 
             if (criteria == null)
-                throw new ArgumentNullException("criteria");
+                throw new ArgumentNullException(nameof(criteria));
 
             var luceneResult = _luceneIndex.Search(criteria);
             return luceneResult.TotalHits;
@@ -179,7 +178,7 @@ namespace ExpandoDB
             EnsureCollectionIsNotDropped();
 
             if (content == null)
-                throw new ArgumentNullException("content");
+                throw new ArgumentNullException(nameof(content));
 
             var affected = await _contentStorage.UpdateAsync(content);
             if (affected > 0)

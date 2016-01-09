@@ -12,7 +12,7 @@ namespace ExpandoDB.Search
         public static LuceneDocument ToLuceneDocument(this Content content, IndexSchema indexSchema = null)
         {
             if (content == null)
-                throw new ArgumentNullException("content");
+                throw new ArgumentNullException(nameof(content));
 
             if (indexSchema == null)
                 indexSchema = IndexSchema.CreateDefault();
@@ -70,11 +70,11 @@ namespace ExpandoDB.Search
         public static void PopulateWith(this SearchResult<Guid> result, TopFieldDocs topFieldDocs, Func<int, LuceneDocument> getDoc)
         {
             if (result == null)
-                throw new ArgumentNullException("result");
+                throw new ArgumentNullException(nameof(result));
             if (topFieldDocs == null)
-                throw new ArgumentNullException("topFieldDocs");
+                throw new ArgumentNullException(nameof(topFieldDocs));
             if (getDoc == null)
-                throw new ArgumentNullException("getDoc");
+                throw new ArgumentNullException(nameof(getDoc));
 
             result.ItemCount = topFieldDocs.ScoreDocs.Length;
             result.TotalHits = topFieldDocs.TotalHits;

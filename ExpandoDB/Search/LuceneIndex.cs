@@ -1,14 +1,10 @@
 ﻿using FlexLucene.Analysis;
 using FlexLucene.Index;
-using FlexLucene.Queryparser.Classic;
 using FlexLucene.Search;
 using FlexLucene.Store;
 using java.nio.file;
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Linq;
-using LuceneFieldType = FlexLucene.Document.FieldType;
 using System.Threading;
 
 namespace ExpandoDB.Search
@@ -37,7 +33,7 @@ namespace ExpandoDB.Search
         public LuceneIndex(string indexPath, IndexSchema indexSchema = null)
         {
             if (String.IsNullOrWhiteSpace(indexPath))
-                throw new ArgumentNullException("indexPath");
+                throw new ArgumentNullException(nameof(indexPath));
             if (indexSchema == null)
                 indexSchema = IndexSchema.CreateDefault();
 
@@ -98,7 +94,7 @@ namespace ExpandoDB.Search
         public void Insert(Content content)
         {
             if (content == null)
-                throw new ArgumentNullException("content");
+                throw new ArgumentNullException(nameof(content));
             
             var document = content.ToLuceneDocument(_indexSchema);
             
@@ -126,7 +122,7 @@ namespace ExpandoDB.Search
         public void Update(Content content)
         {
             if (content == null)
-                throw new ArgumentNullException("content");
+                throw new ArgumentNullException(nameof(content));
 
             if (content._id == null || content._id == Guid.Empty)
                 throw new InvalidOperationException("Cannot update Content that does not have an _id");
@@ -147,7 +143,7 @@ namespace ExpandoDB.Search
         public SearchResult<Guid> Search(SearchCriteria criteria)
         {
             if (criteria == null)
-                throw new ArgumentNullException("criteria");
+                throw new ArgumentNullException(nameof(criteria));
 
             criteria.Query = String.IsNullOrWhiteSpace(criteria.Query) ? "*:*" : criteria.Query;
             criteria.TopN = criteria.TopN > 0 ? criteria.TopN : DEFAULT_SEARCH_TOP_N;

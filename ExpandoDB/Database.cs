@@ -1,13 +1,12 @@
-﻿using System;
+﻿using ExpandoDB.Storage;
+using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Data.SQLite;
 using System.IO;
-using System.Reflection;
-using System.Threading.Tasks;
-using System.Threading;
 using System.Linq;
-using ExpandoDB.Storage;
+using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ExpandoDB
 {

@@ -5,8 +5,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ExpandoDB
 {
@@ -180,7 +178,7 @@ namespace ExpandoDB
         /// <returns></returns>
         public static IDictionary<string, object> ToDictionary(this StorageRow row)
         {
-            IDictionary<string, object> dictionary = new Dictionary<string, object>();
+            var dictionary = new Dictionary<string, object>() as IDictionary<string, object>;
             try
             {
                 dictionary = row.json.ToDictionary();

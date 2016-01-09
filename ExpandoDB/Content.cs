@@ -1,10 +1,7 @@
-﻿using ExpandoDB.Search;
-using ExpandoDB.Storage;
-using System;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Dynamic;
-using System.Collections;
-using ExpandoDB.Serialization;
 
 namespace ExpandoDB
 {
@@ -56,7 +53,7 @@ namespace ExpandoDB
         public Content(ExpandoObject expando)
         {
             if (expando == null)
-                throw new ArgumentNullException("expando");
+                throw new ArgumentNullException(nameof(expando));
 
             _expando = expando;            
             _expandoDictionary = (IDictionary<string, object>)_expando;
@@ -164,7 +161,7 @@ namespace ExpandoDB
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
 
                 _expandoDictionary[CREATED_TIMESTAMP_FIELD_NAME] = value;
             }
@@ -188,7 +185,7 @@ namespace ExpandoDB
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
 
                 _expandoDictionary[MODIFIED_TIMESTAMP_FIELD_NAME] = value;
             }

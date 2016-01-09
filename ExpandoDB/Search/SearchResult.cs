@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ExpandoDB.Search
 {
@@ -22,7 +19,7 @@ namespace ExpandoDB.Search
         public SearchResult(SearchCriteria criteria, int itemCount = 0, int totalHits = 0, int pageCount = 0)
         {
             if (criteria == null)
-                throw new ArgumentNullException("criteria");
+                throw new ArgumentNullException(nameof(criteria));
                    
             Query = criteria.Query;
             SortByField = criteria.SortByField;

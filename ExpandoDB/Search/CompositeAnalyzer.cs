@@ -4,7 +4,7 @@ using System;
 using System.Collections.Concurrent;
 
 namespace ExpandoDB.Search
-{    
+{
     public class CompositeAnalyzer : AnalyzerWrapper
     {
         private readonly ConcurrentDictionary<string, Analyzer> _perFieldAnalyzers;        
@@ -20,7 +20,7 @@ namespace ExpandoDB.Search
             base(Analyzer.PER_FIELD_REUSE_STRATEGY)
         {
             if (indexSchema == null)
-                throw new ArgumentNullException("indexSchema");
+                throw new ArgumentNullException(nameof(indexSchema));
                    
             _textAnalyzer = new FullTextAnalyzer();
             _keywordAnalyzer = new KeywordAnalyzer();

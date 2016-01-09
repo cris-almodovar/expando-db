@@ -1,12 +1,11 @@
 ﻿using ExpandoDB.Search;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.IO;
-using System.Reflection;
-using System.Linq;
-using System.Text;
-using System.Threading;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Threading;
 
 namespace ExpandoDB.Tests
 {

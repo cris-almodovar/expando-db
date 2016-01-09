@@ -2,8 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ExpandoDB.Rest.DTO
 {
@@ -37,9 +35,9 @@ namespace ExpandoDB.Rest.DTO
         public static SearchResponseDto PopulateWith(this SearchResponseDto responseDto, SearchRequestDto searchRequestDto, string collectionName, SearchResult<Content> searchResult)
         {
             if (searchRequestDto == null)
-                throw new ArgumentNullException("searchRequestDto");
+                throw new ArgumentNullException(nameof(searchRequestDto));
             if (searchResult == null)
-                throw new ArgumentNullException("searchResult");
+                throw new ArgumentNullException(nameof(searchResult));
 
             responseDto.select = searchRequestDto.select;
             responseDto.from = collectionName;
@@ -61,9 +59,9 @@ namespace ExpandoDB.Rest.DTO
         public static Content Select(this Content content, IList<string> selectedFields)
         {
             if (content == null)
-                throw new ArgumentNullException("content");
+                throw new ArgumentNullException(nameof(content));
             if (selectedFields == null)
-                throw new ArgumentNullException("selectedFields");
+                throw new ArgumentNullException(nameof(selectedFields));
 
             if (selectedFields.Count == 0)
                 return content;

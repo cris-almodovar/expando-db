@@ -1,9 +1,8 @@
 ﻿using FlexLucene.Document;
 using FlexLucene.Util;
 using System;
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using System.Collections;
+using System.Collections.Generic;
 using System.Text;
 
 namespace ExpandoDB.Search
@@ -28,7 +27,7 @@ namespace ExpandoDB.Search
         public static IList<Field> ToLuceneFields(this object value, IndexedField indexedField)
         {
             if (indexedField == null)
-                throw new ArgumentNullException("indexedField");
+                throw new ArgumentNullException(nameof(indexedField));
 
             var luceneFields = new List<Field>();            
             var fieldName = indexedField.Name.Trim();
@@ -292,7 +291,7 @@ namespace ExpandoDB.Search
         public static string ToLuceneFullTextString(this Content content)
         {
             if (content == null)
-                throw new ArgumentNullException("content");
+                throw new ArgumentNullException(nameof(content));
 
             var buffer = new System.Text.StringBuilder();
 

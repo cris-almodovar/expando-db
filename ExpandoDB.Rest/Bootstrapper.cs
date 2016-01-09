@@ -1,17 +1,11 @@
-﻿using Nancy;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Nancy.Bootstrapper;
-using Nancy.TinyIoc;
-using Nancy.Json;
+﻿using ExpandoDB.Rest.DTO;
 using log4net;
-using System.Configuration;
-using ExpandoDB;
-using ExpandoDB.Rest.DTO;
-using System.Reflection;
+using Nancy;
+using Nancy.Bootstrapper;
+using Nancy.Json;
+using Nancy.TinyIoc;
+using System;
+using System.Linq;
 
 namespace ExpandoDB.Rest
 {

@@ -1,15 +1,11 @@
 ﻿using RestSharp;
 using System;
-using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 using System.Xml;
-using System.Xml.Linq;
 
 namespace ConsoleApplication5
 {
@@ -87,25 +83,7 @@ namespace ConsoleApplication5
 
             stopwatch.Stop();
             Console.WriteLine("Finished loading in " + stopwatch.Elapsed.ToString());
-        }
-
-        static XmlDocument FromHtml(TextReader reader)
-        {
-
-            // setup SgmlReader
-            Sgml.SgmlReader sgmlReader = new Sgml.SgmlReader();
-            sgmlReader.DocType = "XML";
-            sgmlReader.WhitespaceHandling = WhitespaceHandling.All;
-            sgmlReader.CaseFolding = Sgml.CaseFolding.ToLower;
-            sgmlReader.InputStream = reader;
-
-            // create document
-            XmlDocument doc = new XmlDocument();
-            doc.PreserveWhitespace = true;
-            doc.XmlResolver = null;
-            doc.Load(sgmlReader);
-            return doc;
-        }
+        }        
     }
 
 

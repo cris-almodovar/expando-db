@@ -1,12 +1,11 @@
-﻿using System;
+﻿using Dapper;
+using ExpandoDB.Serialization;
+using System;
 using System.Collections.Generic;
 using System.Data.SQLite;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using Dapper;
-using ExpandoDB.Serialization;
 
 namespace ExpandoDB.Storage
 {
@@ -95,7 +94,7 @@ namespace ExpandoDB.Storage
         public async Task<string> InsertAsync(ContentCollectionSchema collectionSchema)
         {
             if (collectionSchema == null)
-                throw new ArgumentNullException("collectionSchema");
+                throw new ArgumentNullException(nameof(collectionSchema));
 
             using (var conn = GetConnection())
             {
@@ -110,7 +109,7 @@ namespace ExpandoDB.Storage
         public async Task<int> UpdateAsync(ContentCollectionSchema collectionSchema)
         {
             if (collectionSchema == null)
-                throw new ArgumentNullException("collectionSchema");
+                throw new ArgumentNullException(nameof(collectionSchema));
 
             using (var conn = GetConnection())
             {

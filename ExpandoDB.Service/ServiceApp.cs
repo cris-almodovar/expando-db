@@ -1,15 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using log4net;
+using Nancy.Hosting.Self;
+using System;
 using System.Configuration;
 using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using Nancy.Hosting.Self;
-using Topshelf;
-using Topshelf.ServiceConfigurators;
-using log4net;
 
 namespace ExpandoDB.Rest
 {

@@ -1,5 +1,4 @@
-﻿using ExpandoDB.Serialization;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -19,7 +18,7 @@ namespace ExpandoDB.Storage
         public EnumerableContents(IEnumerable<StorageRow> rows)
         {
             if (rows == null)
-                throw new ArgumentNullException("rows");
+                throw new ArgumentNullException(nameof(rows));
 
             _rows = rows;
         }
