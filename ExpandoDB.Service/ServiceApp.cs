@@ -9,8 +9,7 @@ using System.Threading.Tasks;
 using Nancy.Hosting.Self;
 using Topshelf;
 using Topshelf.ServiceConfigurators;
-
-[assembly: log4net.Config.XmlConfigurator(ConfigFile = "log4net.config", Watch = true)]
+using log4net;
 
 namespace ExpandoDB.Rest
 {
@@ -22,7 +21,8 @@ namespace ExpandoDB.Rest
     {
         private NancyHost _nancyHost;
         private readonly HostConfiguration _nancyHostConfig;
-        private readonly Uri _baseUri;        
+        private readonly Uri _baseUri;
+        private readonly ILog _log = LogManager.GetLogger(typeof(ServiceApp).Name);        
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceApp"/> class.
@@ -49,8 +49,14 @@ namespace ExpandoDB.Rest
         /// <returns></returns>
         public bool Start()
         {
+            _log.Info("---------------------------------------------");
+            _log.Info("Starting ExpandoDB service ...");            
+
             _nancyHost = new NancyHost(_nancyHostConfig, _baseUri);
             _nancyHost.Start();
+
+            _log.Info("ExpandoDB service started successfully.");
+            _log.Info("---------------------------------------------");
 
             return true;
         }
@@ -63,6 +69,9 @@ namespace ExpandoDB.Rest
         {
             _nancyHost.Dispose();
             _nancyHost.Stop();
+
+            _log.Info("ExpandoDB service stopped successfully.");
+
             return true;
         }        
     }

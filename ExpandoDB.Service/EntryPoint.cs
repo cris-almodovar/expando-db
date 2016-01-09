@@ -5,6 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Topshelf;
 
+[assembly: log4net.Config.XmlConfigurator(ConfigFile = "log4net.config", Watch = true)]
+
 namespace ExpandoDB.Rest
 {
     /// <summary>

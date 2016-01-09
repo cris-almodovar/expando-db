@@ -170,6 +170,9 @@ namespace ExpandoDB.Serialization
             if (value == null)
                 return null;
 
+            if (value.GetType().Name != "JsonObject")
+                return value;
+
             var converter = TypeDescriptor.GetConverter(value);
 
             var destinationType = converter.GetDestinationType(value);

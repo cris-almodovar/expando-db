@@ -139,7 +139,7 @@ namespace ExpandoDB
             set
             {
                 if (value == null || value == Guid.Empty)
-                    throw new ArgumentException("value cannot be null or empty");
+                    throw new ArgumentException("_id cannot be null or empty");
 
                 _expandoDictionary[ID_FIELD_NAME] = value;
             }
