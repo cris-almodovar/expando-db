@@ -16,13 +16,15 @@ namespace ConsoleApplication5
             var expandoDbUrl = ConfigurationManager.AppSettings["ExpandoDbUrl"] ?? "http://localhost:9000/db";
             var restClient = new RestClient(expandoDbUrl);
 
-            var appDirectory = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
-            Directory.SetCurrentDirectory(appDirectory);
+            Console.WriteLine("ExpandoDB URL: " + expandoDbUrl);
 
-            Console.WriteLine("Current directory: " + appDirectory);
+            var appDirectory = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+            Directory.SetCurrentDirectory(appDirectory);            
 
             var datasetFolder = ConfigurationManager.AppSettings["DatasetFolder"] ?? "reuters";
             var sgmlFiles = Directory.GetFiles(datasetFolder);
+
+            Console.WriteLine(String.Format("Importing {0} sgml files from {1}.", sgmlFiles.Length, datasetFolder));
 
             var stopwatch = new Stopwatch();
             stopwatch.Start();
@@ -71,7 +73,6 @@ namespace ConsoleApplication5
                             {
                                 Console.WriteLine(e.Message);
                             }
-
 
                             buffer.Clear();
                         }
