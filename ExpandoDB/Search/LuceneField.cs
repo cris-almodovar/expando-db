@@ -90,7 +90,7 @@ namespace ExpandoDB.Search
                         luceneFields.Add(new TextField(fieldName, stringValue, FieldStore.NO));
                         if (indexedField.DataType != FieldDataType.Array)
                         {
-                            var stringValueForSorting = (stringValue.Length > 256 ? stringValue.Substring(0, 256) : stringValue).Trim().ToLowerInvariant();
+                            var stringValueForSorting = (stringValue.Length > 50 ? stringValue.Substring(0, 50) : stringValue).Trim().ToLowerInvariant();
                             luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(stringValueForSorting)));
                         }                       
                         break;

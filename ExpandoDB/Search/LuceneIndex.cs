@@ -4,8 +4,10 @@ using FlexLucene.Search;
 using FlexLucene.Store;
 using java.nio.file;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace ExpandoDB.Search
 {
@@ -23,6 +25,10 @@ namespace ExpandoDB.Search
         private readonly Timer _autoRefreshTimer;
         private readonly Timer _autoCommitTimer;
         private readonly IndexSchema _indexSchema;
+        private readonly BlockingCollection<Content> _insertQueue;
+        private readonly BlockingCollection<Content> _updateQueue;
+        private readonly BlockingCollection<Guid> _deleteQueue;
+        private readonly CancellationTokenSource _cancellationTokenSource;
         public IndexSchema Schema { get { return _indexSchema; } }       
 
 
@@ -49,10 +55,20 @@ namespace ExpandoDB.Search
             var config = new IndexWriterConfig(_compositeAnalyzer);
             _writer = new IndexWriter(_indexDirectory, config);
 
-            _searcherManager = new SearcherManager(_writer, true, null);            
+            _searcherManager = new SearcherManager(_writer, true, null);
+
+            _insertQueue = new BlockingCollection<Content>();
+            _updateQueue = new BlockingCollection<Content>();
+            _deleteQueue = new BlockingCollection<Guid>();
+
+            _cancellationTokenSource = new CancellationTokenSource();            
+            
+            Task.Factory.StartNew(ProcessQueuedInserts, TaskCreationOptions.LongRunning);
+            Task.Factory.StartNew(ProcessQueuedUpdates, TaskCreationOptions.LongRunning);
+            Task.Factory.StartNew(ProcessQueuedDeletes, TaskCreationOptions.LongRunning);                       
 
             _autoRefreshTimer = new Timer(o => Refresh(), null, TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(500));
-            _autoCommitTimer = new Timer(o => Commit(), null, TimeSpan.FromMilliseconds(1000), TimeSpan.FromMilliseconds(1000));
+            _autoCommitTimer = new Timer(o => Commit(), null, TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(60));
         }
 
         /// <summary>
@@ -93,12 +109,26 @@ namespace ExpandoDB.Search
         /// <param name="content">The dynamic content.</param>        
         public void Insert(Content content)
         {
-            if (content == null)
-                throw new ArgumentNullException(nameof(content));
-            
-            var document = content.ToLuceneDocument(_indexSchema);
-            
-            _writer.AddDocument(document);                        
+            _insertQueue.Add(content);                
+        }        
+
+        private void ProcessQueuedInserts()
+        {
+            foreach (var content in _insertQueue.GetConsumingEnumerable())
+            {
+                if (_cancellationTokenSource.IsCancellationRequested)
+                    break;
+
+                if (content == null)
+                    continue;
+
+                try
+                {
+                    var document = content.ToLuceneDocument(_indexSchema);
+                    _writer.AddDocument(document);
+                }
+                catch { }
+            }
         }
 
         /// <summary>
@@ -107,11 +137,26 @@ namespace ExpandoDB.Search
         /// <param name="guid">The unique identifier.</param>
         public void Delete(Guid guid)
         {
-            if (guid == Guid.Empty)
-                throw new ArgumentException("guid cannot be empty");
+            _deleteQueue.Add(guid);        
+        }
+        
+        private void ProcessQueuedDeletes()
+        {
+            foreach (var guid in _deleteQueue.GetConsumingEnumerable())
+            {
+                if (_cancellationTokenSource.IsCancellationRequested)
+                    break;
 
-            var idTerm = new Term("_id", guid.ToString());
-            _writer.DeleteDocuments(idTerm);            
+                if (guid == Guid.Empty)
+                    continue;
+
+                try
+                {
+                    var idTerm = new Term("_id", guid.ToString());
+                    _writer.DeleteDocuments(idTerm);
+                }
+                catch { }
+            }
         }
 
         /// <summary>
@@ -121,18 +166,33 @@ namespace ExpandoDB.Search
         /// <exception cref="ArgumentNullException">content</exception>
         public void Update(Content content)
         {
-            if (content == null)
-                throw new ArgumentNullException(nameof(content));
+            _updateQueue.Add(content);         
+        }
 
-            if (content._id == null || content._id == Guid.Empty)
-                throw new InvalidOperationException("Cannot update Content that does not have an _id");
-            
-            var document = content.ToLuceneDocument(_indexSchema);
+        private void ProcessQueuedUpdates()
+        {
+            foreach (var content in _updateQueue.GetConsumingEnumerable())
+            {
+                if (_cancellationTokenSource.IsCancellationRequested)
+                    break;
 
-            var id = content._id.ToString();
-            var idTerm = new Term("_id", id);
-            
-            _writer.UpdateDocument(idTerm, document);           
+                if (content == null)
+                    continue;
+
+                if (content._id == null || content._id == Guid.Empty)
+                    continue;  //throw new InvalidOperationException("Cannot update Content that does not have an _id");
+
+                try
+                {
+                    var document = content.ToLuceneDocument(_indexSchema);
+
+                    var id = content._id.ToString();
+                    var idTerm = new Term("_id", id);
+
+                    _writer.UpdateDocument(idTerm, document);
+                }
+                catch { }
+            }
         }
 
         /// <summary>
@@ -195,6 +255,12 @@ namespace ExpandoDB.Search
         /// </summary>
         public void Dispose()
         {
+            _cancellationTokenSource.Cancel();
+
+            _insertQueue.CompleteAdding();
+            _updateQueue.CompleteAdding();
+            _deleteQueue.CompleteAdding();
+
             _autoRefreshTimer.Dispose();
             _autoCommitTimer.Dispose();
 

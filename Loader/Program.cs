@@ -1,13 +1,15 @@
 ﻿using RestSharp;
 using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using System.Threading.Tasks;
 using System.Xml;
 
-namespace ConsoleApplication5
+namespace Loader
 {
     class Program
     {
@@ -22,65 +24,83 @@ namespace ConsoleApplication5
             Directory.SetCurrentDirectory(appDirectory);            
 
             var datasetFolder = ConfigurationManager.AppSettings["DatasetFolder"] ?? "reuters";
-            var sgmlFiles = Directory.GetFiles(datasetFolder);
+            var sgmlFiles = Directory.GetFiles(datasetFolder, "*.sgm");
 
             Console.WriteLine(String.Format("Importing {0} sgml files from {1}.", sgmlFiles.Length, datasetFolder));
 
             var stopwatch = new Stopwatch();
             stopwatch.Start();
+            
+            var tasks = new List<Task>();
 
             foreach (var fileName in sgmlFiles)
             {
-                using (var reader = new StreamReader(fileName))
-                {
-                    var line = reader.ReadLine();
-                    var buffer = new StringBuilder();
-                    while (line != null)
+                tasks.Add(Task.Run(
+                    async () =>
                     {
-                        if (!line.StartsWith("<!DOCTYPE", StringComparison.InvariantCulture))
-                            buffer.AppendLine(line);
+                        Console.WriteLine("Processing file: " + fileName);
 
-                        if (line.StartsWith("</REUTERS>", StringComparison.InvariantCulture))
+                        using (var reader = new StreamReader(fileName))
                         {
-                            try
+                            var line = await reader.ReadLineAsync();
+                            var buffer = new StringBuilder();
+                            while (line != null)
                             {
-                                var xml = buffer.ToString();
-                                var xDoc = new XmlDocument();
-                                xDoc.Load(new StringReader(xml));
-                                var reuters = xDoc.DocumentElement;
+                                if (!line.StartsWith("<!DOCTYPE", StringComparison.InvariantCulture))
+                                    buffer.AppendLine(line);
 
-                                var date = reuters["DATE"].InnerText;
-                                var text = reuters["TEXT"];
-                                var title = text["TITLE"] != null ? text["TITLE"].InnerText : null;
-                                var body = text["BODY"] != null ? text["BODY"].InnerText : null;
-
-                                DateTime dateTime;
-                                DateTime.TryParse(date, out dateTime);
-
-                                var document = new { date = dateTime > DateTime.MinValue ? (DateTime?)dateTime : null, title = title, text = body };
-
-                                var restRequest = new RestRequest
+                                if (line.StartsWith("</REUTERS>", StringComparison.InvariantCulture))
                                 {
-                                    Resource = "/reuters",
-                                    Method = Method.POST,
-                                    DateFormat = DateFormat.ISO_8601
-                                };
+                                    try
+                                    {
+                                        var xml = buffer.ToString();
+                                        var xDoc = new XmlDocument();
+                                        xDoc.Load(new StringReader(xml));
+                                        var reuters = xDoc.DocumentElement;
 
-                                restRequest.AddJsonBody(document);
-                                restClient.Execute(restRequest);
-                            }
-                            catch (Exception e)
-                            {
-                                Console.WriteLine(e.Message);
-                            }
+                                        var date = reuters["DATE"].InnerText;
+                                        var text = reuters["TEXT"];
+                                        var title = text["TITLE"] != null ? text["TITLE"].InnerText : null;
+                                        var body = text["BODY"] != null ? text["BODY"].InnerText : null;
 
-                            buffer.Clear();
+                                        DateTime dateTime;
+                                        DateTime.TryParse(date, out dateTime);
+
+                                        var document = new {
+                                            date = dateTime > DateTime.MinValue ? (DateTime?)dateTime : null,
+                                            title = title,
+                                            text = body
+                                        };                                        
+
+                                        var restRequest = new RestRequest
+                                        {
+                                            Resource = "/reuters",
+                                            Method = Method.POST,
+                                            DateFormat = DateFormat.ISO_8601
+                                        };
+
+                                        restRequest.AddJsonBody(document);
+                                        await restClient.ExecuteTaskAsync(restRequest);
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        Console.WriteLine(e.Message);
+                                    }
+
+                                    buffer.Clear();
+                                }
+
+                                line = await reader.ReadLineAsync();
+                            }
                         }
 
-                        line = reader.ReadLine();
+                        Console.WriteLine("Finished processing file: " + fileName);
                     }
-                }
+                )
+                );            
             }
+
+            Task.WaitAll(tasks.ToArray());
 
             stopwatch.Stop();
             Console.WriteLine("Finished loading in " + stopwatch.Elapsed.ToString());
