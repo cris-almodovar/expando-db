@@ -293,7 +293,7 @@ namespace ExpandoDB.Search
             if (content == null)
                 throw new ArgumentNullException(nameof(content));
 
-            var buffer = new System.Text.StringBuilder();
+            var buffer = new StringBuilder();
 
             var dictionary = content.AsDictionary();
             foreach (var fieldName in dictionary.Keys)
@@ -302,7 +302,7 @@ namespace ExpandoDB.Search
                 if (fieldValue == null)
                     continue;
 
-                buffer.AppendFormat(fieldValue.ToLuceneFullTextString());
+                buffer.Append(fieldValue.ToLuceneFullTextString());
             }
 
             return buffer.ToString();
@@ -373,7 +373,7 @@ namespace ExpandoDB.Search
                 if (item == null)
                     continue;
 
-                buffer.AppendFormat(item.ToLuceneFullTextString());
+                buffer.Append(item.ToLuceneFullTextString());
             }
 
             return buffer.ToString();
@@ -447,7 +447,7 @@ namespace ExpandoDB.Search
                 if (field == null)
                     continue;
 
-                buffer.AppendFormat(field.ToLuceneFullTextString());
+                buffer.Append(field.ToLuceneFullTextString());
             }
 
             return buffer.ToString();

@@ -6,6 +6,7 @@ using java.nio.file;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -29,6 +30,8 @@ namespace ExpandoDB.Search
         private readonly BlockingCollection<Content> _updateQueue;
         private readonly BlockingCollection<Guid> _deleteQueue;
         private readonly CancellationTokenSource _cancellationTokenSource;
+        private readonly double _autoRefreshIntervalSeconds;
+        private readonly double _autoCommitIntervalSeconds;
         public IndexSchema Schema { get { return _indexSchema; } }       
 
 
@@ -61,14 +64,17 @@ namespace ExpandoDB.Search
             _updateQueue = new BlockingCollection<Content>();
             _deleteQueue = new BlockingCollection<Guid>();
 
-            _cancellationTokenSource = new CancellationTokenSource();            
+            _cancellationTokenSource = new CancellationTokenSource();
             
             Task.Factory.StartNew(ProcessQueuedInserts, TaskCreationOptions.LongRunning);
             Task.Factory.StartNew(ProcessQueuedUpdates, TaskCreationOptions.LongRunning);
-            Task.Factory.StartNew(ProcessQueuedDeletes, TaskCreationOptions.LongRunning);                       
+            Task.Factory.StartNew(ProcessQueuedDeletes, TaskCreationOptions.LongRunning);
 
-            _autoRefreshTimer = new Timer(o => Refresh(), null, TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(500));
-            _autoCommitTimer = new Timer(o => Commit(), null, TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(60));
+            _autoRefreshIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["LuceneAutoRefreshIntervalSeconds"] ?? "0.5");
+            _autoCommitIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["LuceneAutoCommitIntervalSeconds"] ?? "60");
+
+            _autoRefreshTimer = new Timer(o => Refresh(), null, TimeSpan.FromSeconds(_autoRefreshIntervalSeconds), TimeSpan.FromSeconds(_autoRefreshIntervalSeconds));
+            _autoCommitTimer = new Timer(o => Commit(), null, TimeSpan.FromSeconds(_autoCommitIntervalSeconds), TimeSpan.FromSeconds(_autoCommitIntervalSeconds));
         }
 
         /// <summary>
@@ -166,7 +172,7 @@ namespace ExpandoDB.Search
         /// <exception cref="ArgumentNullException">content</exception>
         public void Update(Content content)
         {
-            _updateQueue.Add(content);         
+            _updateQueue.Add(content); 
         }
 
         private void ProcessQueuedUpdates()

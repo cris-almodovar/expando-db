@@ -26,81 +26,72 @@ namespace Loader
             var datasetFolder = ConfigurationManager.AppSettings["DatasetFolder"] ?? "reuters";
             var sgmlFiles = Directory.GetFiles(datasetFolder, "*.sgm");
 
-            Console.WriteLine(String.Format("Importing {0} sgml files from {1}.", sgmlFiles.Length, datasetFolder));
+            Console.WriteLine(String.Format("Importing {0} sgml files from folder: '{1}'.", sgmlFiles.Length, Path.GetFullPath(datasetFolder)));
 
             var stopwatch = new Stopwatch();
             stopwatch.Start();
-            
-            var tasks = new List<Task>();
 
             foreach (var fileName in sgmlFiles)
             {
-                tasks.Add(Task.Run(
-                    async () =>
+                Console.WriteLine("Processing file: " + Path.GetFileName(fileName));
+
+                using (var reader = new StreamReader(fileName))
+                {
+                    var line = reader.ReadLine();
+                    var buffer = new StringBuilder();
+                    while (line != null)
                     {
-                        Console.WriteLine("Processing file: " + fileName);
+                        if (!line.StartsWith("<!DOCTYPE", StringComparison.InvariantCulture))
+                            buffer.AppendLine(line);
 
-                        using (var reader = new StreamReader(fileName))
+                        if (line.StartsWith("</REUTERS>", StringComparison.InvariantCulture))
                         {
-                            var line = await reader.ReadLineAsync();
-                            var buffer = new StringBuilder();
-                            while (line != null)
+                            try
                             {
-                                if (!line.StartsWith("<!DOCTYPE", StringComparison.InvariantCulture))
-                                    buffer.AppendLine(line);
+                                var xml = buffer.ToString();
+                                var xDoc = new XmlDocument();
+                                xDoc.Load(new StringReader(xml));
+                                var reuters = xDoc.DocumentElement;
 
-                                if (line.StartsWith("</REUTERS>", StringComparison.InvariantCulture))
+                                var date = reuters["DATE"].InnerText;
+                                var text = reuters["TEXT"];
+                                var title = text["TITLE"] != null ? text["TITLE"].InnerText : null;
+                                var body = text["BODY"] != null ? text["BODY"].InnerText : null;
+
+                                DateTime dateTime;
+                                DateTime.TryParse(date, out dateTime);
+
+                                var document = new
                                 {
-                                    try
-                                    {
-                                        var xml = buffer.ToString();
-                                        var xDoc = new XmlDocument();
-                                        xDoc.Load(new StringReader(xml));
-                                        var reuters = xDoc.DocumentElement;
+                                    date = dateTime > DateTime.MinValue ? (DateTime?)dateTime : null,
+                                    title = title,
+                                    text = body
+                                };
 
-                                        var date = reuters["DATE"].InnerText;
-                                        var text = reuters["TEXT"];
-                                        var title = text["TITLE"] != null ? text["TITLE"].InnerText : null;
-                                        var body = text["BODY"] != null ? text["BODY"].InnerText : null;
+                                var restRequest = new RestRequest
+                                {
+                                    Resource = "/reuters",
+                                    Method = Method.POST,
+                                    DateFormat = DateFormat.ISO_8601
+                                };
 
-                                        DateTime dateTime;
-                                        DateTime.TryParse(date, out dateTime);
-
-                                        var document = new {
-                                            date = dateTime > DateTime.MinValue ? (DateTime?)dateTime : null,
-                                            title = title,
-                                            text = body
-                                        };                                        
-
-                                        var restRequest = new RestRequest
-                                        {
-                                            Resource = "/reuters",
-                                            Method = Method.POST,
-                                            DateFormat = DateFormat.ISO_8601
-                                        };
-
-                                        restRequest.AddJsonBody(document);
-                                        await restClient.ExecuteTaskAsync(restRequest);
-                                    }
-                                    catch (Exception e)
-                                    {
-                                        Console.WriteLine(e.Message);
-                                    }
-
-                                    buffer.Clear();
-                                }
-
-                                line = await reader.ReadLineAsync();
+                                restRequest.AddJsonBody(document);
+                                restClient.Execute(restRequest);
                             }
+                            catch (Exception e)
+                            {
+                                Console.WriteLine(e.Message);
+                            }
+
+                            buffer.Clear();
                         }
 
-                        Console.WriteLine("Finished processing file: " + fileName);
+                        line = reader.ReadLine();
                     }
-                )
-                );            
-            }
+                }
 
-            Task.WaitAll(tasks.ToArray());
+                Console.WriteLine("Finished processing file: " + Path.GetFileName(fileName));
+            }     
 
             stopwatch.Stop();
             Console.WriteLine("Finished loading in " + stopwatch.Elapsed.ToString());

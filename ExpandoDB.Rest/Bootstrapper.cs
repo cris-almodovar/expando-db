@@ -11,21 +11,18 @@ namespace ExpandoDB.Rest
 {
     public class Bootstrapper : DefaultNancyBootstrapper
     {
-        private readonly ILog _log = LogManager.GetLogger(typeof(Bootstrapper).Name);
-
-        public Bootstrapper()
-        {
-            AppDomain.CurrentDomain.UnhandledException += (sender, ex) =>
-            {
-                _log.Error(ex);
-            };            
-        }        
+        private readonly ILog _log = LogManager.GetLogger(typeof(Bootstrapper).Name);              
 
         protected override void ApplicationStartup(TinyIoCContainer container, IPipelines pipelines)
         {
             base.ApplicationStartup(container, pipelines);
             StaticConfiguration.DisableErrorTraces = false;
-            
+
+            AppDomain.CurrentDomain.UnhandledException += (sender, ex) =>
+            {
+                _log.Error(ex);
+            };
+
             pipelines.AfterRequest.AddItemToEndOfPipeline(ctx =>
             {
                 if (ctx.Request.Headers.Keys.Contains("Origin"))
