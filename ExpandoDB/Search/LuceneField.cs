@@ -62,7 +62,8 @@ namespace ExpandoDB.Search
                         var numberString = Convert.ToDouble(value).ToLuceneNumberString();
                         luceneFields.Add(new StringField(fieldName, numberString, FieldStore.NO));
 
-                        if (indexedField.DataType != FieldDataType.Array)
+                        // Only top-level and non-array / non-object fields are sortable
+                        if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
                             luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(numberString)));
                         break;
 
@@ -75,7 +76,8 @@ namespace ExpandoDB.Search
                         var booleanString = value.ToString().ToLower();
                         luceneFields.Add(new StringField(fieldName, booleanString, FieldStore.NO));
 
-                        if (indexedField.DataType != FieldDataType.Array)
+                        // Only top-level and non-array fields are sortable
+                        if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
                             luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(booleanString)));
                         break;
 
@@ -88,7 +90,9 @@ namespace ExpandoDB.Search
                             EnsureSameFieldDataType(indexedField, FieldDataType.Text);                        
 
                         luceneFields.Add(new TextField(fieldName, stringValue, FieldStore.NO));
-                        if (indexedField.DataType != FieldDataType.Array)
+                        
+                        // Only top-level and non-array fields are sortable
+                        if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
                         {
                             var stringValueForSorting = (stringValue.Length > 50 ? stringValue.Substring(0, 50) : stringValue).Trim().ToLowerInvariant();
                             luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(stringValueForSorting)));
@@ -104,7 +108,8 @@ namespace ExpandoDB.Search
                         var dateValue = ((DateTime)value).ToLuceneDateString();
                         luceneFields.Add(new StringField(fieldName, dateValue, FieldStore.NO));
 
-                        if (indexedField.DataType != FieldDataType.Array)
+                        // Only top-level and non-array fields are sortable
+                        if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
                             luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(dateValue)));
                         break;
 
@@ -119,7 +124,8 @@ namespace ExpandoDB.Search
                             var idValue = ((Guid)value).ToString();
                             luceneFields.Add(new StringField(fieldName, idValue, FieldStore.YES));
 
-                            if (indexedField.DataType != FieldDataType.Array)
+                            // Only top-level and non-array fields are sortable
+                            if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
                                 luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(idValue)));
                         }
                         else if (value is IList)
@@ -232,7 +238,7 @@ namespace ExpandoDB.Search
                         case FieldDataType.Object:
                             var dictionary = item as IDictionary<string, object>;
                             if (dictionary != null)
-                                luceneFields.AddRange(dictionary.ToLuceneFields(indexedField));
+                                luceneFields.AddRange(dictionary.ToLuceneFields(indexedField));                            
                             break;
                     }
                 }
@@ -244,8 +250,9 @@ namespace ExpandoDB.Search
         private static List<Field> ToLuceneFields(this IDictionary<string, object> dictionary, IndexedField parentIndexedField)
         {
             var luceneFields = new List<Field>();
-            var childSchema = new IndexSchema(parentIndexedField.Name);
-            parentIndexedField.DataType = FieldDataType.Object;
+            var childSchema = parentIndexedField.ObjectSchema ?? new IndexSchema(parentIndexedField.Name);            
+            if (parentIndexedField.DataType == FieldDataType.Array)
+                parentIndexedField.ArrayElementDataType = FieldDataType.Object;
             parentIndexedField.ObjectSchema = childSchema;
 
             foreach (var fieldName in dictionary.Keys)

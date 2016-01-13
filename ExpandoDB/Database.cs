@@ -1,6 +1,7 @@
 ﻿using ExpandoDB.Storage;
 using System;
 using System.Collections.Concurrent;
+using System.Configuration;
 using System.Data.SQLite;
 using System.IO;
 using System.Linq;
@@ -26,7 +27,8 @@ namespace ExpandoDB
         private readonly ISchemaStorage _schemaStorage;
         private readonly ConcurrentDictionary<string, ContentCollectionSchema> _schemaCache;
         private readonly Timer _schemaPersistenceTimer;
-        private readonly object _schemaPersistenceLock = new object();
+        private readonly double _schemaPersistenceIntervalSeconds;
+        private readonly object _schemaPersistenceLock = new object();        
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Database"/> class.
@@ -62,7 +64,8 @@ namespace ExpandoDB
                 _contentCollections.TryAdd(schema.Name, collection);
             }
 
-            _schemaPersistenceTimer = new Timer( async (o) =>  await PersistSchemas(), null, TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(500));
+            _schemaPersistenceIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["SchemaPersistenceIntervalSeconds"] ?? "1");
+            _schemaPersistenceTimer = new Timer( async (o) =>  await PersistSchemas(), null, TimeSpan.FromSeconds(_schemaPersistenceIntervalSeconds), TimeSpan.FromSeconds(_schemaPersistenceIntervalSeconds));
 
         }
 

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ExpandoDB.Serialization;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -7,7 +8,7 @@ namespace ExpandoDB
     public class ContentCollectionSchema : IEquatable<ContentCollectionSchema>
     {
         public string Name { get; set; }
-        public List<IndexedField> IndexedFields { get; set; }
+        public List<ContentCollectionSchemaField> Fields { get; set; }        
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ContentCollectionSchema"/> class.
@@ -23,7 +24,7 @@ namespace ExpandoDB
         public ContentCollectionSchema(string name)
         {
             Name = name;
-            IndexedFields = new List<IndexedField>();
+            Fields = new List<ContentCollectionSchemaField>();
         }
 
         /// <summary>
@@ -39,16 +40,9 @@ namespace ExpandoDB
             if (Name != other.Name)
                 return false;
 
-            var thisFields = IndexedFields.Select(f => f.Name).ToList();
-            thisFields.Sort();
-
-            var otherFields = other.IndexedFields.Select(f => f.Name).ToList();
-            otherFields.Sort();
-
-            if (thisFields.SequenceEqual(otherFields))
-                return true;
-            else
-                return false;
+            var thisJson = DynamicSerializer.Serialize(this);
+            var otherJson = DynamicSerializer.Serialize(other);
+            return string.Compare(thisJson, otherJson, StringComparison.Ordinal) == 0;
         }
 
         /// <summary>
@@ -111,20 +105,69 @@ namespace ExpandoDB
         //public override int GetHashCode()
         //{
         //    return Name.GetHashCode() + IndexedFields.GetHashCode();
-        //}
+        //}        
+
+    }
+
+    public class ContentCollectionSchemaField
+    {
+        public string Name { get; set; }
+        public FieldDataType DataType { get; set; }
+        public FieldDataType ArrayElementDataType { get; set; }
+        public ContentCollectionSchema ObjectSchema { get; set; }        
+    }
+
+    public static class ContentCollectionSchemaUtil
+    {
+        public static ContentCollectionSchema ToContentCollectionSchema(this IndexSchema fromSchema)
+        {
+            if (fromSchema == null)
+                return null;
+
+            var toSchema = new ContentCollectionSchema(fromSchema.Name);
+            foreach (var fieldName in fromSchema.Fields.Keys)
+            {
+                var field = fromSchema.Fields[fieldName];
+                var toSchemaField = new ContentCollectionSchemaField
+                {
+                    Name = field.Name,
+                    DataType = field.DataType,
+                    ArrayElementDataType = field.ArrayElementDataType,
+                    ObjectSchema = field.ObjectSchema.ToContentCollectionSchema()
+                };
+
+                toSchema.Fields.Add(toSchemaField);
+            }
+
+            return toSchema;
+
+        }
 
         /// <summary>
         /// Gets the IndexSchema based on the IndexedFields of this instance.
         /// </summary>
         /// <returns></returns>
-        public IndexSchema GetIndexSchema()
+        public static IndexSchema ToIndexSchema(this ContentCollectionSchema fromSchema)
         {
-            var indexSchema = new IndexSchema(Name);
-            foreach (var field in IndexedFields)            
-                indexSchema.Fields.TryAdd(field.Name, field);
+            if (fromSchema == null)
+                return null;
 
-            return indexSchema;
+            var toSchema = new IndexSchema(fromSchema.Name);
+            foreach (var fromField in fromSchema.Fields)
+            {
+                var toField = new IndexedField
+                {
+                    Name = fromField.Name,
+                    DataType = fromField.DataType,
+                    ArrayElementDataType = fromField.ArrayElementDataType,
+                    ObjectSchema = fromField.ObjectSchema.ToIndexSchema()
+                };
+
+                toSchema.Fields.TryAdd(toField.Name, toField);
+            }
+
+            return toSchema;
         }
-
+        
     }
 }

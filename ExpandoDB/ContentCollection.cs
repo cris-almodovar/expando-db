@@ -52,7 +52,7 @@ namespace ExpandoDB
         /// <param name="schema">The ContentCollectionSchema.</param>
         /// <param name="dbPath">The path to the db folder.</param>
         public ContentCollection(ContentCollectionSchema schema, string dbPath)
-            : this(schema.Name, dbPath, schema.GetIndexSchema())
+            : this(schema.Name, dbPath, schema.ToIndexSchema())
         {
         }
 
@@ -257,18 +257,18 @@ namespace ExpandoDB
                 if (field == null)
                     continue;
 
-                var fieldCopy = new IndexedField
+                var fieldCopy = new ContentCollectionSchemaField
                 {
                     Name = field.Name,
                     DataType = field.DataType,
-                    ArrayElementDataType =
-                    field.ArrayElementDataType
+                    ArrayElementDataType = field.ArrayElementDataType,
+                    ObjectSchema = field.ObjectSchema.ToContentCollectionSchema()
                 };
 
-                schema.IndexedFields.Add(fieldCopy);
+                schema.Fields.Add(fieldCopy);
             }
 
-            schema.IndexedFields = schema.IndexedFields.OrderBy(f => f.Name).ToList();
+            schema.Fields = schema.Fields.OrderBy(f => f.Name).ToList();
 
             return schema;
         }

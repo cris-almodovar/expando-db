@@ -25,11 +25,7 @@ namespace ExpandoDB.Search
         private readonly SearcherManager _searcherManager;        
         private readonly Timer _autoRefreshTimer;
         private readonly Timer _autoCommitTimer;
-        private readonly IndexSchema _indexSchema;
-        private readonly BlockingCollection<Content> _insertQueue;
-        private readonly BlockingCollection<Content> _updateQueue;
-        private readonly BlockingCollection<Guid> _deleteQueue;
-        private readonly CancellationTokenSource _cancellationTokenSource;
+        private readonly IndexSchema _indexSchema;        
         private readonly double _autoRefreshIntervalSeconds;
         private readonly double _autoCommitIntervalSeconds;
         public IndexSchema Schema { get { return _indexSchema; } }       
@@ -58,17 +54,7 @@ namespace ExpandoDB.Search
             var config = new IndexWriterConfig(_compositeAnalyzer);
             _writer = new IndexWriter(_indexDirectory, config);
 
-            _searcherManager = new SearcherManager(_writer, true, null);
-
-            _insertQueue = new BlockingCollection<Content>();
-            _updateQueue = new BlockingCollection<Content>();
-            _deleteQueue = new BlockingCollection<Guid>();
-
-            _cancellationTokenSource = new CancellationTokenSource();
-            
-            Task.Factory.StartNew(ProcessQueuedInserts, TaskCreationOptions.LongRunning);
-            Task.Factory.StartNew(ProcessQueuedUpdates, TaskCreationOptions.LongRunning);
-            Task.Factory.StartNew(ProcessQueuedDeletes, TaskCreationOptions.LongRunning);
+            _searcherManager = new SearcherManager(_writer, true, null);            
 
             _autoRefreshIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["LuceneAutoRefreshIntervalSeconds"] ?? "0.5");
             _autoCommitIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["LuceneAutoCommitIntervalSeconds"] ?? "60");
@@ -115,27 +101,16 @@ namespace ExpandoDB.Search
         /// <param name="content">The dynamic content.</param>        
         public void Insert(Content content)
         {
-            _insertQueue.Add(content);                
-        }        
+            if (content == null)
+                throw new ArgumentNullException(nameof(content));
 
-        private void ProcessQueuedInserts()
-        {
-            foreach (var content in _insertQueue.GetConsumingEnumerable())
+            try
             {
-                if (_cancellationTokenSource.IsCancellationRequested)
-                    break;
-
-                if (content == null)
-                    continue;
-
-                try
-                {
-                    var document = content.ToLuceneDocument(_indexSchema);
-                    _writer.AddDocument(document);
-                }
-                catch { }
+                var document = content.ToLuceneDocument(_indexSchema);
+                _writer.AddDocument(document);
             }
-        }
+            catch { }            
+        }               
 
         /// <summary>
         /// Deletes the content identified by the guid.
@@ -143,26 +118,15 @@ namespace ExpandoDB.Search
         /// <param name="guid">The unique identifier.</param>
         public void Delete(Guid guid)
         {
-            _deleteQueue.Add(guid);        
-        }
-        
-        private void ProcessQueuedDeletes()
-        {
-            foreach (var guid in _deleteQueue.GetConsumingEnumerable())
+            if (guid == Guid.Empty)
+                throw new ArgumentException(nameof(guid) + " cannot be empty");
+
+            try
             {
-                if (_cancellationTokenSource.IsCancellationRequested)
-                    break;
-
-                if (guid == Guid.Empty)
-                    continue;
-
-                try
-                {
-                    var idTerm = new Term("_id", guid.ToString());
-                    _writer.DeleteDocuments(idTerm);
-                }
-                catch { }
+                var idTerm = new Term("_id", guid.ToString());
+                _writer.DeleteDocuments(idTerm);
             }
+            catch { }
         }
 
         /// <summary>
@@ -172,34 +136,23 @@ namespace ExpandoDB.Search
         /// <exception cref="ArgumentNullException">content</exception>
         public void Update(Content content)
         {
-            _updateQueue.Add(content); 
-        }
+            if (content == null)
+                throw new ArgumentNullException(nameof(content));
 
-        private void ProcessQueuedUpdates()
-        {
-            foreach (var content in _updateQueue.GetConsumingEnumerable())
+            if (content._id == null || content._id == Guid.Empty)
+                throw new InvalidOperationException("Cannot update Content that does not have an _id");
+
+            try
             {
-                if (_cancellationTokenSource.IsCancellationRequested)
-                    break;
+                var document = content.ToLuceneDocument(_indexSchema);
 
-                if (content == null)
-                    continue;
+                var id = content._id.ToString();
+                var idTerm = new Term("_id", id);
 
-                if (content._id == null || content._id == Guid.Empty)
-                    continue;  //throw new InvalidOperationException("Cannot update Content that does not have an _id");
-
-                try
-                {
-                    var document = content.ToLuceneDocument(_indexSchema);
-
-                    var id = content._id.ToString();
-                    var idTerm = new Term("_id", id);
-
-                    _writer.UpdateDocument(idTerm, document);
-                }
-                catch { }
+                _writer.UpdateDocument(idTerm, document);
             }
-        }
+            catch { }
+        }        
 
         /// <summary>
         /// Searches the Lucene index for Contents that match the specified search criteria.
@@ -261,12 +214,6 @@ namespace ExpandoDB.Search
         /// </summary>
         public void Dispose()
         {
-            _cancellationTokenSource.Cancel();
-
-            _insertQueue.CompleteAdding();
-            _updateQueue.CompleteAdding();
-            _deleteQueue.CompleteAdding();
-
             _autoRefreshTimer.Dispose();
             _autoCommitTimer.Dispose();
 
