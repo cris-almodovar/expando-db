@@ -93,7 +93,7 @@ namespace ExpandoDB.Search
                 _searcherManager.MaybeRefresh();
             }
             catch { }
-        }        
+        }
 
         /// <summary>
         /// Inserts a dynamic content into the index.
@@ -104,13 +104,9 @@ namespace ExpandoDB.Search
             if (content == null)
                 throw new ArgumentNullException(nameof(content));
 
-            try
-            {
-                var document = content.ToLuceneDocument(_indexSchema);
-                _writer.AddDocument(document);
-            }
-            catch { }            
-        }               
+            var document = content.ToLuceneDocument(_indexSchema);
+            _writer.AddDocument(document);
+        }
 
         /// <summary>
         /// Deletes the content identified by the guid.
@@ -121,12 +117,8 @@ namespace ExpandoDB.Search
             if (guid == Guid.Empty)
                 throw new ArgumentException(nameof(guid) + " cannot be empty");
 
-            try
-            {
-                var idTerm = new Term("_id", guid.ToString());
-                _writer.DeleteDocuments(idTerm);
-            }
-            catch { }
+            var idTerm = new Term("_id", guid.ToString());
+            _writer.DeleteDocuments(idTerm);
         }
 
         /// <summary>
@@ -142,16 +134,11 @@ namespace ExpandoDB.Search
             if (content._id == null || content._id == Guid.Empty)
                 throw new InvalidOperationException("Cannot update Content that does not have an _id");
 
-            try
-            {
-                var document = content.ToLuceneDocument(_indexSchema);
+            var document = content.ToLuceneDocument(_indexSchema);
+            var id = content._id.ToString();
+            var idTerm = new Term("_id", id);
 
-                var id = content._id.ToString();
-                var idTerm = new Term("_id", id);
-
-                _writer.UpdateDocument(idTerm, document);
-            }
-            catch { }
+            _writer.UpdateDocument(idTerm, document);
         }        
 
         /// <summary>
