@@ -3,6 +3,7 @@ using log4net;
 using Nancy;
 using Nancy.Bootstrapper;
 using Nancy.Json;
+using Nancy.Responses;
 using Nancy.TinyIoc;
 using System;
 using System.Linq;
@@ -47,11 +48,16 @@ namespace ExpandoDB.Rest
             });
 
             pipelines.OnError.AddItemToEndOfPipeline((ctx, ex) =>
-            {
-                _log.Error(ex);
-                return new ErrorResponseDto { timestamp = DateTime.UtcNow, message = ex.Message, statusCode = HttpStatusCode.InternalServerError };
+                {
+                    _log.Error(ex);
+                    var dto = new ErrorResponseDto { timestamp = DateTime.UtcNow, message = ex.Message, statusCode = HttpStatusCode.InternalServerError };
+                    var response = new JsonResponse<ErrorResponseDto>(dto, new DefaultJsonSerializer())
+                    {
+                        StatusCode = HttpStatusCode.InternalServerError
+                    };
 
-            }
+                    return response;
+                }
             );       
 
             JsonSettings.RetainCasing = true;
