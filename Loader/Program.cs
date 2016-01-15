@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
+using System.Linq;
 
 namespace Loader
 {
@@ -31,71 +32,114 @@ namespace Loader
             var stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            foreach (var fileName in sgmlFiles)
+            var batchSize = Environment.ProcessorCount;
+
+            foreach (var batch in sgmlFiles.InSetsOf(batchSize))
             {
-                Console.WriteLine("Processing file: " + Path.GetFileName(fileName));
+                var tasks = new List<Task>();
 
-                using (var reader = new StreamReader(fileName))
+                foreach (var fileName in batch)
                 {
-                    var line = reader.ReadLine();
-                    var buffer = new StringBuilder();
-                    while (line != null)
-                    {
-                        if (!line.StartsWith("<!DOCTYPE", StringComparison.InvariantCulture))
-                            buffer.AppendLine(line);
+                    Console.WriteLine("Processing file: " + Path.GetFileName(fileName));
 
-                        if (line.StartsWith("</REUTERS>", StringComparison.InvariantCulture))
+                    var task = Task.Factory.StartNew(
+                        () =>
                         {
-                            try
-                            {
-                                var xml = buffer.ToString();
-                                var xDoc = new XmlDocument();
-                                xDoc.Load(new StringReader(xml));
-                                var reuters = xDoc.DocumentElement;
+                            using (var reader = new StreamReader(fileName))
+                            {                                
+                                var buffer = new StringBuilder();
 
-                                var date = reuters["DATE"].InnerText;
-                                var text = reuters["TEXT"];
-                                var title = text["TITLE"] != null ? text["TITLE"].InnerText : null;
-                                var body = text["BODY"] != null ? text["BODY"].InnerText : null;
-
-                                DateTime dateTime;
-                                DateTime.TryParse(date, out dateTime);
-
-                                var document = new
+                                var line = reader.ReadLine();
+                                while (line != null)
                                 {
-                                    date = dateTime > DateTime.MinValue ? (DateTime?)dateTime : null,
-                                    title = title,
-                                    text = body
-                                };
+                                    if (!line.StartsWith("<!DOCTYPE", StringComparison.InvariantCulture))
+                                        buffer.AppendLine(line);
 
-                                var restRequest = new RestRequest
-                                {
-                                    Resource = "/reuters",
-                                    Method = Method.POST,
-                                    DateFormat = DateFormat.ISO_8601
-                                };
+                                    if (line.StartsWith("</REUTERS>", StringComparison.InvariantCulture))
+                                    {
+                                        // We encountered the closing tag, get all the lines accumulated so far
+                                        // and convert to XmlDocument.
+                                        try
+                                        {
+                                            var xml = buffer.ToString();
+                                            buffer.Clear();
 
-                                restRequest.AddJsonBody(document);
-                                restClient.Execute(restRequest);
+                                            var xDoc = new XmlDocument();
+                                            xDoc.Load(new StringReader(xml));
+                                            var reuters = xDoc.DocumentElement;
+
+                                            var date = reuters["DATE"].InnerText;
+                                            var text = reuters["TEXT"];
+                                            var title = text["TITLE"] != null ? text["TITLE"].InnerText : null;
+                                            var body = text["BODY"] != null ? text["BODY"].InnerText : null;
+
+                                            DateTime dateTime;
+                                            DateTime.TryParse(date, out dateTime);
+
+                                            var document = new
+                                            {
+                                                date = dateTime > DateTime.MinValue ? (DateTime?)dateTime : null,
+                                                title = title,
+                                                text = body
+                                            };
+
+                                            var restRequest = new RestRequest
+                                            {
+                                                Resource = "/reuters",
+                                                Method = Method.POST,
+                                                DateFormat = DateFormat.ISO_8601
+                                            };
+
+                                            restRequest.AddJsonBody(document);
+                                            restClient.Execute(restRequest);
+                                        }
+                                        catch (Exception e)
+                                        {
+                                            Console.WriteLine(e.Message);
+                                        }                                        
+                                    }
+
+                                    line = reader.ReadLine();
+                                }
                             }
-                            catch (Exception e)
-                            {
-                                Console.WriteLine(e.Message);
-                            }
 
-                            buffer.Clear();
-                        }
+                            Console.WriteLine("Finished processing file: " + Path.GetFileName(fileName));
+                        },
+                        TaskCreationOptions.LongRunning
+                   );
 
-                        line = reader.ReadLine();
-                    }
+                    tasks.Add(task);
+
                 }
 
-                Console.WriteLine("Finished processing file: " + Path.GetFileName(fileName));
-            }     
+                Task.WaitAll(tasks.ToArray());
+
+            }
 
             stopwatch.Stop();
-            Console.WriteLine("Finished loading in " + stopwatch.Elapsed.ToString());
+            Console.WriteLine("Finished importing files. Elapsed = " + stopwatch.Elapsed.ToString());
         }        
+    }
+
+    public static class Extension
+    {
+        public static IEnumerable<IEnumerable<T>> InSetsOf<T>(this IEnumerable<T> source, int size)
+        {
+            var toReturn = new List<T>(size);
+            foreach (var item in source)
+            {
+                toReturn.Add(item);
+                if (toReturn.Count == size)
+                {
+                    yield return toReturn;
+                    toReturn = new List<T>(size);
+                }
+            }
+            if (toReturn.Any())
+            {
+                yield return toReturn;
+            }
+        }
     }
 
 

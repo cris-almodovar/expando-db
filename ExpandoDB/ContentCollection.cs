@@ -105,8 +105,11 @@ namespace ExpandoDB
                     throw new InvalidOperationException("There is an existing Content with the same _id");
             }
 
-            var guid = await _contentStorage.InsertAsync(content);
+            if (content._id == null || content._id.Value == Guid.Empty)
+                content._id = Guid.NewGuid();
+
             _luceneIndex.Insert(content);
+            var guid = await _contentStorage.InsertAsync(content);            
 
             return guid;
         }
@@ -180,9 +183,8 @@ namespace ExpandoDB
             if (content == null)
                 throw new ArgumentNullException(nameof(content));
 
+            _luceneIndex.Update(content);
             var affected = await _contentStorage.UpdateAsync(content);
-            if (affected > 0)
-                _luceneIndex.Update(content);
 
             return affected;
         }
@@ -200,8 +202,8 @@ namespace ExpandoDB
             if (guid == Guid.Empty)
                 throw new ArgumentException("guid cannot be empty");
 
-            var affected = await _contentStorage.DeleteAsync(guid);
             _luceneIndex.Delete(guid);
+            var affected = await _contentStorage.DeleteAsync(guid);            
 
             return affected;
         }

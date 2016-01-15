@@ -23,11 +23,14 @@ namespace ExpandoDB.Search
         private readonly Analyzer _compositeAnalyzer;
         private readonly IndexWriter _writer;                
         private readonly SearcherManager _searcherManager;        
-        private readonly Timer _autoRefreshTimer;
-        private readonly Timer _autoCommitTimer;
+        private readonly Timer _refreshTimer;
+        private readonly Timer _commitTimer;
         private readonly IndexSchema _indexSchema;        
-        private readonly double _autoRefreshIntervalSeconds;
-        private readonly double _autoCommitIntervalSeconds;
+        private readonly double _refreshIntervalSeconds;
+        private readonly double _commitIntervalSeconds;
+        private readonly long _writerLockTimeoutMilliseconds;
+        private readonly double _ramBufferSizeMB;
+
         public IndexSchema Schema { get { return _indexSchema; } }       
 
 
@@ -51,16 +54,23 @@ namespace ExpandoDB.Search
             _indexSchema = indexSchema ?? IndexSchema.CreateDefault();
             _compositeAnalyzer = new CompositeAnalyzer(_indexSchema);
 
-            var config = new IndexWriterConfig(_compositeAnalyzer);
-            _writer = new IndexWriter(_indexDirectory, config);
+            _ramBufferSizeMB = Double.Parse(ConfigurationManager.AppSettings["LuceneRAMBufferSizeMB"] ?? "16");
+            _writerLockTimeoutMilliseconds = Convert.ToInt64(Double.Parse(ConfigurationManager.AppSettings["LuceneWriterLockTimeoutSeconds"] ?? "1") * 1000);            
+
+            var config = new IndexWriterConfig(_compositeAnalyzer)
+                            .SetRAMBufferSizeMB(_ramBufferSizeMB)
+                            .SetWriteLockTimeout(_writerLockTimeoutMilliseconds)
+                            .SetCommitOnClose(true);
+            
+            _writer = new IndexWriter(_indexDirectory, config);            
 
             _searcherManager = new SearcherManager(_writer, true, null);            
 
-            _autoRefreshIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["LuceneAutoRefreshIntervalSeconds"] ?? "0.5");
-            _autoCommitIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["LuceneAutoCommitIntervalSeconds"] ?? "60");
+            _refreshIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["LuceneRefreshIntervalSeconds"] ?? "0.5");    
+            _commitIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["LuceneCommitIntervalSeconds"] ?? "60");
 
-            _autoRefreshTimer = new Timer(o => Refresh(), null, TimeSpan.FromSeconds(_autoRefreshIntervalSeconds), TimeSpan.FromSeconds(_autoRefreshIntervalSeconds));
-            _autoCommitTimer = new Timer(o => Commit(), null, TimeSpan.FromSeconds(_autoCommitIntervalSeconds), TimeSpan.FromSeconds(_autoCommitIntervalSeconds));
+            _refreshTimer = new Timer(o => Refresh(), null, TimeSpan.FromSeconds(_refreshIntervalSeconds), TimeSpan.FromSeconds(_refreshIntervalSeconds));
+            _commitTimer = new Timer(o => Commit(), null, TimeSpan.FromSeconds(_commitIntervalSeconds), TimeSpan.FromSeconds(_commitIntervalSeconds));
         }
 
         /// <summary>
@@ -74,7 +84,7 @@ namespace ExpandoDB.Search
             try
             {
                 if (_writer.HasUncommittedChanges())
-                    _writer.Commit();               
+                    _writer.Commit();
             }
             catch { }
 
@@ -100,9 +110,12 @@ namespace ExpandoDB.Search
         /// </summary>
         /// <param name="content">The dynamic content.</param>        
         public void Insert(Content content)
-        {
+        {            
             if (content == null)
                 throw new ArgumentNullException(nameof(content));
+
+            if (content._id == null || content._id.Value == Guid.Empty)
+                content._id = Guid.NewGuid();
 
             var document = content.ToLuceneDocument(_indexSchema);
             _writer.AddDocument(document);
@@ -201,8 +214,8 @@ namespace ExpandoDB.Search
         /// </summary>
         public void Dispose()
         {
-            _autoRefreshTimer.Dispose();
-            _autoCommitTimer.Dispose();
+            _refreshTimer.Dispose();
+            _commitTimer.Dispose();
 
             _searcherManager.Close();
 

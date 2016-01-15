@@ -1,4 +1,5 @@
-﻿using FlexLucene.Analysis;
+﻿using ExpandoDB.Serialization;
+using FlexLucene.Analysis;
 using FlexLucene.Queryparser.Classic;
 using FlexLucene.Search;
 using System;
@@ -34,6 +35,14 @@ namespace ExpandoDB.Search
                 }
                 else if (indexedField.DataType == FieldDataType.DateTime)
                 {
+                    var date1 = DateTime.MinValue;
+                    var date2 = DateTime.MinValue;
+
+                    if (DynamicSerializer.TryParseDateTime(part1, ref date1))
+                        part1 = date1.ToUniversalTime().ToString(LuceneField.DATE_TIME_FORMAT);
+                    if (DynamicSerializer.TryParseDateTime(part2, ref date2))
+                        part2 = date2.ToUniversalTime().ToString(LuceneField.DATE_TIME_FORMAT);
+
                     part1 = part1.PadRight(LuceneField.DATE_TIME_FORMAT.Length, '0');
                     part2 = part2.PadRight(LuceneField.DATE_TIME_FORMAT.Length, '0');
                 }
@@ -49,7 +58,13 @@ namespace ExpandoDB.Search
                 if (indexedField.DataType == FieldDataType.Number)
                     queryText = FormatAsLuceneNumberString(queryText);
                 else if (indexedField.DataType == FieldDataType.DateTime)
+                {
+                    var date1 = DateTime.MinValue;                    
+                    if (DynamicSerializer.TryParseDateTime(queryText, ref date1))
+                        queryText = date1.ToUniversalTime().ToString(LuceneField.DATE_TIME_FORMAT);
+
                     queryText = queryText.PadRight(LuceneField.DATE_TIME_FORMAT.Length, '0');
+                }
             }
             return base.GetFieldQuery(fieldName, queryText, quoted);
         }

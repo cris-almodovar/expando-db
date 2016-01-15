@@ -121,12 +121,13 @@ namespace ExpandoDB.Search
                             else if (indexedField.DataType != FieldDataType.Array)
                                 EnsureSameFieldDataType(indexedField, FieldDataType.String);
 
-                            var idValue = ((Guid)value).ToString();
-                            luceneFields.Add(new StringField(fieldName, idValue, FieldStore.YES));
+                            var guidValue = ((Guid)value).ToString();
+                            var isStored = (indexedField.Name == ID_FIELD_NAME ? FieldStore.YES : FieldStore.NO);
+                            luceneFields.Add(new StringField(fieldName, guidValue, isStored));
 
                             // Only top-level and non-array fields are sortable
                             if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
-                                luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(idValue)));
+                                luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(guidValue)));
                         }
                         else if (value is IList)
                         {

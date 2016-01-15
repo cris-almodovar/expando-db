@@ -22,7 +22,12 @@ namespace ExpandoDB.Search
                 throw new InvalidOperationException("Cannot index a Content that does not have an _id.");
 
             var luceneDocument = new LuceneDocument();
-            foreach (var fieldName in dictionary.Keys)
+
+            // Make sure the _id field is the first field added to the Lucene document
+            var keys = dictionary.Keys.Except( new[] { LuceneField.ID_FIELD_NAME } ).ToList();
+            keys.Insert(0, LuceneField.ID_FIELD_NAME);            
+
+            foreach (var fieldName in keys)
             {               
                 IndexedField indexedField = null;
                 if (!indexSchema.Fields.TryGetValue(fieldName, out indexedField))                
