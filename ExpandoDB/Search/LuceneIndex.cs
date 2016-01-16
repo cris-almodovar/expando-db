@@ -1,4 +1,5 @@
-﻿using FlexLucene.Analysis;
+﻿using Common.Logging;
+using FlexLucene.Analysis;
 using FlexLucene.Index;
 using FlexLucene.Search;
 using FlexLucene.Store;
@@ -25,7 +26,8 @@ namespace ExpandoDB.Search
         private readonly SearcherManager _searcherManager;        
         private readonly Timer _refreshTimer;
         private readonly Timer _commitTimer;
-        private readonly IndexSchema _indexSchema;        
+        private readonly IndexSchema _indexSchema;
+        private readonly ILog _log = LogManager.GetLogger(typeof(LuceneIndex).Name);    
         private readonly double _refreshIntervalSeconds;
         private readonly double _commitIntervalSeconds;
         private readonly long _writerLockTimeoutMilliseconds;
@@ -86,7 +88,10 @@ namespace ExpandoDB.Search
                 if (_writer.HasUncommittedChanges())
                     _writer.Commit();
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _log.Error(ex);
+            }
 
         }
 
@@ -102,7 +107,10 @@ namespace ExpandoDB.Search
             {  
                 _searcherManager.MaybeRefresh();
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _log.Error(ex);
+            }
         }
 
         /// <summary>

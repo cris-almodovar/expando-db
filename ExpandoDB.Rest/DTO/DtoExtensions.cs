@@ -26,7 +26,7 @@ namespace ExpandoDB.Rest.DTO
             var searchCriteria = new SearchCriteria
             {
                 Query = dto.where,
-                TopN = int.MaxValue
+                TopN = 1  // We're not interested in the docs, just the total hits.
             };
 
             return searchCriteria;

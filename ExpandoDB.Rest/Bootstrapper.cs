@@ -1,5 +1,5 @@
 ﻿using ExpandoDB.Rest.DTO;
-using log4net;
+using Common.Logging;
 using Nancy;
 using Nancy.Bootstrapper;
 using Nancy.Json;

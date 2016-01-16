@@ -166,7 +166,8 @@ namespace ExpandoDB
 
             if (criteria == null)
                 throw new ArgumentNullException(nameof(criteria));
-
+            
+            criteria.TopN = 1;  // We're not interested in the docs, just the total hits.
             var luceneResult = _luceneIndex.Search(criteria);
             return luceneResult.TotalHits;
         }
