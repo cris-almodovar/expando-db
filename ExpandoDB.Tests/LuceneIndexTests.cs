@@ -103,6 +103,18 @@ namespace ExpandoDB.Tests
             Assert.AreEqual<int?>(result.ItemCount, 10);
             Assert.AreEqual<int?>(result.ItemCount, result.TotalHits);
             Assert.IsTrue(result.Items.SequenceEqual(contentIds));
-        }       
+        }
+
+        [TestMethod]
+        [TestCategory("Lucene Index tests")]
+        public void Can_tokenize_text()
+        {
+            var text = "The quick brown fox jumped over the lazy dog.";
+            var expected = new[] { "the", "quick", "brown", "fox", "jump", "over", "the", "lazi", "dog" };
+            var actual = FullTextAnalyzer.Tokenize(text).ToArray();
+
+            Assert.IsTrue(expected.SequenceEqual(actual));           
+
+        }
     }
 }

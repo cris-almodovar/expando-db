@@ -27,7 +27,7 @@ namespace ExpandoDB.Search
         /// the tokens that make up the texts, using the Porter stemming algorithm.</param>
         /// <param name="ignoreCase">if set to <c>true</c>, character casing is ignored.</param>
         /// <param name="separatorChars">A string whose component characters will be used to split the texts into tokens.</param>   
-        public FullTextAnalyzer(bool enableStemming = true, bool ignoreCase = true, string separatorChars = null)
+        public FullTextAnalyzer(bool enableStemming = true, bool ignoreCase = true, string separatorChars = DEFAULT_SEPARATOR_CHARS)
         {
             if (String.IsNullOrWhiteSpace(separatorChars))
                 separatorChars = DEFAULT_SEPARATOR_CHARS;
@@ -66,7 +66,7 @@ namespace ExpandoDB.Search
         /// <param name="ignoreCase">if set to <c>true</c>, character casing is ignored.</param>
         /// <param name="separatorChars">A string whose component characters will be used to split the texts into tokens.</param> 
         /// <returns></returns>
-        public static IEnumerable<string> Tokenize(string text, bool enableStemming = true, bool ignoreCase = true, string separatorChars = null)
+        public static IEnumerable<string> Tokenize(string text, bool enableStemming = true, bool ignoreCase = true, string separatorChars = DEFAULT_SEPARATOR_CHARS)
         {
             if (String.IsNullOrWhiteSpace(text))
                 throw new ArgumentException("text cannot be null or blank");
@@ -77,7 +77,7 @@ namespace ExpandoDB.Search
             {
                 using (var stream = analyzer.TokenStream("text", text))
                 {
-                    var attrib = stream.AddAttribute(java.lang.Class.forName("FlexLucene.Analysis.Tokenattributes.CharTermAttribute")) as CharTermAttribute;
+                    var attrib = stream.AddAttribute(typeof(CharTermAttribute)) as CharTermAttribute;
                     stream.Reset();
                     while (stream.IncrementToken())
                     {
