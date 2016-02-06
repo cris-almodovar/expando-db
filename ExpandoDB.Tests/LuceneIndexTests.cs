@@ -34,6 +34,8 @@ namespace ExpandoDB.Tests
             // Release the resources used by the index
             _luceneIndex.Dispose();
 
+            Thread.Sleep(TimeSpan.FromSeconds(2));
+
             // Delete the index directory and all index files
             if (Directory.Exists(_indexPath))    
                 Directory.Delete(_indexPath, true);
