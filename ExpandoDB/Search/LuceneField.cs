@@ -12,7 +12,7 @@ namespace ExpandoDB.Search
         public const string ID_FIELD_NAME = Content.ID_FIELD_NAME;        
         public const string CREATED_TIMESTAMP_FIELD_NAME = Content.CREATED_TIMESTAMP_FIELD_NAME;
         public const string MODIFIED_TIMESTAMP_FIELD_NAME = Content.MODIFIED_TIMESTAMP_FIELD_NAME;
-        public const string FULL_TEXT_FIELD_NAME = "_fullText";
+        public const string FULL_TEXT_FIELD_NAME = "_full_text_";
 
         public const string DATE_TIME_FORMAT = "yyyyMMddHHmmssfffffff";  
         public const string NUMBER_FORMAT = "000000000000000.000000000000";
