@@ -43,7 +43,7 @@ namespace ExpandoDB.Search
         public LuceneIndex(string indexPath, IndexSchema indexSchema = null)
         {
             if (String.IsNullOrWhiteSpace(indexPath))
-                throw new ArgumentNullException(nameof(indexPath));
+                throw new ArgumentNullException(nameof(indexPath)); 
             if (indexSchema == null)
                 indexSchema = IndexSchema.CreateDefault();
 
@@ -56,7 +56,7 @@ namespace ExpandoDB.Search
             _indexSchema = indexSchema ?? IndexSchema.CreateDefault();
             _compositeAnalyzer = new CompositeAnalyzer(_indexSchema);
 
-            _ramBufferSizeMB = Double.Parse(ConfigurationManager.AppSettings["LuceneRAMBufferSizeMB"] ?? "16");
+            _ramBufferSizeMB = Double.Parse(ConfigurationManager.AppSettings["LuceneRAMBufferSizeMB"] ?? "64");
             _writerLockTimeoutMilliseconds = Convert.ToInt64(Double.Parse(ConfigurationManager.AppSettings["LuceneWriterLockTimeoutSeconds"] ?? "1") * 1000);            
 
             var config = new IndexWriterConfig(_compositeAnalyzer)
@@ -138,7 +138,7 @@ namespace ExpandoDB.Search
             if (guid == Guid.Empty)
                 throw new ArgumentException(nameof(guid) + " cannot be empty");
 
-            var idTerm = new Term("_id", guid.ToString());
+            var idTerm = new Term(Content.ID_FIELD_NAME, guid.ToString());
             _writer.DeleteDocuments(idTerm);
         }
 
@@ -157,7 +157,7 @@ namespace ExpandoDB.Search
 
             var document = content.ToLuceneDocument(_indexSchema);
             var id = content._id.ToString();
-            var idTerm = new Term("_id", id);
+            var idTerm = new Term(Content.ID_FIELD_NAME, id);
 
             _writer.UpdateDocument(idTerm, document);
         }        
@@ -179,7 +179,7 @@ namespace ExpandoDB.Search
             criteria.Validate();
 
             var result = new SearchResult<Guid>(criteria);
-            var queryParser = new LuceneQueryParser(LuceneField.FULL_TEXT_FIELD_NAME, _compositeAnalyzer, _indexSchema);
+            var queryParser = new LuceneQueryParser(LuceneFieldExtensions.FULL_TEXT_FIELD_NAME, _compositeAnalyzer, _indexSchema);
             var query = queryParser.Parse(criteria.Query);
 
             var searcher = _searcherManager.Acquire() as IndexSearcher;
@@ -193,7 +193,7 @@ namespace ExpandoDB.Search
                 }
                 finally
                 {
-                    _searcherManager.Release(searcher);
+                    _searcherManager.Release(searcher); 
                     searcher = null;
                 }
             }

@@ -106,7 +106,7 @@ namespace ExpandoDB
             }
 
             if (content._id == null || content._id.Value == Guid.Empty)
-                content._id = Guid.NewGuid();
+                content._id = Guid.NewGuid();            
 
             _luceneIndex.Insert(content);
             var guid = await _contentStorage.InsertAsync(content);            

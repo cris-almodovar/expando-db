@@ -3,17 +3,17 @@ using FlexLucene.Util;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace ExpandoDB.Search
 {
-    public static class LuceneField
-    {
-        public const string ID_FIELD_NAME = Content.ID_FIELD_NAME;        
-        public const string CREATED_TIMESTAMP_FIELD_NAME = Content.CREATED_TIMESTAMP_FIELD_NAME;
-        public const string MODIFIED_TIMESTAMP_FIELD_NAME = Content.MODIFIED_TIMESTAMP_FIELD_NAME;
+    /// <summary>
+    /// Implements extension methods for converting objects to Lucene Fields.
+    /// </summary>
+    public static class LuceneFieldExtensions
+    {       
         public const string FULL_TEXT_FIELD_NAME = "_full_text_";
-
         public const string DATE_TIME_FORMAT = "yyyyMMddHHmmssfffffff";  
         public const string NUMBER_FORMAT = "000000000000000.000000000000";
         public const string DEFAULT_NULL_VALUE_TOKEN = "_null_";
@@ -122,7 +122,7 @@ namespace ExpandoDB.Search
                                 EnsureSameFieldDataType(indexedField, FieldDataType.String);
 
                             var guidValue = ((Guid)value).ToString();
-                            var isStored = (indexedField.Name == ID_FIELD_NAME ? FieldStore.YES : FieldStore.NO);
+                            var isStored = (indexedField.Name == Content.ID_FIELD_NAME ? FieldStore.YES : FieldStore.NO);
                             luceneFields.Add(new StringField(fieldName, guidValue, isStored));
 
                             // Only top-level and non-array fields are sortable
@@ -304,7 +304,9 @@ namespace ExpandoDB.Search
             var buffer = new StringBuilder();
 
             var dictionary = content.AsDictionary();
-            foreach (var fieldName in dictionary.Keys)
+            var keys = dictionary.Keys.Except(new[] { Content.ID_FIELD_NAME, Content.CREATED_TIMESTAMP_FIELD_NAME, Content.MODIFIED_TIMESTAMP_FIELD_NAME });
+
+            foreach (var fieldName in keys)
             {
                 var fieldValue = dictionary[fieldName];
                 if (fieldValue == null)

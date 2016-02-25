@@ -17,15 +17,15 @@ namespace ExpandoDB.Search
             if (indexSchema == null)
                 indexSchema = IndexSchema.CreateDefault();
 
-            var dictionary = content.AsDictionary();
-            if (!dictionary.ContainsKey(Content.ID_FIELD_NAME))
+            var contentDictionary = content.AsDictionary();
+            if (!contentDictionary.ContainsKey(Content.ID_FIELD_NAME))
                 throw new InvalidOperationException("Cannot index a Content that does not have an _id.");
 
             var luceneDocument = new LuceneDocument();
 
             // Make sure the _id field is the first field added to the Lucene document
-            var keys = dictionary.Keys.Except( new[] { LuceneField.ID_FIELD_NAME } ).ToList();
-            keys.Insert(0, LuceneField.ID_FIELD_NAME);            
+            var keys = contentDictionary.Keys.Except( new[] { Content.ID_FIELD_NAME } ).ToList();
+            keys.Insert(0, Content.ID_FIELD_NAME);            
 
             foreach (var fieldName in keys)
             {               
@@ -38,7 +38,7 @@ namespace ExpandoDB.Search
                     indexSchema.Fields.TryAdd(fieldName, indexedField);
                 }
 
-                var fieldValue = dictionary[fieldName];                
+                var fieldValue = contentDictionary[fieldName];                
                 var luceneFields = fieldValue.ToLuceneFields(indexedField);
                 foreach (var luceneField in luceneFields)
                     luceneDocument.Add(luceneField);
@@ -47,7 +47,7 @@ namespace ExpandoDB.Search
             // The full-text field is always generated and added to the lucene document,
             // even though it is not part of the index schema exposed to the user.
             var fullText = content.ToLuceneFullTextString();
-             luceneDocument.Add(new TextField(LuceneField.FULL_TEXT_FIELD_NAME, fullText, FieldStore.NO));            
+             luceneDocument.Add(new TextField(LuceneFieldExtensions.FULL_TEXT_FIELD_NAME, fullText, FieldStore.NO));            
 
             return luceneDocument;
         }
@@ -102,7 +102,7 @@ namespace ExpandoDB.Search
                     if (doc == null)
                         continue;
 
-                    var idField = doc.GetField(LuceneField.ID_FIELD_NAME);
+                    var idField = doc.GetField(Content.ID_FIELD_NAME);
                     var idValue = idField.StringValue();
 
                     contentIds.Add(Guid.Parse(idValue));

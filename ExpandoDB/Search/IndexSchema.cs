@@ -3,6 +3,9 @@ using System.Collections.Concurrent;
 
 namespace ExpandoDB
 {
+    /// <summary>
+    /// Represents the set of indexed fields for a ContentCollection.
+    /// </summary>
     public class IndexSchema
     {
         public string Name { get; set; }
