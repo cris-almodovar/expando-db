@@ -83,7 +83,7 @@ namespace ExpandoDB.Search
 
             foreach (var sd in scoreDocs)
             {
-                var bestFragment = highlighter.GetBestFragment(fieldQuery, reader, sd.Doc, LuceneFieldExtensions.FULL_TEXT_FIELD_NAME, 256) ?? String.Empty;
+                var bestFragment = highlighter.GetBestFragment(fieldQuery, reader, sd.Doc, LuceneFieldExtensions.FULL_TEXT_FIELD_NAME, 256);
                 var document = searcher.Doc(sd.Doc);
                 var docId = document.Get(Content.ID_FIELD_NAME);
 
