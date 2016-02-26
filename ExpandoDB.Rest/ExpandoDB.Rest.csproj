@@ -46,8 +46,8 @@
       <HintPath>..\packages\Nancy.1.4.3\lib\net40\Nancy.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Nancy.Serialization.Jil, Version=1.41.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nancy.Serialization.Jil.1.41.0\lib\net45\Nancy.Serialization.Jil.dll</HintPath>
+    <Reference Include="Nancy.Serialization.Jil, Version=1.44.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Nancy.Serialization.Jil.1.44.0\lib\net45\Nancy.Serialization.Jil.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Sigil, Version=4.5.1.0, Culture=neutral, PublicKeyToken=2d06c3494341c8ab, processorArchitecture=MSIL">

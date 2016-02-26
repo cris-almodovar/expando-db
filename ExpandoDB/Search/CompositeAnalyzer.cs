@@ -5,6 +5,15 @@ using System.Collections.Concurrent;
 
 namespace ExpandoDB.Search
 {
+    /// <summary>
+    /// A custom Lucene AnalyzerWrapper that returns a <see cref="FullTextAnalyzer"/>
+    /// or a <see cref="KeywordAnalyzer"/>, depending on the field being analyzed.
+    /// </summary>
+    /// <remarks>
+    /// An instance of CompositeAnalyzer is associated with an instance of <see cref="LuceneIndex"/>,
+    /// which in turn is associated with an instance of <see cref="ContentCollection"/>.
+    /// </remarks>
+    /// <seealso cref="FlexLucene.Analysis.AnalyzerWrapper" />
     public class CompositeAnalyzer : AnalyzerWrapper
     {
         private readonly ConcurrentDictionary<string, Analyzer> _perFieldAnalyzers;        
@@ -15,7 +24,7 @@ namespace ExpandoDB.Search
         /// <summary>
         /// Initializes a new instance of the <see cref="CompositeAnalyzer" /> class.
         /// </summary>
-        /// <param name="indexSchema">The Content schema.</param>        
+        /// <param name="indexSchema">The IndexSchema of the Lucene index associated with this <see cref="CompositeAnalyzer"/>.</param>        
         public CompositeAnalyzer(IndexSchema indexSchema) :
             base(Analyzer.PER_FIELD_REUSE_STRATEGY)
         {
@@ -55,7 +64,7 @@ namespace ExpandoDB.Search
         }
 
         /// <summary>
-        /// Gets the wrapped analyzer.
+        /// Gets the Analyzer for the specified field.
         /// </summary>
         /// <param name="fieldName">Name of the field.</param>
         /// <returns></returns>

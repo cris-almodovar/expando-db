@@ -7,5 +7,6 @@
         public int TopN { get; set; }
         public int ItemsPerPage { get; set; }
         public int PageNumber { get; set; }
+        public bool IncludeHighlight { get; set; }
     }
 }

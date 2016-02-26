@@ -15,6 +15,7 @@ namespace ExpandoDB.Rest.DTO
         public int pageCount { get; set; }
         public int pageNumber { get; set; }
         public int itemsPerPage { get; set; }
+        public bool includeHighlight { get; set; }
         public List<ExpandoObject> items { get; set; }        
     }
 }

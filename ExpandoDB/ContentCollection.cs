@@ -119,6 +119,7 @@ namespace ExpandoDB
         /// </summary>
         /// <param name="criteria">The search criteria.</param>
         /// <returns></returns>
+        /// <exception cref="System.ArgumentNullException"></exception>
         public async Task<SearchResult<Content>> SearchAsync(SearchCriteria criteria)
         {
             EnsureCollectionIsNotDropped();
@@ -131,6 +132,12 @@ namespace ExpandoDB
 
             if (searchResult.ItemCount > 0)
                 searchResult.Items = await _contentStorage.GetAsync(luceneResult.Items.ToList());
+
+            // NOTE: At this point the Items collection only contains the JSON string representation of the Content objects.
+            // It will be deserialized to Content objects only when enumerated.
+
+            if (criteria.IncludeHighlight)                            
+                searchResult.Items = searchResult.Items.GenerateHighlights(criteria);            
 
             return searchResult;
         }

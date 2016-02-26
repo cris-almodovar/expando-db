@@ -13,12 +13,12 @@ namespace ExpandoDB
 
         public IndexSchema()
         {
+            Fields = new ConcurrentDictionary<string, IndexedField>();
         }
 
-        public IndexSchema(string name)
+        public IndexSchema(string name) : this()
         {
-            Name = name;
-            Fields = new ConcurrentDictionary<string, IndexedField>();
+            Name = name;            
         }
 
         /// <summary>

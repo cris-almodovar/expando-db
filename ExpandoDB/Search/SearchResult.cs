@@ -13,6 +13,7 @@ namespace ExpandoDB.Search
         public int PageCount { get; set; }
         public int PageNumber { get; set; }
         public int ItemsPerPage { get; set; }
+        public bool IncludeHighlight { get; set; }
         public IEnumerable<TResult> Items { get; set; }       
 
         
@@ -25,6 +26,7 @@ namespace ExpandoDB.Search
             SortByField = criteria.SortByField;
             TopN = criteria.TopN;
             ItemsPerPage = criteria.ItemsPerPage;
+            IncludeHighlight = criteria.IncludeHighlight;
             PageNumber = criteria.PageNumber;
 
             ItemCount = itemCount;

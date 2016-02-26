@@ -20,6 +20,7 @@ namespace ExpandoDB.Search
     {
         public const int DEFAULT_SEARCH_TOP_N = 100000;
         public const int DEFAULT_SEARCH_ITEMS_PER_PAGE = 10;
+        private const string ALL_DOCS_QUERY = "*:*";
         private readonly Directory _indexDirectory;
         private readonly Analyzer _compositeAnalyzer;
         private readonly IndexWriter _writer;                
@@ -39,7 +40,7 @@ namespace ExpandoDB.Search
         /// <summary>
         /// Initializes a new instance of the <see cref="LuceneIndex"/> class.
         /// </summary>
-        /// <param name="indexPath">The path to the directory that will contain the index files.</param>                
+        /// <param name="indexPath">The path to the directory that will contain the Lucene index files.</param>
         public LuceneIndex(string indexPath, IndexSchema indexSchema = null)
         {
             if (String.IsNullOrWhiteSpace(indexPath))
@@ -76,10 +77,13 @@ namespace ExpandoDB.Search
         }
 
         /// <summary>
-        /// Commits the latest insertions and deletions on the index.
+        /// Commits the latest insertions and deletions to the on-disk Lucene index.
         /// </summary>  
         /// <remarks>
-        /// The LuceneIndex auto-invokes this method automatically every 1000 milliseconds.
+        /// For performance, the <see cref="LuceneIndex"/> object indexes data using an in-memory buffer instead of writing directly to disk.
+        /// <para>
+        /// The <see cref="LuceneIndex"/> object auto-invokes this method every N seconds, where N is the value of the <b>LuceneCommitIntervalSeconds</b> config item.
+        /// </para>
         /// </remarks>      
         public void Commit()
         {
@@ -96,10 +100,10 @@ namespace ExpandoDB.Search
         }
 
         /// <summary>
-        /// Refreshes the Lucene index so that Search() reflects the latest insertions and deletions.
+        /// Refreshes the Lucene index so that the Search operation reflects the latest insertions and deletions.
         /// </summary>
         /// <remarks>
-        /// The LuceneIndex auto-invokes this method automatically every 500 milliseconds.
+        /// The <see cref="LuceneIndex"/> object auto-invokes this method every N seconds, where N is the value of the <b>LuceneRefreshIntervalSeconds</b> config item.
         /// </remarks>
         public void Refresh()
         {
@@ -172,7 +176,7 @@ namespace ExpandoDB.Search
             if (criteria == null)
                 throw new ArgumentNullException(nameof(criteria));
 
-            criteria.Query = String.IsNullOrWhiteSpace(criteria.Query) ? "*:*" : criteria.Query;
+            criteria.Query = String.IsNullOrWhiteSpace(criteria.Query) ? ALL_DOCS_QUERY : criteria.Query;
             criteria.TopN = criteria.TopN > 0 ? criteria.TopN : DEFAULT_SEARCH_TOP_N;
             criteria.ItemsPerPage = criteria.ItemsPerPage > 0 ? criteria.ItemsPerPage : DEFAULT_SEARCH_ITEMS_PER_PAGE;
             criteria.PageNumber = criteria.PageNumber > 0 ? criteria.PageNumber : 1;

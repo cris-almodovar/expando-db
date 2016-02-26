@@ -47,7 +47,7 @@ namespace ExpandoDB.Search
             // The full-text field is always generated and added to the lucene document,
             // even though it is not part of the index schema exposed to the user.
             var fullText = content.ToLuceneFullTextString();
-             luceneDocument.Add(new TextField(LuceneFieldExtensions.FULL_TEXT_FIELD_NAME, fullText, FieldStore.NO));            
+            luceneDocument.Add(new TextField(LuceneFieldExtensions.FULL_TEXT_FIELD_NAME, fullText, FieldStore.NO));            
 
             return luceneDocument;
         }
@@ -125,7 +125,7 @@ namespace ExpandoDB.Search
             }
 
             return pageCount;
-        }
+        }        
 
     }
 }
