@@ -16,7 +16,7 @@ namespace ExpandoDB.Rest.DTO
                 TopN = dto.topN ?? LuceneIndex.DEFAULT_SEARCH_TOP_N,
                 ItemsPerPage = dto.itemsPerPage ?? LuceneIndex.DEFAULT_SEARCH_ITEMS_PER_PAGE,
                 PageNumber = dto.pageNumber ?? 1, 
-                IncludeHighlight = dto.includeHighlight ?? false 
+                IncludeHighlight = dto.highlight ?? false 
             };
 
             return searchCriteria;
@@ -50,7 +50,7 @@ namespace ExpandoDB.Rest.DTO
             responseDto.pageCount = searchResult.PageCount;
             responseDto.pageNumber = searchResult.PageNumber;
             responseDto.itemsPerPage = searchResult.ItemsPerPage;
-            responseDto.includeHighlight = searchResult.IncludeHighlight;
+            responseDto.highlight = searchResult.IncludeHighlight;
 
             var fieldsToSelect = searchRequestDto.select.ToList();
             responseDto.items = searchResult.Items.Select(c => c.Select(fieldsToSelect).AsExpando()).ToList();

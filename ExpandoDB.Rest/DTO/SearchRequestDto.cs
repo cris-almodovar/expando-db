@@ -8,6 +8,6 @@
         public string orderBy { get; set; }        
         public int? itemsPerPage { get; set; }
         public int? pageNumber { get; set; }
-        public bool? includeHighlight { get; set; }
+        public bool? highlight { get; set; }
     }
 }

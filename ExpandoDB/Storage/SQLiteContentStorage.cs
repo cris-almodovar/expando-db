@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Data.SQLite;
 using System.IO;
 using System.Linq;
@@ -13,7 +14,7 @@ namespace ExpandoDB.Storage
     /// </summary>
     public class SQLiteContentStorage : IContentStorage
     {
-        private const string CONN_STRING_TEMPLATE = "Data Source={0}; Version=3; Pooling=true; Max Pool Size=100; DateTimeKind=UTC; Enlist=N; Compress=True";
+        private const string CONN_STRING_TEMPLATE = "Data Source={0}; Version=3; Pooling=True; Max Pool Size={1}; DateTimeKind=UTC; Enlist=N; Compress=True; Synchronous={2}; Page Size=1024; Cache Size={3}";
         private const int SQLITE_MAX_VARIABLE_NUMBER = 999;
         private readonly string _dbFilePath;
         private readonly string _connectionString;
@@ -48,7 +49,11 @@ namespace ExpandoDB.Storage
 
             _dbFilePath = dbFilePath;
             _contentCollectionName = contentCollectionName;
-            _connectionString = String.Format(CONN_STRING_TEMPLATE, dbFilePath);
+
+            var maxPoolSize = ConfigurationManager.AppSettings["SQLiteMaxPoolSize"] ?? "100";
+            var synchronous = ConfigurationManager.AppSettings["SQLitePragmaSynchronous"] ?? "Off";
+            var cacheSize = ConfigurationManager.AppSettings["SQLitePragmaCacheSize"] ?? "10000";
+            _connectionString = String.Format(CONN_STRING_TEMPLATE, dbFilePath, maxPoolSize, synchronous, cacheSize);
 
             _createTableSql = String.Format("CREATE TABLE IF NOT EXISTS [{0}] (id TEXT PRIMARY KEY, json TEXT)", _contentCollectionName);
             _insertOneSql = String.Format("INSERT INTO [{0}] (id, json) VALUES (@id, @json)", _contentCollectionName);

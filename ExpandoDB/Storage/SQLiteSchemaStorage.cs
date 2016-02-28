@@ -2,6 +2,7 @@
 using ExpandoDB.Serialization;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Data.SQLite;
 using System.IO;
 using System.Linq;
@@ -12,7 +13,7 @@ namespace ExpandoDB.Storage
     internal class SQLiteSchemaStorage : ISchemaStorage
     {
         public const string SCHEMA_TABLE_NAME = "_schema";
-        private const string CONN_STRING_TEMPLATE = "Data Source={0}; Version=3; Pooling=true; Max Pool Size=100; DateTimeKind=UTC; Enlist=N; Compress=True";
+        private const string CONN_STRING_TEMPLATE = "Data Source={0}; Version=3; Pooling=True; Max Pool Size={1}; DateTimeKind=UTC; Enlist=N; Compress=True; Synchronous={2}; Page Size=1024; Cache Size={3}";
         private readonly string _dbFilePath;
         private readonly string _connectionString;
         private readonly string _createTableSql;
@@ -32,7 +33,11 @@ namespace ExpandoDB.Storage
 
             _dbFilePath = dbFilePath;
 
-            _connectionString = String.Format(CONN_STRING_TEMPLATE, dbFilePath);
+            var maxPoolSize = ConfigurationManager.AppSettings["SQLiteMaxPoolSize"] ?? "100";
+            var synchronous = ConfigurationManager.AppSettings["SQLitePragmaSynchronous"] ?? "Off";
+            var cacheSize = ConfigurationManager.AppSettings["SQLitePragmaCacheSize"] ?? "10000";
+            _connectionString = String.Format(CONN_STRING_TEMPLATE, dbFilePath, maxPoolSize, synchronous, cacheSize);
+
             _createTableSql = String.Format("CREATE TABLE IF NOT EXISTS [{0}] (name TEXT PRIMARY KEY, json TEXT)", SCHEMA_TABLE_NAME);
             _insertOneSql = String.Format("INSERT INTO [{0}] (name, json) VALUES (@name, @json)", SCHEMA_TABLE_NAME);
             _selectAllSql = String.Format("SELECT name,json FROM [{0}]", SCHEMA_TABLE_NAME);           
