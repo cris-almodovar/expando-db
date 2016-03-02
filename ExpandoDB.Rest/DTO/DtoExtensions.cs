@@ -53,6 +53,9 @@ namespace ExpandoDB.Rest.DTO
             responseDto.highlight = searchResult.IncludeHighlight;
 
             var fieldsToSelect = searchRequestDto.select.ToList();
+            if (fieldsToSelect.Count > 0 && searchResult.IncludeHighlight)
+                fieldsToSelect.Add(LuceneHighlighter.HIGHLIGHT_FIELD_NAME);
+
             responseDto.items = searchResult.Items.Select(c => c.Select(fieldsToSelect).AsExpando()).ToList();
 
             return responseDto;
@@ -68,13 +71,16 @@ namespace ExpandoDB.Rest.DTO
             if (selectedFields.Count == 0)
                 return content;
 
+            selectedFields = selectedFields.Distinct().ToList();
+
             var contentDictionary = content.AsDictionary();
 
             // Remove fields that are not in the selectedFields
-            contentDictionary.Keys
-                             .Where(fieldName => !selectedFields.Contains(fieldName))
-                             .ToList()
-                             .ForEach(fieldName => contentDictionary.Remove(fieldName));
+            var keysToRemove = contentDictionary.Keys
+                                                .Where(fieldName => !selectedFields.Contains(fieldName))
+                                                .ToList();
+
+            keysToRemove.ForEach(fieldName => contentDictionary.Remove(fieldName));
 
             // Content should now only contain the fields in the selectedFields list
             return content;

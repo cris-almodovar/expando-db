@@ -100,7 +100,7 @@ namespace ExpandoDB
 
             if (content._id.HasValue)
             {
-                var exists = await _contentStorage.ExistsAsync(content._id.Value);
+                var exists = await _contentStorage.ExistsAsync(content._id.Value).ConfigureAwait(false);
                 if (exists)
                     throw new InvalidOperationException("There is an existing Content with the same _id");
             }
@@ -109,7 +109,7 @@ namespace ExpandoDB
                 content._id = Guid.NewGuid();            
 
             _luceneIndex.Insert(content);
-            var guid = await _contentStorage.InsertAsync(content);            
+            var guid = await _contentStorage.InsertAsync(content).ConfigureAwait(false);             
 
             return guid;
         }
@@ -131,7 +131,7 @@ namespace ExpandoDB
             var searchResult = new SearchResult<Content>(criteria, luceneResult.ItemCount, luceneResult.TotalHits, luceneResult.PageCount);
 
             if (searchResult.ItemCount > 0)
-                searchResult.Items = await _contentStorage.GetAsync(luceneResult.Items.ToList());
+                searchResult.Items = await _contentStorage.GetAsync(luceneResult.Items.ToList()).ConfigureAwait(false); 
 
             // NOTE: At this point the Items collection only contains the JSON string representation of the Content objects.
             // It will be deserialized to Content objects only when enumerated.
@@ -158,7 +158,7 @@ namespace ExpandoDB
             if (guid == Guid.Empty)
                 throw new ArgumentException("guid cannot be empty");
 
-            var content = await _contentStorage.GetAsync(guid);
+            var content = await _contentStorage.GetAsync(guid).ConfigureAwait(false); 
             return content;
         }
 
@@ -192,7 +192,7 @@ namespace ExpandoDB
                 throw new ArgumentNullException(nameof(content));
 
             _luceneIndex.Update(content);
-            var affected = await _contentStorage.UpdateAsync(content);
+            var affected = await _contentStorage.UpdateAsync(content).ConfigureAwait(false); 
 
             return affected;
         }
@@ -211,7 +211,7 @@ namespace ExpandoDB
                 throw new ArgumentException("guid cannot be empty");
 
             _luceneIndex.Delete(guid);
-            var affected = await _contentStorage.DeleteAsync(guid);            
+            var affected = await _contentStorage.DeleteAsync(guid).ConfigureAwait(false);             
 
             return affected;
         }
@@ -225,11 +225,11 @@ namespace ExpandoDB
         {
             EnsureCollectionIsNotDropped();
 
-            await _contentStorage.DropAsync();
+            await _contentStorage.DropAsync().ConfigureAwait(false); 
             _luceneIndex.Dispose();
 
             // Wait half a second before deleting the Lucene index
-            await Task.Delay(TimeSpan.FromMilliseconds(500));
+            await Task.Delay(TimeSpan.FromMilliseconds(500)).ConfigureAwait(false);
 
             Directory.Delete(_indexPath, true);
             // TODO: Check that the index directory has been deleted successfully

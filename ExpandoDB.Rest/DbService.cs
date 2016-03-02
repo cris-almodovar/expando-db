@@ -55,7 +55,7 @@ namespace ExpandoDB.Rest
             var collection = _db[collectionName];
             // The collection will be auto-created if it doesn't exist
 
-            var guid = await collection.InsertAsync(content);
+            var guid = await collection.InsertAsync(content).ConfigureAwait(false);
 
             stopwatch.Stop();
 
@@ -109,8 +109,8 @@ namespace ExpandoDB.Rest
             var collection = _db[collectionName];
             var requestDto = this.Bind<SearchRequestDto>();
             var searchCriteria = requestDto.ToSearchCriteria();
-            var selectedFields = requestDto.select.ToList();
-            var result = await collection.SearchAsync(searchCriteria);
+            //var selectedFields = requestDto.select.ToList();
+            var result = await collection.SearchAsync(searchCriteria).ConfigureAwait(false);
 
             stopwatch.Stop();
 
@@ -169,7 +169,7 @@ namespace ExpandoDB.Rest
                 return HttpStatusCode.NotFound;
 
             var collection = _db[collectionName];
-            var content = await collection.GetAsync(guid);
+            var content = await collection.GetAsync(guid).ConfigureAwait(false);
             if (content == null)
                 return HttpStatusCode.NotFound;
 
@@ -214,7 +214,7 @@ namespace ExpandoDB.Rest
 
             var content = new Content(dictionary);
             content._id = guid;
-            var affected = await collection.UpdateAsync(content);
+            var affected = await collection.UpdateAsync(content).ConfigureAwait(false);
 
             stopwatch.Stop();
 
@@ -257,7 +257,7 @@ namespace ExpandoDB.Rest
             if (count == 0)
                 return HttpStatusCode.NotFound;
 
-            var content = await collection.GetAsync(guid);
+            var content = await collection.GetAsync(guid).ConfigureAwait(false);
             if (content == null)
                 return HttpStatusCode.NotFound;
 
@@ -268,7 +268,7 @@ namespace ExpandoDB.Rest
             foreach (var key in keysToUpdate)
                 contentDictionary[key] = patchDictionary[key];
 
-            var affected = await collection.UpdateAsync(content);
+            var affected = await collection.UpdateAsync(content).ConfigureAwait(false);
 
             stopwatch.Stop();
 
@@ -305,7 +305,7 @@ namespace ExpandoDB.Rest
             if (count == 0)
                 return HttpStatusCode.NotFound;
 
-            var affected = await collection.DeleteAsync(guid);
+            var affected = await collection.DeleteAsync(guid).ConfigureAwait(false);
 
             stopwatch.Stop();
 
@@ -332,7 +332,7 @@ namespace ExpandoDB.Rest
             if (!_db.ContainsCollection(collectionName))
                 return HttpStatusCode.NotFound;
 
-            var isDropped = await _db.DropCollectionAsync(collectionName);            
+            var isDropped = await _db.DropCollectionAsync(collectionName).ConfigureAwait(false);            
 
             stopwatch.Stop();
 

@@ -65,7 +65,7 @@ namespace ExpandoDB
             }
 
             _schemaPersistenceIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["SchemaPersistenceIntervalSeconds"] ?? "1");
-            _schemaPersistenceTimer = new Timer( async (o) =>  await PersistSchemas(), null, TimeSpan.FromSeconds(_schemaPersistenceIntervalSeconds), TimeSpan.FromSeconds(_schemaPersistenceIntervalSeconds));
+            _schemaPersistenceTimer = new Timer( async (o) =>  await PersistSchemas().ConfigureAwait(false), null, TimeSpan.FromSeconds(_schemaPersistenceIntervalSeconds), TimeSpan.FromSeconds(_schemaPersistenceIntervalSeconds));
 
         }
 
@@ -84,7 +84,7 @@ namespace ExpandoDB
 
                     var newSchema = _contentCollections[schemaName].GetSchema();
                     _schemaCache.TryAdd(newSchema.Name, newSchema);
-                    await _schemaStorage.InsertAsync(newSchema);
+                    await _schemaStorage.InsertAsync(newSchema).ConfigureAwait(false);
                 }
 
                 var schemasToUpdate = from schemaName in _contentCollections.Keys.Intersect(_schemaCache.Keys)
@@ -100,7 +100,7 @@ namespace ExpandoDB
 
                     var updatedSchema = _contentCollections[schemaName].GetSchema();
                     _schemaCache[schemaName] = updatedSchema;
-                    await _schemaStorage.UpdateAsync(updatedSchema);
+                    await _schemaStorage.UpdateAsync(updatedSchema).ConfigureAwait(false);
                 }
 
                 var schemasToRemove = from schemaName in _schemaCache.Keys.Except(_contentCollections.Keys)                                      
@@ -110,7 +110,7 @@ namespace ExpandoDB
                 {
                     ContentCollectionSchema removedSchema = null;
                     _schemaCache.TryRemove(schemaName, out removedSchema);
-                    await _schemaStorage.DeleteAsync(schemaName);
+                    await _schemaStorage.DeleteAsync(schemaName).ConfigureAwait(false);
                 }
             }            
             finally
@@ -182,10 +182,10 @@ namespace ExpandoDB
             ContentCollection collection = null;
 
             if (_contentCollections.TryRemove(collectionName, out collection))            
-                isSuccessful = await collection.DropAsync();
+                isSuccessful = await collection.DropAsync().ConfigureAwait(false);
 
             if (isSuccessful)
-                await PersistSchemas();
+                await PersistSchemas().ConfigureAwait(false);
 
             return isSuccessful;
         }

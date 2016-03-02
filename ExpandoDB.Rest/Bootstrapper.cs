@@ -7,6 +7,7 @@ using Nancy.Responses;
 using Nancy.TinyIoc;
 using System;
 using System.Linq;
+using Nancy.Responses.Negotiation;
 
 namespace ExpandoDB.Rest
 {
@@ -70,6 +71,20 @@ namespace ExpandoDB.Rest
             
             var db = new Database(Config.DbPath);
             container.Register<Database>(db);                       
-        }     
+        }
+
+        protected override NancyInternalConfiguration InternalConfiguration
+        {
+            get
+            {
+                return NancyInternalConfiguration.WithOverrides(
+                    c =>
+                    {
+                        c.ResponseProcessors.Clear();
+                        c.ResponseProcessors.Add(typeof(JsonProcessor));
+                    }
+                );
+            }
+        }
     }
 }

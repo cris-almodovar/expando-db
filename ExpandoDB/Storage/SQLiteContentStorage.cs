@@ -120,7 +120,7 @@ namespace ExpandoDB.Storage
 
                 var id = content._id.ToString();
                 var json = content.ToJson();                
-                await conn.ExecuteAsync(_insertOneSql, new { id, json });
+                await conn.ExecuteAsync(_insertOneSql, new { id, json }).ConfigureAwait(false);
 
                 return content._id.Value;               
             }
@@ -140,7 +140,7 @@ namespace ExpandoDB.Storage
             using (var conn = GetConnection())
             {
                 var id = guid.ToString();
-                var result = await conn.QueryAsync<StorageRow>(_selectOneSql, new { id });
+                var result = await conn.QueryAsync<StorageRow>(_selectOneSql, new { id }).ConfigureAwait(false);
                 
                 var row = result.FirstOrDefault();
                 if (row == null)    
@@ -173,7 +173,7 @@ namespace ExpandoDB.Storage
                 for (var batchNumber = 0; batchNumber < batchCount; batchNumber++)
                 {
                     var subList = idList.Skip(batchNumber * itemsPerBatch).Take(itemsPerBatch).ToList();
-                    var subResult = await conn.QueryAsync<StorageRow>(_selectManySql, new { ids = subList });
+                    var subResult = await conn.QueryAsync<StorageRow>(_selectManySql, new { ids = subList }).ConfigureAwait(false);
 
                     // The result will *NOT* be in the same order as the input guids;
                     // we need re-sort the result to be in the same order as the input guids
@@ -208,11 +208,11 @@ namespace ExpandoDB.Storage
             using (var conn = GetConnection())
             {
                 var id = content._id.ToString();
-                var count = await conn.ExecuteScalarAsync<int>(_selectCountSql, new { id });
+                var count = await conn.ExecuteScalarAsync<int>(_selectCountSql, new { id }).ConfigureAwait(false);
                 if (count == 0)
                     return 0;                
 
-                var result = await conn.QueryAsync<StorageRow>(_selectOneSql, new { id });
+                var result = await conn.QueryAsync<StorageRow>(_selectOneSql, new { id }).ConfigureAwait(false);
                 var row = result.FirstOrDefault();
                 if (row == null)
                     return 0;
@@ -229,7 +229,7 @@ namespace ExpandoDB.Storage
                 content.ConvertDatesToUtc();
                 
                 var json = content.ToJson();                
-                count = await conn.ExecuteAsync(_updateOneSql, new { id, json });                
+                count = await conn.ExecuteAsync(_updateOneSql, new { id, json }).ConfigureAwait(false);                
                 return count;
             }
         }
@@ -247,7 +247,7 @@ namespace ExpandoDB.Storage
             using (var conn = GetConnection())
             {
                 var id = guid.ToString(); 
-                var count = await conn.ExecuteAsync(_deleteOneSql, new { id });
+                var count = await conn.ExecuteAsync(_deleteOneSql, new { id }).ConfigureAwait(false);
                 return count;
             }
         }
@@ -266,7 +266,7 @@ namespace ExpandoDB.Storage
             {
                 // TODO: delete in batches of SQLITE_MAX_VARIABLE_NUMBER each.
                 var ids = guids.Select(g => g.ToString());
-                var count = await conn.ExecuteAsync(_deleteManySql, new { ids });
+                var count = await conn.ExecuteAsync(_deleteManySql, new { ids }).ConfigureAwait(false);
                 return count;
             }
         }
@@ -284,7 +284,7 @@ namespace ExpandoDB.Storage
             using (var conn = GetConnection())
             {
                 var id = guid.ToString();
-                var count = await conn.ExecuteScalarAsync<int>(_selectCountSql, new { id });
+                var count = await conn.ExecuteScalarAsync<int>(_selectCountSql, new { id }).ConfigureAwait(false);
                 return count > 0;
             }
         }
@@ -297,7 +297,7 @@ namespace ExpandoDB.Storage
         {
             using (var conn = GetConnection())
             {                
-                await conn.ExecuteAsync(_dropTableSql);                
+                await conn.ExecuteAsync(_dropTableSql).ConfigureAwait(false);                
             }            
         }
 
