@@ -27,17 +27,17 @@ namespace ExpandoDB.Rest
         /// <param name="db">The Database instance; this is auto-injected by NancyFX's IOC container.</param>
         public DbService(Database db) : base("/db")
         {
-            _db = db;
+            _db = db;            
 
             // Here we define the routes and their corresponding handlers.
             // Note that all handlers except OnGetCount() and OnGetCollectionSchema() are async.
 
             Post["/{collection}", true] = OnInsertContentAsync;
             Get["/{collection}/schema"] = OnGetCollectionSchema;
-            Get["/{collection}", true] = OnSearchContentsAsync;
+            Get["/{collection}", true] = OnSearchContentsAsync;            
             Get["/{collection}/count"] = OnGetCount;
             Get["/{collection}/{id:guid}", true] = OnGetContentAsync;
-            Put["/{collection}/{id:guid}", true] = OnUpdateContentAsync;
+            Put["/{collection}/{id:guid}", true] = OnUpdateContentAsync;                       
             Patch["/{collection}/{id:guid}", true] = OnPatchContentAsync;
             Delete["/{collection}/{id:guid}", true] = OnDeleteContentAsync;
             Delete["/{collection}", true] = OnDeleteCollectionAsync;
@@ -65,7 +65,7 @@ namespace ExpandoDB.Rest
             var content = new Content(dictionary);
 
             // Get the target ContentCollection; it will be auto-created if it doesn't exist.
-            var collection = _db[collectionName];            
+            var collection = _db[collectionName];
 
             // Insert the Content object into the target ContentCollection.
             var guid = await collection.InsertAsync(content).ConfigureAwait(false);
@@ -133,8 +133,9 @@ namespace ExpandoDB.Rest
 
             var collection = _db[collectionName];
             var requestDto = this.Bind<SearchRequestDto>();
-            var searchCriteria = requestDto.ToSearchCriteria();            
-            var result = await collection.SearchAsync(searchCriteria).ConfigureAwait(false);
+            var searchCriteria = requestDto.ToSearchCriteria();
+            var selectedFields = requestDto.select.ToList();
+            var result = await collection.SearchAsync(searchCriteria);
 
             stopwatch.Stop();
 

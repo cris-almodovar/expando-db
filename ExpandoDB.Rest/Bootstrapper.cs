@@ -81,33 +81,18 @@ namespace ExpandoDB.Rest
                     }
                 }
             });
-        }
+        }        
 
         protected override void ConfigureApplicationContainer(TinyIoCContainer container)
         {
             base.ConfigureApplicationContainer(container);
-
+            
             // There is only one instance of the Database object in the application.
             // It is created here, and registered with the IOC container so that 
             // it can be auto-injected into DbService instances.
             
             var db = new Database(Config.DbPath);
             container.Register<Database>(db);                       
-        }
-       
-        protected override NancyInternalConfiguration InternalConfiguration
-        {
-            get
-            {
-                // Configure all Web Service endpoints to return JSON only.
-                return NancyInternalConfiguration.WithOverrides(
-                    c =>
-                    {
-                        c.ResponseProcessors.Clear();
-                        c.ResponseProcessors.Add(typeof(JsonProcessor));
-                    }
-                );
-            }
-        }
+        }     
     }
 }
