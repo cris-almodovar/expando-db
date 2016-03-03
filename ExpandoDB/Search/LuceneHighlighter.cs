@@ -1,5 +1,6 @@
 ﻿using Common.Logging;
 using FlexLucene.Analysis;
+using FlexLucene.Analysis.Standard;
 using FlexLucene.Document;
 using FlexLucene.Index;
 using FlexLucene.Search;
@@ -20,7 +21,7 @@ namespace ExpandoDB.Search
     /// </summary>
     public static class LuceneHighlighter
     {
-        private const string HIGHLIGHT_FIELD_NAME = "_highlight";
+        public const string HIGHLIGHT_FIELD_NAME = "_highlight";
         private static readonly ILog _log = LogManager.GetLogger(typeof(LuceneHighlighter).Name);
 
         /// <summary>
@@ -70,14 +71,18 @@ namespace ExpandoDB.Search
         {
             var contentHightlightMap = contents.ToDictionary(c => c._id.ToString());
 
+            var reader = DirectoryReader.Open(writer, true);
             var indexSchema = CreateIndexSchema();
             var queryParser = new LuceneQueryParser(LuceneFieldExtensions.FULL_TEXT_FIELD_NAME, writer.GetAnalyzer(), indexSchema);
-            var query = queryParser.Parse(criteria.Query);
-            var highlighter = CreateHighlighter();
-            var fieldQuery = highlighter.GetFieldQuery(query);
-            var reader = DirectoryReader.Open(writer, true);
-            var searcher = new IndexSearcher(reader);
+            queryParser.SetMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
 
+            var query = queryParser.Parse(criteria.Query)
+                                   .Rewrite(reader);            
+
+            var highlighter = CreateHighlighter();            
+            var fieldQuery = highlighter.GetFieldQuery(query);
+
+            var searcher = new IndexSearcher(reader);
             var topFieldDocs = searcher.Search(query, contents.Count, Sort.RELEVANCE);
             var scoreDocs = topFieldDocs.ScoreDocs;
 

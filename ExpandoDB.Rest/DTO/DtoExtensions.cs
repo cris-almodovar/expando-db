@@ -5,8 +5,16 @@ using System.Linq;
 
 namespace ExpandoDB.Rest.DTO
 {
+    /// <summary>
+    /// Implements utitlity methods for ExpandoDB Data Transfer Objects (DTOs).
+    /// </summary>
     public static class DtoExtensions
     {
+        /// <summary>
+        /// Converts the given <see cref="SearchRequestDto"/> to a <see cref="SearchCriteria"/> object./>
+        /// </summary>
+        /// <param name="dto">The SearchRequestDto object.</param>
+        /// <returns></returns>
         public static SearchCriteria ToSearchCriteria(this SearchRequestDto dto)
         {
             var searchCriteria = new SearchCriteria
@@ -22,6 +30,11 @@ namespace ExpandoDB.Rest.DTO
             return searchCriteria;
         }
 
+        /// <summary>
+        /// Converts the given <see cref="CountRequestDto" to a <see cref="SearchCriteria"/> object./>
+        /// </summary>
+        /// <param name="dto">The CountRequestDto object.</param>
+        /// <returns></returns>
         public static SearchCriteria ToSearchCriteria(this CountRequestDto dto)
         {
             var searchCriteria = new SearchCriteria
@@ -33,6 +46,16 @@ namespace ExpandoDB.Rest.DTO
             return searchCriteria;
         }
 
+        /// <summary>
+        /// Populates the given <see cref="SearchResponseDto"/> with data from the given <see cref="SearchRequestDto"/> and <see cref="SearchResult{TResult}"/> objects.
+        /// </summary>
+        /// <param name="responseDto">The SearchResponseDto object.</param>
+        /// <param name="searchRequestDto">The SearchRequestDto object.</param>
+        /// <param name="collectionName">Name of the collection.</param>
+        /// <param name="searchResult">The SearchResult object.</param>
+        /// <returns></returns>
+        /// <exception cref="System.ArgumentNullException">
+        /// </exception>
         public static SearchResponseDto PopulateWith(this SearchResponseDto responseDto, SearchRequestDto searchRequestDto, string collectionName, SearchResult<Content> searchResult)
         {
             if (searchRequestDto == null)
@@ -53,11 +76,22 @@ namespace ExpandoDB.Rest.DTO
             responseDto.highlight = searchResult.IncludeHighlight;
 
             var fieldsToSelect = searchRequestDto.select.ToList();
+            if (fieldsToSelect.Count > 0 && searchResult.IncludeHighlight)
+                fieldsToSelect.Add(LuceneHighlighter.HIGHLIGHT_FIELD_NAME);
+
             responseDto.items = searchResult.Items.Select(c => c.Select(fieldsToSelect).AsExpando()).ToList();
 
             return responseDto;
         }
 
+        /// <summary>
+        /// Selects only the specified list of fields.
+        /// </summary>
+        /// <param name="content">The Content object.</param>
+        /// <param name="selectedFields">The list of fields to be selected.</param>
+        /// <returns></returns>
+        /// <exception cref="System.ArgumentNullException">
+        /// </exception>
         public static Content Select(this Content content, IList<string> selectedFields)
         {
             if (content == null)
@@ -68,18 +102,26 @@ namespace ExpandoDB.Rest.DTO
             if (selectedFields.Count == 0)
                 return content;
 
+            selectedFields = selectedFields.Distinct().ToList();
+
             var contentDictionary = content.AsDictionary();
 
             // Remove fields that are not in the selectedFields
-            contentDictionary.Keys
-                             .Where(fieldName => !selectedFields.Contains(fieldName))
-                             .ToList()
-                             .ForEach(fieldName => contentDictionary.Remove(fieldName));
+            var keysToRemove = contentDictionary.Keys
+                                                .Where(fieldName => !selectedFields.Contains(fieldName))
+                                                .ToList();
+
+            keysToRemove.ForEach(fieldName => contentDictionary.Remove(fieldName));
 
             // Content should now only contain the fields in the selectedFields list
             return content;
         }
 
+        /// <summary>
+        /// Converts the given comma-separated string to an IList<string>.
+        /// </summary>
+        /// <param name="csvString">The CSV string.</param>
+        /// <returns></returns>
         public static IList<string> ToList(this string csvString)
         {
             var list = new List<string>();

@@ -8,6 +8,10 @@ using System.Linq;
 
 namespace ExpandoDB.Rest
 {
+    /// <summary>
+    /// Binds request data to a DynamicDictionary object. 
+    /// </summary>
+    /// <seealso cref="Nancy.ModelBinding.IModelBinder" />
     public class DynamicModelBinder : IModelBinder
     {
         public object Bind(NancyContext context, Type modelType, object instance, BindingConfig configuration, params string[] blackListedProperties)

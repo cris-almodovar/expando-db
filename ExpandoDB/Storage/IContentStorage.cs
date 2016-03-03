@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 namespace ExpandoDB.Storage
 {
     /// <summary>
-    /// Provides persistence functions for dynamic Content.
+    /// Defines the operations that must be implemented by a Content Storage engine.
     /// </summary>
     public interface IContentStorage
     {

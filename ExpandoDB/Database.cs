@@ -1,4 +1,5 @@
-﻿using ExpandoDB.Storage;
+﻿using Common.Logging;
+using ExpandoDB.Storage;
 using System;
 using System.Collections.Concurrent;
 using System.Configuration;
@@ -12,8 +13,11 @@ using System.Threading.Tasks;
 namespace ExpandoDB
 {
     /// <summary>
-    /// 
+    /// Represents a collection of <see cref="ContentCollection"/> objects. 
     /// </summary>
+    /// <remarks>
+    /// This class is analogous to a MongoDB database.
+    /// </remarks>
     public class Database : IDisposable
     {
         internal const string DB_FILENAME = "expando-db.s3db";
@@ -28,7 +32,8 @@ namespace ExpandoDB
         private readonly ConcurrentDictionary<string, ContentCollectionSchema> _schemaCache;
         private readonly Timer _schemaPersistenceTimer;
         private readonly double _schemaPersistenceIntervalSeconds;
-        private readonly object _schemaPersistenceLock = new object();        
+        private readonly object _schemaPersistenceLock = new object();
+        private readonly ILog _log = LogManager.GetLogger(typeof(Database).Name);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Database"/> class.
@@ -84,7 +89,7 @@ namespace ExpandoDB
 
                     var newSchema = _contentCollections[schemaName].GetSchema();
                     _schemaCache.TryAdd(newSchema.Name, newSchema);
-                    await _schemaStorage.InsertAsync(newSchema);
+                    await _schemaStorage.InsertAsync(newSchema).ConfigureAwait(false);
                 }
 
                 var schemasToUpdate = from schemaName in _contentCollections.Keys.Intersect(_schemaCache.Keys)
@@ -100,7 +105,7 @@ namespace ExpandoDB
 
                     var updatedSchema = _contentCollections[schemaName].GetSchema();
                     _schemaCache[schemaName] = updatedSchema;
-                    await _schemaStorage.UpdateAsync(updatedSchema);
+                    await _schemaStorage.UpdateAsync(updatedSchema).ConfigureAwait(false);
                 }
 
                 var schemasToRemove = from schemaName in _schemaCache.Keys.Except(_contentCollections.Keys)                                      
@@ -110,12 +115,16 @@ namespace ExpandoDB
                 {
                     ContentCollectionSchema removedSchema = null;
                     _schemaCache.TryRemove(schemaName, out removedSchema);
-                    await _schemaStorage.DeleteAsync(schemaName);
+                    await _schemaStorage.DeleteAsync(schemaName).ConfigureAwait(false);
                 }
-            }            
+            }
+            catch (Exception ex)
+            {
+                _log.Error(ex);
+            }     
             finally
             {
-                Monitor.Exit(_schemaPersistenceLock);
+                Monitor.Exit(_schemaPersistenceLock);                
             }       
         }
 
@@ -182,10 +191,10 @@ namespace ExpandoDB
             ContentCollection collection = null;
 
             if (_contentCollections.TryRemove(collectionName, out collection))            
-                isSuccessful = await collection.DropAsync();
+                isSuccessful = await collection.DropAsync().ConfigureAwait(false);
 
             if (isSuccessful)
-                await PersistSchemas();
+                await PersistSchemas().ConfigureAwait(false);
 
             return isSuccessful;
         }

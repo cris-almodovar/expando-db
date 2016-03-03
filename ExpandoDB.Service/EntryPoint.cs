@@ -3,7 +3,7 @@
 namespace ExpandoDB.Rest
 {
     /// <summary>
-    /// Contains the application's Main() method.
+    /// Implements the application's Main() method.
     /// </summary>
     class EntryPoint
     {        

@@ -1,5 +1,8 @@
 ﻿namespace ExpandoDB.Rest.DTO
 {
+    /// <summary>
+    /// Represents the JSON data accepted by the GET /db/{collection} API.
+    /// </summary>
     public class SearchRequestDto
     {        
         public string select { get; set; }

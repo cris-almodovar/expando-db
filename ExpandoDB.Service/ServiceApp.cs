@@ -9,14 +9,15 @@ namespace ExpandoDB.Rest
 {
 
     /// <summary>
-    /// Represents the ExpandoDB Server application.
+    /// Wraps ExpandoDB in a Service application.
     /// </summary>
     public class ServiceApp 
     {
         private NancyHost _nancyHost;
         private readonly HostConfiguration _nancyHostConfig;
         private readonly Uri _baseUri;
-        private readonly ILog _log = LogManager.GetLogger(typeof(ServiceApp).Name);        
+        private readonly ILog _log = LogManager.GetLogger(typeof(ServiceApp).Name);
+        private const string DEFAULT_BASE_URL = @"http://localhost:9000/";
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceApp"/> class.
@@ -26,7 +27,7 @@ namespace ExpandoDB.Rest
             var appDirectory = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
             Directory.SetCurrentDirectory(appDirectory);
 
-            var baseUriString = ConfigurationManager.AppSettings["BaseUrl"] ?? "http://localhost:9000/";
+            var baseUriString = ConfigurationManager.AppSettings["NancyBaseUrl"] ?? DEFAULT_BASE_URL;
             if (!baseUriString.Trim().EndsWith("/", StringComparison.InvariantCulture))
                 baseUriString += "/";
 

@@ -6,7 +6,7 @@ using System.Dynamic;
 namespace ExpandoDB
 {
     /// <summary>
-    /// Represents a dynamic Content object.
+    /// Represents a dynamic JSON object.
     /// </summary>
     public class Content : DynamicObject
     {

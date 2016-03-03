@@ -10,6 +10,10 @@ using System.Threading.Tasks;
 
 namespace ExpandoDB.Storage
 {
+    /// <summary>
+    /// A Schema Storage engine that persists Content objects to a SQLite database.
+    /// </summary>
+    /// <seealso cref="ExpandoDB.Storage.ISchemaStorage" />
     internal class SQLiteSchemaStorage : ISchemaStorage
     {
         public const string SCHEMA_TABLE_NAME = "_schema";
@@ -81,7 +85,7 @@ namespace ExpandoDB.Storage
         {
             using (var conn = GetConnection())
             {
-                var result = await conn.QueryAsync(_selectAllSql);
+                var result = await conn.QueryAsync(_selectAllSql).ConfigureAwait(false);
                 var resultLookup = result.ToDictionary(row => row.name as string);
 
                 var collectionSchemas = new List<ContentCollectionSchema>();
@@ -105,7 +109,7 @@ namespace ExpandoDB.Storage
             {
                 var name = collectionSchema.Name;
                 var json = DynamicSerializer.Serialize(collectionSchema);
-                await conn.ExecuteAsync(_insertOneSql, new { name, json });
+                await conn.ExecuteAsync(_insertOneSql, new { name, json }).ConfigureAwait(false);
 
                 return name;
             }            
@@ -120,7 +124,7 @@ namespace ExpandoDB.Storage
             {
                 var name = collectionSchema.Name;
                 var json = DynamicSerializer.Serialize(collectionSchema);
-                var count = await conn.ExecuteAsync(_updateOneSql, new { name, json });
+                var count = await conn.ExecuteAsync(_updateOneSql, new { name, json }).ConfigureAwait(false);
 
                 return count;
             }
@@ -133,7 +137,7 @@ namespace ExpandoDB.Storage
 
             using (var conn = GetConnection())
             {               
-                var count = await conn.ExecuteAsync(_deleteOneSql, new { name = schemaName });
+                var count = await conn.ExecuteAsync(_deleteOneSql, new { name = schemaName }).ConfigureAwait(false);
                 return count;
             }
         }

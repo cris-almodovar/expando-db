@@ -2,6 +2,9 @@
 
 namespace ExpandoDB.Rest.DTO
 {
+    /// <summary>
+    /// Defines the fields common to all JSON data returned by ExpandoDB REST endpoints.
+    /// </summary>
     public abstract class ResponseDto
     {        
         public DateTime timestamp { get; set; }
