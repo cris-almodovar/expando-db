@@ -27,7 +27,7 @@ namespace ExpandoDB.Tests
             if (!Directory.Exists(_dbPath))
                 Directory.CreateDirectory(_dbPath);
 
-            _dbFilePath = Path.Combine(_dbPath, Guid.NewGuid().ToString() + ".sdb3");
+            _dbFilePath = Path.Combine(_dbPath, $"{Guid.NewGuid()}.sdb3");
             if (File.Exists(_dbFilePath))
                 File.Delete(_dbFilePath);
 
@@ -38,7 +38,7 @@ namespace ExpandoDB.Tests
         public void Cleanup()
         {
             SQLiteConnection.ClearAllPools();
-            Thread.Sleep(1000);
+            Thread.Sleep(TimeSpan.FromSeconds(2));
             File.Delete(_dbFilePath);
             Directory.Delete(_dbPath, true);
         }
@@ -47,7 +47,7 @@ namespace ExpandoDB.Tests
         [TestCategory("Content Storage tests")]
         public void Database_file_is_auto_created()        
         {            
-            var dbFilePath = Path.Combine(_dbPath, Guid.NewGuid().ToString() + ".sdb3");
+            var dbFilePath = Path.Combine(_dbPath, $"{Guid.NewGuid()}.sdb3");
             if (File.Exists(dbFilePath))
                 File.Delete(dbFilePath);
 

@@ -7,8 +7,19 @@ using LuceneDocument = FlexLucene.Document.Document;
 
 namespace ExpandoDB.Search
 {
+    /// <summary>
+    /// Implements utility methods for Lucene search.
+    /// </summary>
     public static class SearchExtensions
     {
+        /// <summary>
+        /// Converts a <see cref="Content"/> object to a <see cref="LuceneDocument"/> object.
+        /// </summary>
+        /// <param name="content">The Content object</param>
+        /// <param name="indexSchema">The index schema.</param>
+        /// <returns></returns>
+        /// <exception cref="System.ArgumentNullException"></exception>
+        /// <exception cref="System.InvalidOperationException">Cannot index a Content that does not have an _id.</exception>
         public static LuceneDocument ToLuceneDocument(this Content content, IndexSchema indexSchema = null)
         {
             if (content == null)

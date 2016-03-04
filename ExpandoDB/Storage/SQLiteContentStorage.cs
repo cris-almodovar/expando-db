@@ -45,7 +45,7 @@ namespace ExpandoDB.Storage
             if (contentCollectionName.Any(c => c == '[' || c == ']'))
                 throw new ArgumentException("collectionName cannot contain '[' or ']'");
             if (contentCollectionName == SQLiteSchemaStorage.SCHEMA_TABLE_NAME)
-                throw new ArgumentException(String.Format("collectionName cannot be '{0}'; this is a reserved name.", SQLiteSchemaStorage.SCHEMA_TABLE_NAME));
+                throw new ArgumentException($"collectionName cannot be '{SQLiteSchemaStorage.SCHEMA_TABLE_NAME}'; this is a reserved name.");
 
             _dbFilePath = dbFilePath;
             _contentCollectionName = contentCollectionName;
@@ -55,15 +55,15 @@ namespace ExpandoDB.Storage
             var cacheSize = ConfigurationManager.AppSettings["SQLitePragmaCacheSize"] ?? "10000";
             _connectionString = String.Format(CONN_STRING_TEMPLATE, dbFilePath, maxPoolSize, synchronous, cacheSize);
 
-            _createTableSql = String.Format("CREATE TABLE IF NOT EXISTS [{0}] (id TEXT PRIMARY KEY, json TEXT)", _contentCollectionName);
-            _insertOneSql = String.Format("INSERT INTO [{0}] (id, json) VALUES (@id, @json)", _contentCollectionName);
-            _selectOneSql = String.Format("SELECT id, json FROM [{0}] WHERE id = @id", _contentCollectionName);
-            _selectManySql = String.Format("SELECT id, json FROM [{0}] WHERE id IN @ids", _contentCollectionName);
-            _selectCountSql = String.Format("SELECT COUNT(*) FROM [{0}] WHERE id = @id", _contentCollectionName);
-            _updateOneSql = String.Format("UPDATE [{0}] SET json = @json WHERE id = @id", _contentCollectionName);
-            _deleteOneSql = String.Format("DELETE FROM [{0}] WHERE id = @id", _contentCollectionName);
-            _deleteManySql = String.Format("DELETE FROM [{0}] WHERE id IN @ids", _contentCollectionName);
-            _dropTableSql = String.Format("DROP TABLE IF EXISTS [{0}]", _contentCollectionName);
+            _createTableSql = $"CREATE TABLE IF NOT EXISTS [{_contentCollectionName}] (id TEXT PRIMARY KEY, json TEXT)";
+            _insertOneSql = $"INSERT INTO [{_contentCollectionName}] (id, json) VALUES (@id, @json)";
+            _selectOneSql = $"SELECT id, json FROM [{_contentCollectionName}] WHERE id = @id";
+            _selectManySql = $"SELECT id, json FROM [{_contentCollectionName}] WHERE id IN @ids";
+            _selectCountSql = $"SELECT COUNT(*) FROM [{_contentCollectionName}] WHERE id = @id";
+            _updateOneSql = $"UPDATE [{_contentCollectionName}] SET json = @json WHERE id = @id";
+            _deleteOneSql = $"DELETE FROM [{_contentCollectionName}] WHERE id = @id";
+            _deleteManySql = $"DELETE FROM [{_contentCollectionName}] WHERE id IN @ids";
+            _dropTableSql = $"DROP TABLE IF EXISTS [{_contentCollectionName}]";
 
             EnsureDatabaseExists();
             EnsureCollectionTableExists();            

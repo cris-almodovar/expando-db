@@ -16,7 +16,7 @@ namespace ExpandoDB.Search
         public const string FULL_TEXT_FIELD_NAME = "_full_text_";
         public const string DATE_TIME_FORMAT = "yyyyMMddHHmmssfffffff";  
         public const string NUMBER_FORMAT = "000000000000000.000000000000";
-        public const string DEFAULT_NULL_VALUE_TOKEN = "_null_";
+        public const string DEFAULT_NULL_TOKEN = "_null_";
 
         /// <summary>
         /// Creates Lucene fields for the given value.

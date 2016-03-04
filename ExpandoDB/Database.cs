@@ -21,8 +21,8 @@ namespace ExpandoDB
     public class Database : IDisposable
     {
         internal const string DB_FILENAME = "expando-db.s3db";
-        internal const string DB_DIR_NAME = "db";
-        internal const string INDEX_DIR_NAME = "index";
+        internal const string DB_DIRECTORY_NAME = "db";
+        internal const string INDEX_DIRECTORY_NAME = "index";
 
         private readonly string _dbPath;        
         private readonly string _dbFilePath;
@@ -44,14 +44,14 @@ namespace ExpandoDB
             if (String.IsNullOrWhiteSpace(dbPath))
             {
                 var appPath = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
-                dbPath = Path.Combine(appPath, DB_DIR_NAME);
+                dbPath = Path.Combine(appPath, DB_DIRECTORY_NAME);
             }
 
             _dbPath = dbPath;
             _dbFilePath = Path.Combine(_dbPath, DB_FILENAME);
             EnsureDatabaseDirectoryExists(_dbPath, _dbFilePath);
 
-            _indexPath = Path.Combine(_dbPath, INDEX_DIR_NAME);
+            _indexPath = Path.Combine(_dbPath, INDEX_DIRECTORY_NAME);
             EnsureIndexDirectoryExists(_indexPath);
 
             _contentCollections = new ConcurrentDictionary<string, ContentCollection>();

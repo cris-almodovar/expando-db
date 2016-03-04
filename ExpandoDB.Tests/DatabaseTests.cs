@@ -19,7 +19,7 @@ namespace ExpandoDB.Tests
         {
             var appPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
-            _dbPath = Path.Combine(appPath, "db");
+            _dbPath = Path.Combine(appPath, $"db-{Guid.NewGuid()}");
             if (Directory.Exists(_dbPath))
                 Directory.Delete(_dbPath, true);
 

@@ -42,11 +42,11 @@ namespace ExpandoDB.Storage
             var cacheSize = ConfigurationManager.AppSettings["SQLitePragmaCacheSize"] ?? "10000";
             _connectionString = String.Format(CONN_STRING_TEMPLATE, dbFilePath, maxPoolSize, synchronous, cacheSize);
 
-            _createTableSql = String.Format("CREATE TABLE IF NOT EXISTS [{0}] (name TEXT PRIMARY KEY, json TEXT)", SCHEMA_TABLE_NAME);
-            _insertOneSql = String.Format("INSERT INTO [{0}] (name, json) VALUES (@name, @json)", SCHEMA_TABLE_NAME);
-            _selectAllSql = String.Format("SELECT name,json FROM [{0}]", SCHEMA_TABLE_NAME);           
-            _updateOneSql = String.Format("UPDATE [{0}] SET json = @json WHERE name = @name", SCHEMA_TABLE_NAME);
-            _deleteOneSql = String.Format("DELETE FROM [{0}] WHERE name = @name", SCHEMA_TABLE_NAME);
+            _createTableSql = $"CREATE TABLE IF NOT EXISTS [{SCHEMA_TABLE_NAME}] (name TEXT PRIMARY KEY, json TEXT)";
+            _insertOneSql = $"INSERT INTO [{SCHEMA_TABLE_NAME}] (name, json) VALUES (@name, @json)";
+            _selectAllSql = $"SELECT name,json FROM [{SCHEMA_TABLE_NAME}]";           
+            _updateOneSql = $"UPDATE [{SCHEMA_TABLE_NAME}] SET json = @json WHERE name = @name";
+            _deleteOneSql = $"DELETE FROM [{SCHEMA_TABLE_NAME}] WHERE name = @name";
 
             EnsureDatabaseExists();
             EnsureSchemaTableExists();                 

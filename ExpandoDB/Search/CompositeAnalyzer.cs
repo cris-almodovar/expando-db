@@ -78,7 +78,7 @@ namespace ExpandoDB.Search
             if (_perFieldAnalyzers.ContainsKey(fieldName))
                 analyzer = _perFieldAnalyzers[fieldName];
 
-            // Check if fieldName is new; if yes, then add it to the _perFieldAnalyzers
+            // Check if fieldName is new; if yes, add it to the _perFieldAnalyzers dictionary.
             if (_indexSchema.Fields.ContainsKey(fieldName))
             {
                 var indexedField = _indexSchema.Fields[fieldName];

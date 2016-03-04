@@ -76,7 +76,7 @@ namespace ExpandoDB
 
             _dbFilePath = Path.Combine(dbPath, Database.DB_FILENAME);
 
-            _indexPath = Path.Combine(dbPath, Database.INDEX_DIR_NAME, name);
+            _indexPath = Path.Combine(dbPath, Database.INDEX_DIRECTORY_NAME, name);
             if (!Directory.Exists(_indexPath))
                 Directory.CreateDirectory(_indexPath);
 
@@ -227,12 +227,21 @@ namespace ExpandoDB
 
             await _contentStorage.DropAsync().ConfigureAwait(false); 
             _luceneIndex.Dispose();
+            
+            var tryCount = 0;
+            while (tryCount < 3)
+            {
+                tryCount += 1;
+                // Wait half a second before deleting the Lucene index
+                await Task.Delay(TimeSpan.FromSeconds(0.5)).ConfigureAwait(false);
+                if (!Directory.Exists(_indexPath))
+                    break;
 
-            // Wait half a second before deleting the Lucene index
-            await Task.Delay(TimeSpan.FromMilliseconds(500)).ConfigureAwait(false);
+                Directory.Delete(_indexPath, true);                
+            }
 
-            Directory.Delete(_indexPath, true);
-            // TODO: Check that the index directory has been deleted successfully
+            if (Directory.Exists(_indexPath))
+                throw new Exception($"Unable to delete Lucene index directory: {_indexPath}");         
 
             IsDropped = true;
             return IsDropped;

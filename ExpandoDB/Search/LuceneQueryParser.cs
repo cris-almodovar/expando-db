@@ -6,6 +6,10 @@ using System;
 
 namespace ExpandoDB.Search
 {
+    /// <summary>
+    /// A custom QueryParser that automatically converts dates and numbers in query expressions to ExpandoDB's date and number formats.
+    /// </summary>
+    /// <seealso cref="FlexLucene.Queryparser.Classic.QueryParser" />
     public class LuceneQueryParser : QueryParser
     {
         private readonly IndexSchema _indexSchema;

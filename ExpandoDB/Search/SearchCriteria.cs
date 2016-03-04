@@ -1,5 +1,8 @@
 ﻿namespace ExpandoDB.Search
 {
+    /// <summary>
+    /// Represents the search parameters accepted by ExpandoDB.
+    /// </summary>
     public class SearchCriteria
     {               
         public string Query { get; set; }        
