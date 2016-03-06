@@ -9,6 +9,7 @@ using System;
 using System.Linq;
 using Nancy.Responses.Negotiation;
 using System.Configuration;
+using Nancy.Conventions;
 
 namespace ExpandoDB.Rest
 {
@@ -93,6 +94,26 @@ namespace ExpandoDB.Rest
             
             var db = new Database(Config.DbPath);
             container.Register<Database>(db);                       
-        }     
+        }
+
+        protected override NancyInternalConfiguration InternalConfiguration
+        {
+            get
+            {
+                return NancyInternalConfiguration.WithOverrides(
+                    c =>
+                    {
+                        c.ResponseProcessors.Clear();
+                        c.ResponseProcessors.Add(typeof(JsonProcessor));
+                    }
+                );
+            }
+        }
+
+        protected override void ConfigureConventions(NancyConventions nancyConventions)
+        {
+            base.ConfigureConventions(nancyConventions);
+
+            nancyConventions.StaticContentsConventions.AddDirectory(@"/api-docs");        }
     }
 }
