@@ -1,7 +1,7 @@
 {
     "swagger": "2.0",
     "info": {
-        "title": "ExpandoDB API",
+        "title": "ExpandoDB",
         "description": "A dynamic JSON database with integrated Lucene search.",
         "version": "0.9.2"
     },
@@ -63,7 +63,7 @@
                     {
                         "name": "pageNumber",
                         "in": "query",
-                        "description": "Specifies the page number of the resultset to return, if the resultset consists of more than one page. This parameter and the itemsPerPage parameter are analogous to the OFFSET-FETCH filter in T-SQL. If not specified, this parameter defaults to 1.",
+                        "description": "Specifies the page number to return, if the resultset consists of more than one page. This parameter and the itemsPerPage parameter are analogous to the OFFSET-FETCH filter in T-SQL. If not specified, this parameter defaults to 1.",
                         "required": false,
                         "type": "integer"
                     },
@@ -94,12 +94,12 @@
                 }
             },
             "post": {
-                "summary": "Inserts a Content object into the target ContentCollection. The Content object is simply a JSON object. This API returns the unique ID of the newly inserted Content object.",
+                "summary": "Inserts a Content object into the target ContentCollection. A Content object is simply a JSON object. This API returns the unique ID of the newly inserted Content object.",
                 "parameters": [
                     {
                         "name": "collection",
                         "in": "path",
-                        "description": "The name of the ContentCollection into which the Content object is to be inserted.",
+                        "description": "The name of the target ContentCollection.",
                         "required": true,
                         "type": "string"
                     },
@@ -137,7 +137,7 @@
                     {
                         "name": "collection",
                         "in": "path",
-                        "description": "The name of the ContentCollection to be dropped.",
+                        "description": "The name of the target ContentCollection.",
                         "required": true,
                         "type": "string"
                     }
@@ -163,12 +163,12 @@
         },
         "/db/{collection}/schema": {
             "get": {
-                "summary": "Gets the schema of the specified ContentCollection.",
+                "summary": "Returns the schema of the specified ContentCollection.",
                 "parameters": [
                     {
                         "name": "collection",
                         "in": "path",
-                        "description": "The name of the ContentCollection whose schema is to be returned.",
+                        "description": "The name of the target ContentCollection.",
                         "required": true,
                         "type": "string"
                     }
@@ -194,12 +194,12 @@
         },
         "/db/{collection}/count": {
             "get": {
-                "summary": "Counts the number of Content objects in the specified ContentCollection, that satisfies a query expression.",
+                "summary": "Counts the number of Content objects in the specified ContentCollection; optionally, the Content objects can be matched against a query expression.",
                 "parameters": [
                     {
                         "name": "collection",
                         "in": "path",
-                        "description": "The name of the ContentCollection.",
+                        "description": "The name of the target ContentCollection.",
                         "required": true,
                         "type": "string"
                     },
@@ -268,7 +268,7 @@
                 }
             },
             "put": {
-                "summary": "Completely replaces the Content object with the specified id.",
+                "summary": "Completely replaces the Content object whose ID is specified.",
                 "parameters": [
                     {
                         "name": "collection",
@@ -313,7 +313,7 @@
                 }
             },
             "patch": {
-                "summary": "Partially updates the Content object with the specified id.",
+                "summary": "Partially updates the Content object whose ID is specified.",
                 "parameters": [
                     {
                         "name": "collection",
@@ -358,7 +358,7 @@
                 }
             },
             "delete": {
-                "summary": "Deletes the the Content object with the specified id, from the specified ContentCollection.",
+                "summary": "Deletes the Content object whose ID is specified.",
                 "parameters": [
                     {
                         "name": "collection",
@@ -470,7 +470,7 @@
                 },
                 "_id": {
                     "type": "string",
-                    "description": "The unique ID (GUID)of the newly inserted Content."
+                    "description": "The unique ID (GUID)of the newly created Content object"
                 },
                 "timestamp": {
                     "type": "string",
