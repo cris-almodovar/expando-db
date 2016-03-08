@@ -234,7 +234,7 @@ namespace ExpandoDB.Search
                             break;
 
                         case FieldDataType.Array:
-                            throw new IndexSchemaException("Nested arrays are currently not supported.");
+                            throw new IndexSchemaException("JSON with nested arrays are currently not supported.");
 
                         case FieldDataType.Object:
                             var dictionary = item as IDictionary<string, object>;
@@ -259,8 +259,15 @@ namespace ExpandoDB.Search
             foreach (var fieldName in dictionary.Keys)
             {
                 var childField = dictionary[fieldName];
-                var childFieldDataType = GetFieldDataType(childField);    
-                           
+                var childFieldDataType = GetFieldDataType(childField);
+
+                var childIndexedField = new IndexedField
+                {
+                    Name = String.Format("{0}.{1}", parentIndexedField.Name, fieldName),
+                    DataType = childFieldDataType
+                };
+                childSchema.Fields.TryAdd(childIndexedField.Name, childIndexedField);
+
                 switch (childFieldDataType)
                 {
                     case FieldDataType.Unknown:
@@ -269,22 +276,20 @@ namespace ExpandoDB.Search
                     case FieldDataType.Number:
                     case FieldDataType.DateTime:
                     case FieldDataType.Boolean:
-                    case FieldDataType.Array:
-                        var childIndexedField = new IndexedField
-                        {
-                            Name = String.Format("{0}.{1}", parentIndexedField.Name, fieldName),
-                            DataType = childFieldDataType
-                        };
-                        childSchema.Fields.TryAdd(childIndexedField.Name, childIndexedField);
+                        luceneFields.AddRange(childField.ToLuceneFields(childIndexedField));
+                        break;
 
-                        if (childFieldDataType == FieldDataType.Array && childField is IList)                        
-                            luceneFields.AddRange((childField as IList).ToLuceneFields(childIndexedField));                        
-                        else
-                            luceneFields.AddRange(childField.ToLuceneFields(childIndexedField));
+                    case FieldDataType.Array:
+                        var list = childField as IList;
+                        if (list != null)
+                            luceneFields.AddRange(list.ToLuceneFields(childIndexedField));
                         break;
 
                     case FieldDataType.Object:
-                        throw new IndexSchemaException("Nested objects are currently not supported.");
+                        var nestedDictionary = childField as IDictionary<string, object>;
+                        if (nestedDictionary != null)
+                            luceneFields.AddRange(nestedDictionary.ToLuceneFields(childIndexedField));
+                        break;                        
                 }
             }
 
