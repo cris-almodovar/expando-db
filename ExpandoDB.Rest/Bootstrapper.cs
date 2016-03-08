@@ -41,7 +41,7 @@ namespace ExpandoDB.Rest
             pipelines.OnError.AddItemToEndOfPipeline((ctx, ex) =>
             {
                 _log.Error(ex);
-                var dto = new ErrorResponseDto { timestamp = DateTime.UtcNow, message = $"{ex.GetType().Name} - {ex.Message}", statusCode = HttpStatusCode.InternalServerError };
+                var dto = new ErrorResponseDto { timestamp = DateTime.UtcNow, errorMessage = $"{ex.GetType().Name} - {ex.Message}", statusCode = HttpStatusCode.InternalServerError };
                 var response = new JsonResponse<ErrorResponseDto>(dto, new DefaultJsonSerializer())
                 {
                     StatusCode = HttpStatusCode.InternalServerError

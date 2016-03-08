@@ -43,7 +43,7 @@ namespace ExpandoDB.Tests
         public void Cleanup()
         {
             _db.Dispose();
-            Thread.Sleep(TimeSpan.FromSeconds(2));
+            Thread.Sleep(TimeSpan.FromSeconds(5));
             Directory.Delete(_dbPath, true);
         }
 

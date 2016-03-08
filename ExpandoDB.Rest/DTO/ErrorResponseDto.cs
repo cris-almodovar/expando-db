@@ -10,6 +10,6 @@ namespace ExpandoDB.Rest.DTO
     {
         public DateTime timestamp { get; set; }
         public HttpStatusCode statusCode { get; set; }
-        public string message { get; set; }
+        public string errorMessage { get; set; }
     }
 }

@@ -649,13 +649,13 @@
                 "timestamp": {
                     "type": "string",
                     "format": "date-time",
-                    "description": "The error occurred on the server at this date/time (UTC)."
+                    "description": "The date/time (UTC) when the error occurred on the server."
                 },
                 "statusCode": {
                     "type": "integer",
                     "description": "The HTTP status code."
                 },
-                "message": {
+                "errorMessage": {
                     "type": "string",
                     "description": "The error message."
                 }
