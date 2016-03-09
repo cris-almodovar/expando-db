@@ -113,7 +113,7 @@ namespace ExpandoDB.Rest
         protected override void ConfigureConventions(NancyConventions nancyConventions)
         {
             base.ConfigureConventions(nancyConventions);
-
-            nancyConventions.StaticContentsConventions.AddDirectory(@"/api-docs");        }
+            nancyConventions.StaticContentsConventions.AddDirectory(@"/api-docs");
+        }
     }
 }

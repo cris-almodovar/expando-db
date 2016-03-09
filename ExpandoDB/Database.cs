@@ -38,7 +38,7 @@ namespace ExpandoDB
         /// <summary>
         /// Initializes a new instance of the <see cref="Database"/> class.
         /// </summary>
-        /// <param name="dbPath">The database path.</param>
+        /// <param name="dbPath">The database directory path.</param>
         public Database(string dbPath = null)
         {
             if (String.IsNullOrWhiteSpace(dbPath))
@@ -70,7 +70,7 @@ namespace ExpandoDB
             }
 
             _schemaPersistenceIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["SchemaPersistenceIntervalSeconds"] ?? "1");
-            _schemaPersistenceTimer = new Timer( async (o) =>  await PersistSchemas().ConfigureAwait(false), null, TimeSpan.FromSeconds(_schemaPersistenceIntervalSeconds), TimeSpan.FromSeconds(_schemaPersistenceIntervalSeconds));
+            _schemaPersistenceTimer = new Timer( async (o) => await PersistSchemas(), null, TimeSpan.FromSeconds(_schemaPersistenceIntervalSeconds), TimeSpan.FromSeconds(_schemaPersistenceIntervalSeconds));
 
         }
 

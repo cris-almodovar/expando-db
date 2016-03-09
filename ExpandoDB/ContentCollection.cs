@@ -39,7 +39,7 @@ namespace ExpandoDB
         public string Name { get { return _name; } }
 
         /// <summary>
-        /// Gets a value indicating whether this ContentCollection has been already dropped.
+        /// Gets a value indicating whether this ContentCollection has already been dropped.
         /// </summary>
         /// <value>
         /// <c>true</c> if this instance has already been dropped; otherwise, <c>false</c>.
