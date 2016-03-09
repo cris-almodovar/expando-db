@@ -14,7 +14,7 @@ namespace ExpandoDB.Storage
     /// </summary>
     public class SQLiteContentStorage : IContentStorage
     {
-        private const string CONN_STRING_TEMPLATE = "Data Source={0}; Version=3; Pooling=True; Max Pool Size={1}; DateTimeKind=UTC; Enlist=N; Compress=True; Synchronous={2}; Page Size=1024; Cache Size={3}";
+        private const string CONN_STRING_TEMPLATE = "Data Source={0}; Version=3; Pooling=True; Max Pool Size={1}; DateTimeKind=UTC; Enlist=N; Compress=True; Synchronous={2}; Page Size=1024; Cache Size={3}; Jounal Mode=WAL;";
         private const int SQLITE_MAX_VARIABLE_NUMBER = 999;
         private readonly string _dbFilePath;
         private readonly string _connectionString;

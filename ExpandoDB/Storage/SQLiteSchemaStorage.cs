@@ -17,7 +17,7 @@ namespace ExpandoDB.Storage
     internal class SQLiteSchemaStorage : ISchemaStorage
     {
         public const string SCHEMA_TABLE_NAME = "_schema";
-        private const string CONN_STRING_TEMPLATE = "Data Source={0}; Version=3; Pooling=True; Max Pool Size={1}; DateTimeKind=UTC; Enlist=N; Compress=True; Synchronous={2}; Page Size=1024; Cache Size={3}";
+        private const string CONN_STRING_TEMPLATE = "Data Source={0}; Version=3; Pooling=True; Max Pool Size={1}; DateTimeKind=UTC; Enlist=N; Compress=True; Synchronous={2}; Page Size=1024; Cache Size={3}; Jounal Mode=WAL;";
         private readonly string _dbFilePath;
         private readonly string _connectionString;
         private readonly string _createTableSql;
