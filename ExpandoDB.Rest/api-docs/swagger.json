@@ -3,7 +3,7 @@
     "info": {
         "title": "ExpandoDB",
         "description": "A dynamic JSON database with integrated Lucene search.",
-        "version": "0.9.2"
+        "version": "0.9.6"
     },
     "host": "localhost:9000",
     "schemes": [
