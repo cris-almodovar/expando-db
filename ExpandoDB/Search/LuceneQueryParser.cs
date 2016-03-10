@@ -43,12 +43,12 @@ namespace ExpandoDB.Search
                     var date2 = DateTime.MinValue;
 
                     if (DynamicSerializer.TryParseDateTime(part1, ref date1))
-                        part1 = date1.ToUniversalTime().ToString(LuceneFieldExtensions.DATE_TIME_FORMAT);
+                        part1 = date1.ToUniversalTime().ToString(LuceneExtensions.DATE_TIME_FORMAT);
                     if (DynamicSerializer.TryParseDateTime(part2, ref date2))
-                        part2 = date2.ToUniversalTime().ToString(LuceneFieldExtensions.DATE_TIME_FORMAT);
+                        part2 = date2.ToUniversalTime().ToString(LuceneExtensions.DATE_TIME_FORMAT);
 
-                    part1 = part1.PadRight(LuceneFieldExtensions.DATE_TIME_FORMAT.Length, '0');
-                    part2 = part2.PadRight(LuceneFieldExtensions.DATE_TIME_FORMAT.Length, '0');
+                    part1 = part1.PadRight(LuceneExtensions.DATE_TIME_FORMAT.Length, '0');
+                    part2 = part2.PadRight(LuceneExtensions.DATE_TIME_FORMAT.Length, '0');
                 }
             }
             return base.GetRangeQuery(fieldName, part1, part2, startInclusive, endInclusive);
@@ -56,18 +56,20 @@ namespace ExpandoDB.Search
 
         protected override Query GetFieldQuery(string fieldName, string queryText, bool quoted)
         {
-            if (_indexSchema.Fields.ContainsKey(fieldName))
+            if (_indexSchema.Fields.ContainsKey(fieldName) && queryText != Config.LuceneNullToken)
             {
                 var indexedField = _indexSchema.Fields[fieldName];
                 if (indexedField.DataType == FieldDataType.Number)
-                    queryText = FormatAsLuceneNumberString(queryText);
+                {                    
+                   queryText = FormatAsLuceneNumberString(queryText);
+                }
                 else if (indexedField.DataType == FieldDataType.DateTime)
                 {
-                    var date1 = DateTime.MinValue;                    
+                    var date1 = DateTime.MinValue;
                     if (DynamicSerializer.TryParseDateTime(queryText, ref date1))
-                        queryText = date1.ToUniversalTime().ToString(LuceneFieldExtensions.DATE_TIME_FORMAT);
+                        queryText = date1.ToUniversalTime().ToString(LuceneExtensions.DATE_TIME_FORMAT);
 
-                    queryText = queryText.PadRight(LuceneFieldExtensions.DATE_TIME_FORMAT.Length, '0');
+                    queryText = queryText.PadRight(LuceneExtensions.DATE_TIME_FORMAT.Length, '0');
                 }
             }
             return base.GetFieldQuery(fieldName, queryText, quoted);

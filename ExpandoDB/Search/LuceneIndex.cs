@@ -183,7 +183,7 @@ namespace ExpandoDB.Search
             criteria.Validate();
 
             var result = new SearchResult<Guid>(criteria);
-            var queryParser = new LuceneQueryParser(LuceneFieldExtensions.FULL_TEXT_FIELD_NAME, _compositeAnalyzer, _indexSchema);
+            var queryParser = new LuceneQueryParser(LuceneExtensions.FULL_TEXT_FIELD_NAME, _compositeAnalyzer, _indexSchema);
             var query = queryParser.Parse(criteria.Query);
 
             var searcher = _searcherManager.Acquire() as IndexSearcher;
@@ -215,7 +215,7 @@ namespace ExpandoDB.Search
             var reverse = sortFieldName.StartsWith("-", StringComparison.InvariantCulture);
             if (reverse)
                 sortFieldName = sortFieldName.TrimStart('-');
-
+            
             sortFields.Add(new SortField(sortFieldName, SortFieldType.STRING, reverse));            
 
             return new Sort(sortFields.ToArray());

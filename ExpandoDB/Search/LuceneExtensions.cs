@@ -5,18 +5,71 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using LuceneDocument = FlexLucene.Document.Document;
 
 namespace ExpandoDB.Search
 {
     /// <summary>
     /// Implements extension methods for converting objects to Lucene Fields.
     /// </summary>
-    public static class LuceneFieldExtensions
+    public static class LuceneExtensions
     {       
         public const string FULL_TEXT_FIELD_NAME = "_full_text_";
         public const string DATE_TIME_FORMAT = "yyyyMMddHHmmssfffffff";  
         public const string NUMBER_FORMAT = "000000000000000.000000000000";
         public const string DEFAULT_NULL_TOKEN = "_null_";
+
+        /// <summary>
+        /// Converts a <see cref="Content"/> object to a <see cref="LuceneDocument"/> object.
+        /// </summary>
+        /// <param name="content">The Content object</param>
+        /// <param name="indexSchema">The index schema.</param>
+        /// <returns></returns>
+        /// <exception cref="System.ArgumentNullException"></exception>
+        /// <exception cref="System.InvalidOperationException">Cannot index a Content that does not have an _id.</exception>
+        public static LuceneDocument ToLuceneDocument(this Content content, IndexSchema indexSchema = null)
+        {
+            if (content == null)
+                throw new ArgumentNullException(nameof(content));
+
+            if (indexSchema == null)
+                indexSchema = IndexSchema.CreateDefault();
+
+            var contentDictionary = content.AsDictionary();
+            if (!contentDictionary.ContainsKey(Content.ID_FIELD_NAME))
+                throw new InvalidOperationException("Cannot index a Content that does not have an _id.");
+
+            var luceneDocument = new LuceneDocument();
+
+            // Make sure the _id field is the first field added to the Lucene document
+            var keys = contentDictionary.Keys.Except(new[] { Content.ID_FIELD_NAME }).ToList();
+            keys.Insert(0, Content.ID_FIELD_NAME);
+
+            foreach (var fieldName in keys)
+            {
+                IndexedField indexedField = null;
+                if (!indexSchema.Fields.TryGetValue(fieldName, out indexedField))
+                {
+                    indexedField = new IndexedField
+                    {
+                        Name = fieldName
+                    };
+                    indexSchema.Fields.TryAdd(fieldName, indexedField);
+                }
+
+                var fieldValue = contentDictionary[fieldName];
+                var luceneFields = fieldValue.ToLuceneFields(indexedField);
+                foreach (var luceneField in luceneFields)
+                    luceneDocument.Add(luceneField);
+            }
+
+            // The full-text field is always generated and added to the lucene document,
+            // even though it is not part of the index schema exposed to the user.
+            var fullText = content.ToLuceneFullTextString();
+            luceneDocument.Add(new TextField(FULL_TEXT_FIELD_NAME, fullText, FieldStore.NO));
+
+            return luceneDocument;
+        }
 
         /// <summary>
         /// Creates Lucene fields for the given value.
@@ -32,126 +85,141 @@ namespace ExpandoDB.Search
             var luceneFields = new List<Field>();            
             var fieldName = indexedField.Name.Trim();
 
-            if (value == null)
+            
+            var fieldType = value?.GetType();
+            var typeCode = fieldType != null ? Type.GetTypeCode(fieldType) : TypeCode.Empty;
+
+            switch (typeCode)
             {
-                if (String.IsNullOrWhiteSpace(Config.LuceneNullToken) == false)
-                {
-                    var nullString = Config.LuceneNullToken;
-                    luceneFields.Add(new StringField(fieldName, nullString, FieldStore.NO));
-                }
-            }
-            else
-            {
-                var fieldType = value.GetType();
-                switch (Type.GetTypeCode(fieldType))
-                {
-                    case TypeCode.UInt16:
-                    case TypeCode.UInt32:
-                    case TypeCode.UInt64:
-                    case TypeCode.Int16:
-                    case TypeCode.Int32:
-                    case TypeCode.Int64:
-                    case TypeCode.Decimal:
-                    case TypeCode.Double:
-                    case TypeCode.Single:
+                case TypeCode.UInt16:
+                case TypeCode.UInt32:
+                case TypeCode.UInt64:
+                case TypeCode.Int16:
+                case TypeCode.Int32:
+                case TypeCode.Int64:
+                case TypeCode.Decimal:
+                case TypeCode.Double:
+                case TypeCode.Single:
+                    if (indexedField.DataType == FieldDataType.Unknown)
+                        indexedField.DataType = FieldDataType.Number;
+                    else if (indexedField.DataType != FieldDataType.Array)
+                        EnsureSameFieldDataType(indexedField, FieldDataType.Number);
+
+                    var numberString = Convert.ToDouble(value).ToLuceneNumberString();
+                    luceneFields.Add(new StringField(fieldName, numberString, FieldStore.NO));
+
+                    // Only top-level and non-array / non-object fields are sortable
+                    if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
+                        luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(numberString)));
+                    break;
+
+                case TypeCode.Boolean:
+                    if (indexedField.DataType == FieldDataType.Unknown)
+                        indexedField.DataType = FieldDataType.Boolean;
+                    else if (indexedField.DataType != FieldDataType.Array)
+                        EnsureSameFieldDataType(indexedField, FieldDataType.Boolean);
+
+                    var booleanString = value.ToString().ToLower();
+                    luceneFields.Add(new StringField(fieldName, booleanString, FieldStore.NO));
+
+                    // Only top-level and non-array fields are sortable
+                    if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
+                        luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(booleanString)));
+                    break;
+
+                case TypeCode.String:
+                    var stringValue = (string)value;
+
+                    if (indexedField.DataType == FieldDataType.Unknown)
+                        indexedField.DataType = FieldDataType.Text;
+                    else if (indexedField.DataType != FieldDataType.Array)
+                        EnsureSameFieldDataType(indexedField, FieldDataType.Text);
+
+                    luceneFields.Add(new TextField(fieldName, stringValue, FieldStore.NO));
+
+                    // Only top-level and non-array fields are sortable
+                    if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
+                    {
+                        var stringValueForSorting = (stringValue.Length > 50 ? stringValue.Substring(0, 50) : stringValue).Trim().ToLowerInvariant();
+                        luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(stringValueForSorting)));
+                    }
+                    break;
+
+                case TypeCode.DateTime:
+                    if (indexedField.DataType == FieldDataType.Unknown)
+                        indexedField.DataType = FieldDataType.DateTime;
+                    else if (indexedField.DataType != FieldDataType.Array)
+                        EnsureSameFieldDataType(indexedField, FieldDataType.DateTime);
+
+                    var dateValue = ((DateTime)value).ToLuceneDateString();
+                    luceneFields.Add(new StringField(fieldName, dateValue, FieldStore.NO));
+
+                    // Only top-level and non-array fields are sortable
+                    if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
+                        luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(dateValue)));
+                    break;
+
+                case TypeCode.Object:
+                    if (fieldType == typeof(Guid) || fieldType == typeof(Guid?))
+                    {
                         if (indexedField.DataType == FieldDataType.Unknown)
-                            indexedField.DataType = FieldDataType.Number;
+                            indexedField.DataType = FieldDataType.String;
                         else if (indexedField.DataType != FieldDataType.Array)
-                            EnsureSameFieldDataType(indexedField, FieldDataType.Number);
+                            EnsureSameFieldDataType(indexedField, FieldDataType.String);
 
-                        var numberString = Convert.ToDouble(value).ToLuceneNumberString();
-                        luceneFields.Add(new StringField(fieldName, numberString, FieldStore.NO));
-
-                        // Only top-level and non-array / non-object fields are sortable
-                        if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
-                            luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(numberString)));
-                        break;
-
-                    case TypeCode.Boolean:
-                        if (indexedField.DataType == FieldDataType.Unknown)
-                            indexedField.DataType = FieldDataType.Boolean;
-                        else if (indexedField.DataType != FieldDataType.Array)
-                            EnsureSameFieldDataType(indexedField, FieldDataType.Boolean);
-
-                        var booleanString = value.ToString().ToLower();
-                        luceneFields.Add(new StringField(fieldName, booleanString, FieldStore.NO));
+                        var guidValue = ((Guid)value).ToString();
+                        var isStored = (indexedField.Name == Content.ID_FIELD_NAME ? FieldStore.YES : FieldStore.NO);
+                        luceneFields.Add(new StringField(fieldName, guidValue, isStored));
 
                         // Only top-level and non-array fields are sortable
                         if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
-                            luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(booleanString)));
-                        break;
-
-                    case TypeCode.String:
-                        var stringValue = (string)value;                                              
-                            
+                            luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(guidValue)));
+                    }
+                    else if (value is IList)
+                    {
                         if (indexedField.DataType == FieldDataType.Unknown)
-                            indexedField.DataType = FieldDataType.Text;
-                        else if (indexedField.DataType != FieldDataType.Array)
-                            EnsureSameFieldDataType(indexedField, FieldDataType.Text);                        
+                            indexedField.DataType = FieldDataType.Array;
+                        else
+                            EnsureSameFieldDataType(indexedField, FieldDataType.Array);
 
-                        luceneFields.Add(new TextField(fieldName, stringValue, FieldStore.NO));
-                        
-                        // Only top-level and non-array fields are sortable
-                        if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
-                        {
-                            var stringValueForSorting = (stringValue.Length > 50 ? stringValue.Substring(0, 50) : stringValue).Trim().ToLowerInvariant();
-                            luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(stringValueForSorting)));
-                        }                       
-                        break;
-
-                    case TypeCode.DateTime:
+                        var list = value as IList;
+                        luceneFields.AddRange(list.ToLuceneFields(indexedField));
+                    }
+                    else if (value is IDictionary<string, object>)
+                    {
                         if (indexedField.DataType == FieldDataType.Unknown)
-                            indexedField.DataType = FieldDataType.DateTime;
+                            indexedField.DataType = FieldDataType.Object;
                         else if (indexedField.DataType != FieldDataType.Array)
-                            EnsureSameFieldDataType(indexedField, FieldDataType.DateTime);
+                            EnsureSameFieldDataType(indexedField, FieldDataType.Object);
 
-                        var dateValue = ((DateTime)value).ToLuceneDateString();
-                        luceneFields.Add(new StringField(fieldName, dateValue, FieldStore.NO));
+                        var dictionary = value as IDictionary<string, object>;
+                        luceneFields.AddRange(dictionary.ToLuceneFields(indexedField));
+                    }
+                    break;
 
-                        // Only top-level and non-array fields are sortable
-                        if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
-                            luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(dateValue)));
-                        break;
-
-                    case TypeCode.Object:
-                        if (fieldType == typeof(Guid) || fieldType == typeof(Guid?))
+                case TypeCode.Empty:
+                    if (!String.IsNullOrWhiteSpace(Config.LuceneNullToken))
+                    {
+                        var nullString = Config.LuceneNullToken;
+                        switch (indexedField.DataType)
                         {
-                            if (indexedField.DataType == FieldDataType.Unknown)
-                                indexedField.DataType = FieldDataType.String;
-                            else if (indexedField.DataType != FieldDataType.Array)
-                                EnsureSameFieldDataType(indexedField, FieldDataType.String);
-
-                            var guidValue = ((Guid)value).ToString();
-                            var isStored = (indexedField.Name == Content.ID_FIELD_NAME ? FieldStore.YES : FieldStore.NO);
-                            luceneFields.Add(new StringField(fieldName, guidValue, isStored));
-
-                            // Only top-level and non-array fields are sortable
-                            if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
-                                luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(guidValue)));
+                            case FieldDataType.Number:
+                            case FieldDataType.Boolean:
+                            case FieldDataType.DateTime:
+                            case FieldDataType.String:
+                                luceneFields.Add(new StringField(fieldName, nullString, FieldStore.NO));
+                                break;
+                            case FieldDataType.Text:
+                            case FieldDataType.Unknown:
+                                luceneFields.Add(new TextField(fieldName, nullString, FieldStore.NO));
+                                break;
                         }
-                        else if (value is IList)
-                        {
-                            if (indexedField.DataType == FieldDataType.Unknown)
-                                indexedField.DataType = FieldDataType.Array;
-                            else
-                                EnsureSameFieldDataType(indexedField, FieldDataType.Array);
 
-                            var list = value as IList;
-                            luceneFields.AddRange(list.ToLuceneFields(indexedField));
-                        }
-                        else if (value is IDictionary<string, object>)
-                        {
-                            if (indexedField.DataType == FieldDataType.Unknown)
-                                indexedField.DataType = FieldDataType.Object;
-                            else if (indexedField.DataType != FieldDataType.Array)
-                                EnsureSameFieldDataType(indexedField, FieldDataType.Object);
+                        luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(nullString)));
+                    }
 
-                            var dictionary = value as IDictionary<string, object>;
-                            luceneFields.AddRange(dictionary.ToLuceneFields(indexedField));
-                        }
-                        break;
-                }
-            }
+                    break;
+            }            
 
             return luceneFields;
         }

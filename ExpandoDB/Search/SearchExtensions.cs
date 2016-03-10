@@ -13,57 +13,6 @@ namespace ExpandoDB.Search
     public static class SearchExtensions
     {
         /// <summary>
-        /// Converts a <see cref="Content"/> object to a <see cref="LuceneDocument"/> object.
-        /// </summary>
-        /// <param name="content">The Content object</param>
-        /// <param name="indexSchema">The index schema.</param>
-        /// <returns></returns>
-        /// <exception cref="System.ArgumentNullException"></exception>
-        /// <exception cref="System.InvalidOperationException">Cannot index a Content that does not have an _id.</exception>
-        public static LuceneDocument ToLuceneDocument(this Content content, IndexSchema indexSchema = null)
-        {
-            if (content == null)
-                throw new ArgumentNullException(nameof(content));
-
-            if (indexSchema == null)
-                indexSchema = IndexSchema.CreateDefault();
-
-            var contentDictionary = content.AsDictionary();
-            if (!contentDictionary.ContainsKey(Content.ID_FIELD_NAME))
-                throw new InvalidOperationException("Cannot index a Content that does not have an _id.");
-
-            var luceneDocument = new LuceneDocument();
-
-            // Make sure the _id field is the first field added to the Lucene document
-            var keys = contentDictionary.Keys.Except( new[] { Content.ID_FIELD_NAME } ).ToList();
-            keys.Insert(0, Content.ID_FIELD_NAME);            
-
-            foreach (var fieldName in keys)
-            {               
-                IndexedField indexedField = null;
-                if (!indexSchema.Fields.TryGetValue(fieldName, out indexedField))                
-                {
-                    indexedField = new IndexedField { 
-                        Name = fieldName                        
-                    };
-                    indexSchema.Fields.TryAdd(fieldName, indexedField);
-                }
-
-                var fieldValue = contentDictionary[fieldName];                
-                var luceneFields = fieldValue.ToLuceneFields(indexedField);
-                foreach (var luceneField in luceneFields)
-                    luceneDocument.Add(luceneField);
-            }
-
-            // The full-text field is always generated and added to the lucene document,
-            // even though it is not part of the index schema exposed to the user.
-            var fullText = content.ToLuceneFullTextString();
-            luceneDocument.Add(new TextField(LuceneFieldExtensions.FULL_TEXT_FIELD_NAME, fullText, FieldStore.NO));            
-
-            return luceneDocument;
-        }
-
-        /// <summary>
         /// Validates the specified search criteria.
         /// </summary>
         /// <param name="criteria">The search criteria.</param>

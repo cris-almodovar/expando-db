@@ -202,7 +202,7 @@
     <Compile Include="Database.cs" />
     <Compile Include="Search\CompositeAnalyzer.cs" />
     <Compile Include="Search\IndexSchemaException.cs" />
-    <Compile Include="Search\LuceneFieldExtensions.cs" />
+    <Compile Include="Search\LuceneExtensions.cs" />
     <Compile Include="Search\LuceneHighlighter.cs" />
     <Compile Include="Search\LuceneQueryParser.cs" />
     <Compile Include="Search\SearchExtensions.cs" />

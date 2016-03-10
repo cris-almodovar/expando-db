@@ -73,7 +73,7 @@ namespace ExpandoDB.Search
 
             var reader = DirectoryReader.Open(writer, true);
             var indexSchema = CreateIndexSchema();
-            var queryParser = new LuceneQueryParser(LuceneFieldExtensions.FULL_TEXT_FIELD_NAME, writer.GetAnalyzer(), indexSchema);
+            var queryParser = new LuceneQueryParser(LuceneExtensions.FULL_TEXT_FIELD_NAME, writer.GetAnalyzer(), indexSchema);
             queryParser.SetMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
 
             var query = queryParser.Parse(criteria.Query)
@@ -88,7 +88,7 @@ namespace ExpandoDB.Search
 
             foreach (var sd in scoreDocs)
             {
-                var bestFragment = highlighter.GetBestFragment(fieldQuery, reader, sd.Doc, LuceneFieldExtensions.FULL_TEXT_FIELD_NAME, 256);
+                var bestFragment = highlighter.GetBestFragment(fieldQuery, reader, sd.Doc, LuceneExtensions.FULL_TEXT_FIELD_NAME, 256);
                 var document = searcher.Doc(sd.Doc);
                 var docId = document.Get(Content.ID_FIELD_NAME);
 
@@ -104,7 +104,7 @@ namespace ExpandoDB.Search
         {
             var indexSchema = new IndexSchema();
             foreach (var indexedField in new[] { new IndexedField { Name = Content.ID_FIELD_NAME, DataType = FieldDataType.String },
-                                                  new IndexedField { Name = LuceneFieldExtensions.FULL_TEXT_FIELD_NAME, DataType = FieldDataType.String }
+                                                  new IndexedField { Name = LuceneExtensions.FULL_TEXT_FIELD_NAME, DataType = FieldDataType.String }
                                                 })
             {
                 indexSchema.Fields.TryAdd(indexedField.Name, indexedField);
@@ -126,7 +126,7 @@ namespace ExpandoDB.Search
                 fullTextFieldType.SetStoreTermVectors(true);
                 fullTextFieldType.SetStoreTermVectorOffsets(true);
                 fullTextFieldType.SetStoreTermVectorPositions(true);
-                var fullTextField = new Field(LuceneFieldExtensions.FULL_TEXT_FIELD_NAME, content.ToLuceneFullTextString(), fullTextFieldType);
+                var fullTextField = new Field(LuceneExtensions.FULL_TEXT_FIELD_NAME, content.ToLuceneFullTextString(), fullTextFieldType);
                 doc.Add(fullTextField);
 
                 writer.AddDocument(doc);

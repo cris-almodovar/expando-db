@@ -14,7 +14,7 @@ namespace ExpandoDB
             var appPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);            
             DbPath = Path.Combine(appPath, Database.DB_DIRECTORY_NAME);
 
-            LuceneNullToken = LuceneFieldExtensions.DEFAULT_NULL_TOKEN;
+            LuceneNullToken = LuceneExtensions.DEFAULT_NULL_TOKEN;
         }
     }
 }
