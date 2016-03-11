@@ -110,7 +110,7 @@ namespace ExpandoDB.Search
 
                     // Only top-level and non-array / non-object fields are sortable
                     if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
-                        luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(numberString)));
+                        luceneFields.Add(new SortedDocValuesField(fieldName.ToSortFieldName(), new BytesRef(numberString)));
                     break;
 
                 case TypeCode.Boolean:
@@ -124,7 +124,7 @@ namespace ExpandoDB.Search
 
                     // Only top-level and non-array fields are sortable
                     if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
-                        luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(booleanString)));
+                        luceneFields.Add(new SortedDocValuesField(fieldName.ToSortFieldName(), new BytesRef(booleanString)));
                     break;
 
                 case TypeCode.String:
@@ -141,7 +141,7 @@ namespace ExpandoDB.Search
                     if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
                     {
                         var stringValueForSorting = (stringValue.Length > 50 ? stringValue.Substring(0, 50) : stringValue).Trim().ToLowerInvariant();
-                        luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(stringValueForSorting)));
+                        luceneFields.Add(new SortedDocValuesField(fieldName.ToSortFieldName(), new BytesRef(stringValueForSorting)));
                     }
                     break;
 
@@ -156,16 +156,16 @@ namespace ExpandoDB.Search
 
                     // Only top-level and non-array fields are sortable
                     if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
-                        luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(dateValue)));
+                        luceneFields.Add(new SortedDocValuesField(fieldName.ToSortFieldName(), new BytesRef(dateValue)));
                     break;
 
                 case TypeCode.Object:
                     if (fieldType == typeof(Guid) || fieldType == typeof(Guid?))
                     {
                         if (indexedField.DataType == FieldDataType.Unknown)
-                            indexedField.DataType = FieldDataType.String;
+                            indexedField.DataType = FieldDataType.Guid;
                         else if (indexedField.DataType != FieldDataType.Array)
-                            EnsureSameFieldDataType(indexedField, FieldDataType.String);
+                            EnsureSameFieldDataType(indexedField, FieldDataType.Guid);
 
                         var guidValue = ((Guid)value).ToString();
                         var isStored = (indexedField.Name == Content.ID_FIELD_NAME ? FieldStore.YES : FieldStore.NO);
@@ -173,7 +173,7 @@ namespace ExpandoDB.Search
 
                         // Only top-level and non-array fields are sortable
                         if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
-                            luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(guidValue)));
+                            luceneFields.Add(new SortedDocValuesField(fieldName.ToSortFieldName(), new BytesRef(guidValue)));
                     }
                     else if (value is IList)
                     {
@@ -206,7 +206,7 @@ namespace ExpandoDB.Search
                             case FieldDataType.Number:
                             case FieldDataType.Boolean:
                             case FieldDataType.DateTime:
-                            case FieldDataType.String:
+                            case FieldDataType.Guid:
                                 luceneFields.Add(new StringField(fieldName, nullString, FieldStore.NO));
                                 break;
                             case FieldDataType.Text:
@@ -215,13 +215,32 @@ namespace ExpandoDB.Search
                                 break;
                         }
 
-                        luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(nullString)));
+                        if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
+                            luceneFields.Add(new SortedDocValuesField(fieldName.ToSortFieldName(), new BytesRef(nullString)));
                     }
 
                     break;
             }            
 
             return luceneFields;
+        }
+
+        /// <summary>
+        /// Converts a Lucene field name to one that is suitable for use as a sort field. 
+        /// </summary>
+        /// <remarks>
+        /// The convention is to enclose the fieldname in underscores.
+        /// </remarks>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
+        public static string ToSortFieldName(this string fieldName)
+        {
+            if (String.IsNullOrWhiteSpace(fieldName))
+                throw new ArgumentException($"{nameof(fieldName)} cannot be null or whitespace.");
+            
+            // Enclose the fieldname in underscores
+            return $"_{fieldName}_";
         }
 
         private static void EnsureSameFieldDataType(IndexedField indexedField, FieldDataType dataType)
@@ -265,7 +284,7 @@ namespace ExpandoDB.Search
 
                 case TypeCode.Object:
                     if (type == typeof(Guid) || type == typeof(Guid?))
-                        return FieldDataType.String;
+                        return FieldDataType.Guid;
                     else if (value is IList)
                         return FieldDataType.Array;
                     else if (value is IDictionary<string, object>)
@@ -293,7 +312,7 @@ namespace ExpandoDB.Search
 
                     switch (indexedField.ArrayElementDataType)
                     {
-                        case FieldDataType.String:
+                        case FieldDataType.Guid:
                         case FieldDataType.Text:
                         case FieldDataType.Number:
                         case FieldDataType.DateTime:
@@ -339,7 +358,7 @@ namespace ExpandoDB.Search
                 switch (childFieldDataType)
                 {
                     case FieldDataType.Unknown:
-                    case FieldDataType.String:
+                    case FieldDataType.Guid:
                     case FieldDataType.Text:
                     case FieldDataType.Number:
                     case FieldDataType.DateTime:
@@ -447,6 +466,11 @@ namespace ExpandoDB.Search
             return buffer.ToString();
         }
 
+        /// <summary>
+        /// Produces a string representation (for Lucene indexing) of all items in the list.
+        /// </summary>
+        /// <param name="list">The list.</param>
+        /// <returns></returns>
         public static string ToLuceneFullTextString(this IList list)
         {
             var buffer = new StringBuilder();

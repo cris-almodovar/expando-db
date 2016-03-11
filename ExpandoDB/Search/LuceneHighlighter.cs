@@ -23,6 +23,16 @@ namespace ExpandoDB.Search
     {
         public const string HIGHLIGHT_FIELD_NAME = "_highlight";
         private static readonly ILog _log = LogManager.GetLogger(typeof(LuceneHighlighter).Name);
+        private static readonly FieldType ExtendedTextFieldType;
+
+        static LuceneHighlighter()
+        {
+            ExtendedTextFieldType = new FieldType(TextField.TYPE_STORED);
+            ExtendedTextFieldType.SetStoreTermVectors(true);
+            ExtendedTextFieldType.SetStoreTermVectorOffsets(true);
+            ExtendedTextFieldType.SetStoreTermVectorPositions(true);
+            ExtendedTextFieldType.Freeze();
+        }
 
         /// <summary>
         /// Annotates the given sequence of <see cref="Content"/> objects by adding a <b>_highlight</b> field;
@@ -103,8 +113,8 @@ namespace ExpandoDB.Search
         private static IndexSchema CreateIndexSchema()
         {
             var indexSchema = new IndexSchema();
-            foreach (var indexedField in new[] { new IndexedField { Name = Content.ID_FIELD_NAME, DataType = FieldDataType.String },
-                                                  new IndexedField { Name = LuceneExtensions.FULL_TEXT_FIELD_NAME, DataType = FieldDataType.String }
+            foreach (var indexedField in new[] { new IndexedField { Name = Content.ID_FIELD_NAME, DataType = FieldDataType.Guid },
+                                                  new IndexedField { Name = LuceneExtensions.FULL_TEXT_FIELD_NAME, DataType = FieldDataType.Text }
                                                 })
             {
                 indexSchema.Fields.TryAdd(indexedField.Name, indexedField);
@@ -122,11 +132,7 @@ namespace ExpandoDB.Search
                 var idField = new StringField(Content.ID_FIELD_NAME, content._id.ToString(), FieldStore.YES);
                 doc.Add(idField);
 
-                var fullTextFieldType = new FieldType(TextField.TYPE_STORED);
-                fullTextFieldType.SetStoreTermVectors(true);
-                fullTextFieldType.SetStoreTermVectorOffsets(true);
-                fullTextFieldType.SetStoreTermVectorPositions(true);
-                var fullTextField = new Field(LuceneExtensions.FULL_TEXT_FIELD_NAME, content.ToLuceneFullTextString(), fullTextFieldType);
+                var fullTextField = new Field(LuceneExtensions.FULL_TEXT_FIELD_NAME, content.ToLuceneFullTextString(), ExtendedTextFieldType);
                 doc.Add(fullTextField);
 
                 writer.AddDocument(doc);

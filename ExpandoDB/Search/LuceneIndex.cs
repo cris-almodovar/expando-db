@@ -211,13 +211,12 @@ namespace ExpandoDB.Search
                 return Sort.RELEVANCE;
 
             var sortFields = new List<SortField>();            
-            var sortFieldName = sortByField.Trim().TrimStart('+');
-            var reverse = sortFieldName.StartsWith("-", StringComparison.InvariantCulture);
+            var fieldName = sortByField.Trim().TrimStart('+');
+            var reverse = fieldName.StartsWith("-", StringComparison.InvariantCulture);
             if (reverse)
-                sortFieldName = sortFieldName.TrimStart('-');
+                fieldName = fieldName.TrimStart('-');
             
-            sortFields.Add(new SortField(sortFieldName, SortFieldType.STRING, reverse));            
-
+            sortFields.Add(new SortField(fieldName.ToSortFieldName(), SortFieldType.STRING, reverse));            
             return new Sort(sortFields.ToArray());
         }       
 

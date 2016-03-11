@@ -50,7 +50,7 @@ namespace ExpandoDB.Search
                 switch (indexedField.DataType)
                 {
                     case FieldDataType.Unknown:
-                    case FieldDataType.String:
+                    case FieldDataType.Guid:
                     case FieldDataType.Number:
                     case FieldDataType.DateTime:
                     case FieldDataType.Boolean:
@@ -84,7 +84,7 @@ namespace ExpandoDB.Search
                 var indexedField = _indexSchema.Fields[fieldName];
                 switch (indexedField.DataType)
                 {
-                    case FieldDataType.String:
+                    case FieldDataType.Guid:
                     case FieldDataType.Number:
                     case FieldDataType.DateTime:
                         _perFieldAnalyzers[fieldName] = analyzer = _keywordAnalyzer;                        
