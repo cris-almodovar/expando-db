@@ -1,5 +1,7 @@
-﻿using System;
+﻿using ExpandoDB.Search;
+using System;
 using System.Collections.Concurrent;
+using System.Diagnostics.Contracts;
 
 namespace ExpandoDB
 {
@@ -27,7 +29,7 @@ namespace ExpandoDB
         /// <param name="name">The name of the IndexSchema.</param>
         /// <returns></returns>
         public static IndexSchema CreateDefault(string name = null)
-        {
+        {            
             if (String.IsNullOrWhiteSpace(name))
                 name = "Default";
 
@@ -35,9 +37,11 @@ namespace ExpandoDB
             indexSchema.Fields[Content.ID_FIELD_NAME] = new IndexedField { Name = Content.ID_FIELD_NAME, DataType = FieldDataType.Guid };
             indexSchema.Fields[Content.CREATED_TIMESTAMP_FIELD_NAME] = new IndexedField { Name = Content.CREATED_TIMESTAMP_FIELD_NAME, DataType = FieldDataType.DateTime };
             indexSchema.Fields[Content.MODIFIED_TIMESTAMP_FIELD_NAME] = new IndexedField { Name = Content.MODIFIED_TIMESTAMP_FIELD_NAME, DataType = FieldDataType.DateTime };
+            indexSchema.Fields[LuceneExtensions.FULL_TEXT_FIELD_NAME] = new IndexedField { Name = LuceneExtensions.FULL_TEXT_FIELD_NAME, DataType = FieldDataType.Text };
 
             return indexSchema;      
-        }               
+        }         
+                   
     }   
 
     public class IndexedField

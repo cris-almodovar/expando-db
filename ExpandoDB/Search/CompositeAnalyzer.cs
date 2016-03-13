@@ -2,6 +2,7 @@
 using FlexLucene.Analysis.Core;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 
 namespace ExpandoDB.Search
 {
@@ -16,10 +17,11 @@ namespace ExpandoDB.Search
     /// <seealso cref="FlexLucene.Analysis.AnalyzerWrapper" />
     public class CompositeAnalyzer : AnalyzerWrapper
     {
-        private readonly ConcurrentDictionary<string, Analyzer> _perFieldAnalyzers;        
+        private readonly ConcurrentDictionary<string, Analyzer> _perFieldAnalyzers;
         private readonly Analyzer _textAnalyzer;
         private readonly Analyzer _keywordAnalyzer;
         private readonly IndexSchema _indexSchema;
+        private readonly IDictionary<string, FieldDataType> _knownDataTypes;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CompositeAnalyzer" /> class.
@@ -30,37 +32,73 @@ namespace ExpandoDB.Search
         {
             if (indexSchema == null)
                 throw new ArgumentNullException(nameof(indexSchema));
-                   
+
             _textAnalyzer = new FullTextAnalyzer();
             _keywordAnalyzer = new KeywordAnalyzer();
             _indexSchema = indexSchema;
 
             _perFieldAnalyzers = new ConcurrentDictionary<string, Analyzer>();
-            InitializePerFieldAnalyzers();            
+            _knownDataTypes = new ConcurrentDictionary<string, FieldDataType>();
+
+            // Assign suitable Analyzers for each field in the schema.
+            RefreshAnalyzer(_indexSchema);
         }
 
-        private void InitializePerFieldAnalyzers()
-        {   
-            foreach (var fieldName in _indexSchema.Fields.Keys)
-            {                
-                if (_perFieldAnalyzers.ContainsKey(fieldName))
-                    continue;
+        private void RefreshAnalyzer(IndexSchema indexSchema)
+        {            
+            foreach (var indexedField in indexSchema.Fields.Values)  
+                if (!_knownDataTypes.ContainsKey(indexedField.Name))         
+                     RefreshAnalyzer(indexedField);            
+        }
 
-                var indexedField = _indexSchema.Fields[fieldName];
-                switch (indexedField.DataType)
-                {
-                    case FieldDataType.Unknown:
-                    case FieldDataType.Guid:
-                    case FieldDataType.Number:
-                    case FieldDataType.DateTime:
-                    case FieldDataType.Boolean:
-                        _perFieldAnalyzers[fieldName] = _keywordAnalyzer;
-                        break;
-                    default:
-                        _perFieldAnalyzers[fieldName] = _textAnalyzer;
-                        break;
-                }                  
+        private void RefreshAnalyzer(IndexedField indexedField)
+        { 
+            var dataType = indexedField.DataType;
+            if (dataType == FieldDataType.Array)
+                dataType = indexedField.ArrayElementDataType; 
+
+            switch (dataType)
+            {
+                case FieldDataType.Unknown:
+                case FieldDataType.Guid:
+                case FieldDataType.Number:
+                case FieldDataType.DateTime:
+                case FieldDataType.Boolean:
+                    _perFieldAnalyzers[indexedField.Name] = _keywordAnalyzer;
+                    _knownDataTypes[indexedField.Name] = dataType;
+                    break;
+
+                case FieldDataType.Text:                    
+                    _perFieldAnalyzers[indexedField.Name] = _textAnalyzer;
+                    _knownDataTypes[indexedField.Name] = dataType;
+                    break;
+
+                case FieldDataType.Object:
+                    RefreshAnalyzer(indexedField.ObjectSchema);
+                    break;                
             }            
+        }
+
+        private void RefreshAnalyzer(string fieldName)
+        {
+            var indexedField = _indexSchema.FindField(fieldName);
+            if (indexedField == null)
+                return;
+
+            // Here we will try to assign an Analyzer to a new field,
+            // i.e. a field that has just been added to the schema.
+            if (!_perFieldAnalyzers.ContainsKey(fieldName))
+                RefreshAnalyzer(indexedField);
+
+            // If there is an Analyzer already assigned to the field,
+            // check if it's the correct one.
+            if (_perFieldAnalyzers.ContainsKey(fieldName))
+            {
+                // This is only true when the initial DataType for the field is Unknown, 
+                // and then the DataType becomes known (i.e. Text, Number, Guid, Boolean, DateTime)
+                if (_knownDataTypes[fieldName] != indexedField.DataType)
+                    RefreshAnalyzer(indexedField);
+            }
         }
 
         /// <summary>
@@ -71,32 +109,19 @@ namespace ExpandoDB.Search
         protected override Analyzer GetWrappedAnalyzer(string fieldName)
         {
             if (String.IsNullOrWhiteSpace(fieldName))
-                throw new ArgumentException("fieldName cannot be null or blank");
-
-            var analyzer = _textAnalyzer;
+                throw new ArgumentException($"{nameof(fieldName)} cannot be null or blank");
+            
+            RefreshAnalyzer(fieldName);
 
             if (_perFieldAnalyzers.ContainsKey(fieldName))
-                analyzer = _perFieldAnalyzers[fieldName];
+                return _perFieldAnalyzers[fieldName];
 
-            // Check if fieldName is new; if yes, add it to the _perFieldAnalyzers dictionary.
-            if (_indexSchema.Fields.ContainsKey(fieldName))
-            {
-                var indexedField = _indexSchema.Fields[fieldName];
-                switch (indexedField.DataType)
-                {
-                    case FieldDataType.Guid:
-                    case FieldDataType.Number:
-                    case FieldDataType.DateTime:
-                        _perFieldAnalyzers[fieldName] = analyzer = _keywordAnalyzer;                        
-                        break;
-                    default:
-                        _perFieldAnalyzers[fieldName] = analyzer = _textAnalyzer;
-                        break;
-                }       
-            }
-
-            return analyzer;
+            return _textAnalyzer;
         }
+
+        
+
+
     }
 }
 

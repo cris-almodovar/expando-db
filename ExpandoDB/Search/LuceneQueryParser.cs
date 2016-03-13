@@ -18,7 +18,7 @@ namespace ExpandoDB.Search
             : base (defaultFieldName, analyzer)
         {
             if (String.IsNullOrWhiteSpace(defaultFieldName))
-                throw new ArgumentException("defaultFieldName cannot be null or blank");
+                throw new ArgumentException($"'{nameof(defaultFieldName)}' cannot be null or blank");
             if (analyzer == null)
                 throw new ArgumentNullException(nameof(analyzer));
             if (indexSchema == null)
@@ -29,59 +29,115 @@ namespace ExpandoDB.Search
 
         protected override Query GetRangeQuery(string fieldName, string part1, string part2, bool startInclusive, bool endInclusive)
         {
-            if (_indexSchema.Fields.ContainsKey(fieldName))
+            var indexedField = _indexSchema.FindField(fieldName);
+            if (indexedField == null)
+                throw new QueryParserException($"'{fieldName}' is not an indexed field.");
+
+            switch (indexedField.DataType)
             {
-                var indexedField = _indexSchema.Fields[fieldName];
-                if (indexedField.DataType == FieldDataType.Number)
-                {
-                    part1 = FormatAsLuceneNumberString(part1);
-                    part2 = FormatAsLuceneNumberString(part2);                    
-                }
-                else if (indexedField.DataType == FieldDataType.DateTime)
-                {
-                    var date1 = DateTime.MinValue;
-                    var date2 = DateTime.MinValue;
+                case FieldDataType.Number:
+                    part1 = ValidateAndFormatAsLuceneNumberString(part1);
+                    part2 = ValidateAndFormatAsLuceneNumberString(part2);
+                    break;
 
-                    if (DynamicSerializer.TryParseDateTime(part1, ref date1))
-                        part1 = date1.ToUniversalTime().ToString(LuceneExtensions.DATE_TIME_FORMAT);
-                    if (DynamicSerializer.TryParseDateTime(part2, ref date2))
-                        part2 = date2.ToUniversalTime().ToString(LuceneExtensions.DATE_TIME_FORMAT);
+                case FieldDataType.DateTime:
+                    part1 = ValidateAndFormatAsLuceneDateTimeString(part1);
+                    part2 = ValidateAndFormatAsLuceneDateTimeString(part2);
+                    break;
 
-                    part1 = part1.PadRight(LuceneExtensions.DATE_TIME_FORMAT.Length, '0');
-                    part2 = part2.PadRight(LuceneExtensions.DATE_TIME_FORMAT.Length, '0');
-                }
-            }
+                case FieldDataType.Boolean:
+                    part1 = ValidateAndFormatAsLuceneBooleanString(part1);
+                    part2 = ValidateAndFormatAsLuceneBooleanString(part2);
+                    break;
+
+                case FieldDataType.Guid:
+                    part1 = ValidateAndFormatAsLuceneGuidString(part1);
+                    part2 = ValidateAndFormatAsLuceneGuidString(part2);
+                    break;
+            }                    
+            
             return base.GetRangeQuery(fieldName, part1, part2, startInclusive, endInclusive);
-        }
+        }       
 
         protected override Query GetFieldQuery(string fieldName, string queryText, bool quoted)
         {
-            if (_indexSchema.Fields.ContainsKey(fieldName) && queryText != Config.LuceneNullToken)
+            var indexedField = _indexSchema.FindField(fieldName);
+            if (indexedField == null)
+                throw new QueryParserException($"'{fieldName}' is not an indexed field.");
+
+            switch (indexedField.DataType)
             {
-                var indexedField = _indexSchema.Fields[fieldName];
-                if (indexedField.DataType == FieldDataType.Number)
-                {                    
-                   queryText = FormatAsLuceneNumberString(queryText);
-                }
-                else if (indexedField.DataType == FieldDataType.DateTime)
-                {
-                    var date1 = DateTime.MinValue;
-                    if (DynamicSerializer.TryParseDateTime(queryText, ref date1))
-                        queryText = date1.ToUniversalTime().ToString(LuceneExtensions.DATE_TIME_FORMAT);
+                case FieldDataType.Number:
+                    queryText = ValidateAndFormatAsLuceneNumberString(queryText);
+                    break;
 
-                    queryText = queryText.PadRight(LuceneExtensions.DATE_TIME_FORMAT.Length, '0');
-                }
+                case FieldDataType.DateTime:
+                    queryText = ValidateAndFormatAsLuceneDateTimeString(queryText);
+                    break;
+
+                case FieldDataType.Boolean:
+                    queryText = ValidateAndFormatAsLuceneBooleanString(queryText);
+                    break;
+
+                case FieldDataType.Guid:
+                    queryText = ValidateAndFormatAsLuceneGuidString(queryText);
+                    break;
             }
+            
             return base.GetFieldQuery(fieldName, queryText, quoted);
-        }
+        }       
 
-        private static string FormatAsLuceneNumberString(string part)
+        private static string ValidateAndFormatAsLuceneNumberString(string value)
         {
+            if (value == Config.LuceneNullToken)
+                return value;
+
             double number;
-            if (!Double.TryParse(part, out number))
-                throw new QueryParserException("Invalid number in query: " + part);
+            if (!Double.TryParse(value, out number))
+                throw new QueryParserException($"Invalid number in query: '{value}'");
 
             return number.ToLuceneNumberString();
-        }        
+        }
+
+        private static string ValidateAndFormatAsLuceneDateTimeString(string value)
+        {
+            if (value == Config.LuceneNullToken)
+                return value;
+
+            var dateTime = DateTime.MinValue;
+
+            if (!DynamicSerializer.TryParseDateTime(value, ref dateTime))
+                throw new QueryParserException($"Invalid DateTime in query: '{value}'");
+
+            var luceneDateTimeString = dateTime.ToUniversalTime().ToString(LuceneExtensions.DATE_TIME_FORMAT);
+            if (luceneDateTimeString.Length < LuceneExtensions.DATE_TIME_FORMAT.Length)
+                luceneDateTimeString = luceneDateTimeString.PadRight(LuceneExtensions.DATE_TIME_FORMAT.Length, '0');
+
+            return luceneDateTimeString;
+        }
+
+        private string ValidateAndFormatAsLuceneBooleanString(string value)
+        {
+            if (value == Config.LuceneNullToken)
+                return value;
+
+            bool boolValue;
+            if (!Boolean.TryParse(value, out boolValue))
+                throw new QueryParserException($"Invalid boolean in query: '{value}'");
+
+            return boolValue.ToString().ToLower();
+        }
+
+        private string ValidateAndFormatAsLuceneGuidString(string value)
+        {
+            if (value == Config.LuceneNullToken)
+                return value;
+
+            Guid guid;
+            if (!Guid.TryParse(value, out guid))
+                throw new QueryParserException($"Invalid GUID in query: '{value}'");
+
+            return guid.ToString().ToLower();
+        }
     }
 }

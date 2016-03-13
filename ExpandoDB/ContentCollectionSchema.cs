@@ -5,6 +5,7 @@ using System.Linq;
 
 namespace ExpandoDB
 {
+    // TODO: Merge ContentCollectionSchema and IndexSchema
     public class ContentCollectionSchema : IEquatable<ContentCollectionSchema>
     {
         public string Name { get; set; }

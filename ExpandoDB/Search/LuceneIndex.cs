@@ -55,7 +55,7 @@ namespace ExpandoDB.Search
             _indexDirectory = new MMapDirectory(path);
 
             _indexSchema = indexSchema ?? IndexSchema.CreateDefault();
-            _compositeAnalyzer = new CompositeAnalyzer(_indexSchema);
+            _compositeAnalyzer = new CompositeAnalyzer(_indexSchema);            
 
             _ramBufferSizeMB = Double.Parse(ConfigurationManager.AppSettings["LuceneRAMBufferSizeMB"] ?? "64");
             _writerLockTimeoutMilliseconds = Convert.ToInt64(Double.Parse(ConfigurationManager.AppSettings["LuceneWriterLockTimeoutSeconds"] ?? "1") * 1000);            

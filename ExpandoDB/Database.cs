@@ -76,6 +76,8 @@ namespace ExpandoDB
 
         private async Task PersistSchemas()
         {
+            // TODO: Don't use a Timer - use an async WaitHandle instead.
+
             if (Monitor.TryEnter(_schemaPersistenceLock, TimeSpan.FromMilliseconds(10)) == false)
                 return;
 
@@ -185,7 +187,7 @@ namespace ExpandoDB
         public async Task<bool> DropCollectionAsync(string collectionName)
         {
             if (!_contentCollections.ContainsKey(collectionName))
-                return false;
+                return false;            
 
             var isSuccessful = false;
             ContentCollection collection = null;

@@ -225,7 +225,9 @@ namespace ExpandoDB
         {
             EnsureCollectionIsNotDropped();
 
-            await _contentStorage.DropAsync().ConfigureAwait(false); 
+            await _contentStorage.DropAsync().ConfigureAwait(false);
+            // Note: The schema entry will be auto-deleted by a background thread in the enclosing Database object.
+
             _luceneIndex.Dispose();
             
             var tryCount = 0;
