@@ -216,7 +216,7 @@ namespace ExpandoDB.Search
             if (reverse)
                 fieldName = fieldName.TrimStart('-');
             
-            sortFields.Add(new SortField(fieldName.ToSortFieldName(), SortFieldType.STRING, reverse));            
+            sortFields.Add(new SortField(fieldName, SortFieldType.STRING, reverse));            
             return new Sort(sortFields.ToArray());
         }       
 

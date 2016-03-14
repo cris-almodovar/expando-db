@@ -108,7 +108,7 @@ namespace ExpandoDB.Search
 
                     // Only top-level and non-array / non-object fields are sortable
                     if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
-                        luceneFields.Add(new SortedDocValuesField(fieldName.ToSortFieldName(), new BytesRef(numberString)));
+                        luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(numberString)));
                     break;
 
                 case TypeCode.Boolean:
@@ -122,7 +122,7 @@ namespace ExpandoDB.Search
 
                     // Only top-level and non-array fields are sortable
                     if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
-                        luceneFields.Add(new SortedDocValuesField(fieldName.ToSortFieldName(), new BytesRef(booleanString)));
+                        luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(booleanString)));
                     break;
 
                 case TypeCode.String:
@@ -139,7 +139,7 @@ namespace ExpandoDB.Search
                     if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
                     {
                         var stringValueForSorting = (stringValue.Length > 50 ? stringValue.Substring(0, 50) : stringValue).Trim().ToLowerInvariant();
-                        luceneFields.Add(new SortedDocValuesField(fieldName.ToSortFieldName(), new BytesRef(stringValueForSorting)));
+                        luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(stringValueForSorting)));
                     }
                     break;
 
@@ -154,7 +154,7 @@ namespace ExpandoDB.Search
 
                     // Only top-level and non-array fields are sortable
                     if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
-                        luceneFields.Add(new SortedDocValuesField(fieldName.ToSortFieldName(), new BytesRef(dateValue)));
+                        luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(dateValue)));
                     break;
 
                 case TypeCode.Object:
@@ -171,7 +171,7 @@ namespace ExpandoDB.Search
 
                         // Only top-level and non-array fields are sortable
                         if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
-                            luceneFields.Add(new SortedDocValuesField(fieldName.ToSortFieldName(), new BytesRef(guidValue)));
+                            luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(guidValue)));
                     }
                     else if (value is IList)
                     {
@@ -206,40 +206,23 @@ namespace ExpandoDB.Search
                             case FieldDataType.DateTime:
                             case FieldDataType.Guid:
                                 luceneFields.Add(new StringField(fieldName, nullString, FieldStore.NO));
+                                if (indexedField.IsTopLevel)
+                                    luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(nullString)));
                                 break;
+
                             case FieldDataType.Text:
                             case FieldDataType.Unknown:
                                 luceneFields.Add(new TextField(fieldName, nullString, FieldStore.NO));
-                                break;
-                        }
-
-                        if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
-                            luceneFields.Add(new SortedDocValuesField(fieldName.ToSortFieldName(), new BytesRef(nullString)));
+                                if (indexedField.IsTopLevel)
+                                    luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(nullString)));
+                                break;                                
+                        }                       
                     }
-
                     break;
             }
 
             return luceneFields;
-        }
-
-        /// <summary>
-        /// Converts a Lucene field name to one that is suitable for use as a sort field. 
-        /// </summary>
-        /// <remarks>
-        /// The convention is to enclose the fieldname in underscores.
-        /// </remarks>
-        /// <param name="fieldName">Name of the field.</param>
-        /// <returns></returns>
-        /// <exception cref="ArgumentException"></exception>
-        public static string ToSortFieldName(this string fieldName)
-        {
-            if (String.IsNullOrWhiteSpace(fieldName))
-                throw new ArgumentException($"{nameof(fieldName)} cannot be null or whitespace.");
-
-            // Enclose the fieldname in underscores
-            return $"_{fieldName}_";
-        }
+        }        
 
         private static void EnsureSameFieldDataType(IndexedField indexedField, FieldDataType dataType)
         {
