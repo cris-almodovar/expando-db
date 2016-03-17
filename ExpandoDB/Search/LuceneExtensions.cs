@@ -10,7 +10,7 @@ using LuceneDocument = FlexLucene.Document.Document;
 namespace ExpandoDB.Search
 {
     /// <summary>
-    /// Implements extension methods for converting objects to Lucene Fields.
+    /// Implements extension methods for converting Content objects to Lucene documents.
     /// </summary>
     public static class LuceneExtensions
     {
@@ -63,7 +63,7 @@ namespace ExpandoDB.Search
                     luceneDocument.Add(luceneField);
             }
 
-            // The full-text field is auto-generated and added to the Lucene document.
+            // The full-text field is always auto-generated and added to the Lucene document.
             var fullText = content.ToLuceneFullTextString();
             luceneDocument.Add(new TextField(FULL_TEXT_FIELD_NAME, fullText, FieldStore.NO));
 
@@ -71,7 +71,7 @@ namespace ExpandoDB.Search
         }
 
         /// <summary>
-        /// Creates Lucene fields for the given value.
+        /// Generates Lucene fields for the given object.
         /// </summary>
         /// <param name="value">The value.</param>
         /// <param name="indexedField">The indexed field.</param>
@@ -434,7 +434,7 @@ namespace ExpandoDB.Search
 
         private static string InvertNegativeNumber(string negativeNumber)
         {
-            var buffer = new System.Text.StringBuilder();
+            var buffer = new StringBuilder();
             for (int i = 0; i < negativeNumber.Length; i++)
             {
                 char digit = negativeNumber[i];

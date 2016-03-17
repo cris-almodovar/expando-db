@@ -45,7 +45,7 @@ namespace ExpandoDB.Search
         protected override AnalyzerTokenStreamComponents CreateComponents(string fieldName)
         {
             if (String.IsNullOrWhiteSpace(fieldName))
-                throw new ArgumentException("fieldName cannot be null or blank");
+                throw new ArgumentException($"{nameof(fieldName)} cannot be null or blank");
 
             var pattern = Pattern.compile(_separatorChars);
             var tokenizer = new PatternTokenizer(pattern, -1);

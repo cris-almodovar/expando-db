@@ -24,7 +24,7 @@ namespace ExpandoDB
         }
 
         /// <summary>
-        /// Creates a default IndexSchema, which contains the _id, _createdTimestamp, and _modifiedTimestamp fields.
+        /// Creates a default IndexSchema, which contains the _id, _createdTimestamp, _modifiedTimestamp, and _full_text_ fields.
         /// </summary>
         /// <param name="name">The name of the IndexSchema.</param>
         /// <returns></returns>
