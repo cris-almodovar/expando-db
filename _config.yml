@@ -19,7 +19,7 @@ title:       "expando-db"
 keywords:    "JSON, document database, Lucene, search, full-text search, REST, microservice"
 description: "A dynamic JSON document database with integrated Lucene search"
 source_link: "https://github.com/cris-almodovar/expando-db"
-favicon:     "img/favicon.ico"
+favicon:     "img/expando-db.ico"
 touch_icon:  "img/apple-touch-icon.png"
 google_analytics_key: ## put YOUR key here to enable tracking! (blank to disable)
 
