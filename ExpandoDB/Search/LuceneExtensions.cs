@@ -6,6 +6,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using LuceneDocument = FlexLucene.Document.Document;
+using LuceneDouble = java.lang.Double;
+using LuceneLong = java.lang.Long;
+using LuceneInteger = java.lang.Integer;
 
 namespace ExpandoDB.Search
 {
@@ -14,10 +17,13 @@ namespace ExpandoDB.Search
     /// </summary>
     public static class LuceneExtensions
     {
-        public const string FULL_TEXT_FIELD_NAME = "_full_text_";
-        public const string DATE_TIME_FORMAT = "yyyyMMddHHmmssfffffff";
-        public const string NUMBER_FORMAT = "000000000000000.000000000000";
+        public const string FULL_TEXT_FIELD_NAME = "_full_text_";     
         public const string DEFAULT_NULL_TOKEN = "_null_";
+        public const int INDEX_NULL_VALUE = 1;
+        public static readonly LuceneDouble DOUBLE_MIN_VALUE = new LuceneDouble(LuceneDouble.MIN_VALUE);
+        public static readonly LuceneDouble DOUBLE_MAX_VALUE = new LuceneDouble(LuceneDouble.MAX_VALUE);
+        public static readonly LuceneLong LONG_MIN_VALUE = new LuceneLong(LuceneLong.MIN_VALUE);
+        public static readonly LuceneLong LONG_MAX_VALUE = new LuceneLong(LuceneLong.MAX_VALUE);
 
         /// <summary>
         /// Converts a <see cref="Content"/> object to a <see cref="LuceneDocument"/> object.
@@ -71,7 +77,7 @@ namespace ExpandoDB.Search
         }
 
         /// <summary>
-        /// Generates Lucene fields for the given object.
+        /// Generates Lucene fields for the given value.
         /// </summary>
         /// <param name="value">The value.</param>
         /// <param name="indexedField">The indexed field.</param>
@@ -81,9 +87,9 @@ namespace ExpandoDB.Search
             if (indexedField == null)
                 throw new ArgumentNullException(nameof(indexedField));
 
-            var luceneFields = new List<Field>();
-            var fieldName = indexedField.Name.Trim();
+            var luceneFields = new List<Field>();  // This will contain the generated Lucene fields for the passed in value.
 
+            var fieldName = indexedField.Name.Trim();
             var fieldType = value?.GetType();
             var typeCode = fieldType != null ? Type.GetTypeCode(fieldType) : TypeCode.Empty;
 
@@ -98,138 +104,69 @@ namespace ExpandoDB.Search
                 case TypeCode.Decimal:
                 case TypeCode.Double:
                 case TypeCode.Single:
-                    if (indexedField.DataType == FieldDataType.Unknown)
-                        indexedField.DataType = FieldDataType.Number;
-                    else if (indexedField.DataType != FieldDataType.Array)
-                        EnsureSameFieldDataType(indexedField, FieldDataType.Number);
-
-                    var numberString = Convert.ToDouble(value).ToLuceneNumberString();
-                    luceneFields.Add(new StringField(fieldName, numberString, FieldStore.NO));
-
-                    // Only top-level and non-array / non-object fields are sortable
-                    if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
-                        luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(numberString)));
+                    indexedField.ValidateDataType(FieldDataType.Number);
+                    luceneFields.AddNumberField(indexedField, value);
                     break;
 
                 case TypeCode.Boolean:
-                    if (indexedField.DataType == FieldDataType.Unknown)
-                        indexedField.DataType = FieldDataType.Boolean;
-                    else if (indexedField.DataType != FieldDataType.Array)
-                        EnsureSameFieldDataType(indexedField, FieldDataType.Boolean);
-
-                    var booleanString = value.ToString().ToLower();
-                    luceneFields.Add(new StringField(fieldName, booleanString, FieldStore.NO));
-
-                    // Only top-level and non-array fields are sortable
-                    if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
-                        luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(booleanString)));
+                    indexedField.ValidateDataType(FieldDataType.Boolean);
+                    luceneFields.AddBooleanField(indexedField, value);                   
                     break;
 
                 case TypeCode.String:
-                    var stringValue = (string)value;
-
-                    if (indexedField.DataType == FieldDataType.Unknown)
-                        indexedField.DataType = FieldDataType.Text;
-                    else if (indexedField.DataType != FieldDataType.Array)
-                        EnsureSameFieldDataType(indexedField, FieldDataType.Text);
-
-                    luceneFields.Add(new TextField(fieldName, stringValue, FieldStore.NO));
-
-                    // Only top-level and non-array fields are sortable
-                    if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
-                    {
-                        var stringValueForSorting = (stringValue.Length > 50 ? stringValue.Substring(0, 50) : stringValue).Trim().ToLowerInvariant();
-                        luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(stringValueForSorting)));
-                    }
+                    indexedField.ValidateDataType(FieldDataType.Text);
+                    luceneFields.AddTextField(indexedField, value);
                     break;
 
                 case TypeCode.DateTime:
-                    if (indexedField.DataType == FieldDataType.Unknown)
-                        indexedField.DataType = FieldDataType.DateTime;
-                    else if (indexedField.DataType != FieldDataType.Array)
-                        EnsureSameFieldDataType(indexedField, FieldDataType.DateTime);
-
-                    var dateValue = ((DateTime)value).ToLuceneDateString();
-                    luceneFields.Add(new StringField(fieldName, dateValue, FieldStore.NO));
-
-                    // Only top-level and non-array fields are sortable
-                    if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
-                        luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(dateValue)));
+                    indexedField.ValidateDataType(FieldDataType.DateTime);
+                    luceneFields.AddDateTimeField(indexedField, value);                    
                     break;
 
                 case TypeCode.Object:
                     if (fieldType == typeof(Guid) || fieldType == typeof(Guid?))
                     {
-                        if (indexedField.DataType == FieldDataType.Unknown)
-                            indexedField.DataType = FieldDataType.Guid;
-                        else if (indexedField.DataType != FieldDataType.Array)
-                            EnsureSameFieldDataType(indexedField, FieldDataType.Guid);
-
-                        var guidValue = ((Guid)value).ToString().ToLower();
-                        var isStored = (indexedField.Name == Content.ID_FIELD_NAME ? FieldStore.YES : FieldStore.NO);
-                        luceneFields.Add(new StringField(fieldName, guidValue, isStored));
-
-                        // Only top-level and non-array fields are sortable
-                        if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
-                            luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(guidValue)));
+                        indexedField.ValidateDataType(FieldDataType.Guid);
+                        luceneFields.AddGuidField(indexedField, value);
                     }
                     else if (value is IList)
                     {
-                        if (indexedField.DataType == FieldDataType.Unknown)
-                            indexedField.DataType = FieldDataType.Array;
-                        else
-                            EnsureSameFieldDataType(indexedField, FieldDataType.Array);
+                        indexedField.ValidateDataType(FieldDataType.Array);
 
                         var list = value as IList;
                         luceneFields.AddRange(list.ToLuceneFields(indexedField));
                     }
                     else if (value is IDictionary<string, object>)
                     {
-                        if (indexedField.DataType == FieldDataType.Unknown)
-                            indexedField.DataType = FieldDataType.Object;
-                        else if (indexedField.DataType != FieldDataType.Array)
-                            EnsureSameFieldDataType(indexedField, FieldDataType.Object);
+                        indexedField.ValidateDataType(FieldDataType.Object);
 
                         var dictionary = value as IDictionary<string, object>;
                         luceneFields.AddRange(dictionary.ToLuceneFields(indexedField));
                     }
                     break;
 
-                case TypeCode.Empty:
-                    if (!String.IsNullOrWhiteSpace(Config.LuceneNullToken))
-                    {
-                        var nullString = Config.LuceneNullToken;
-                        switch (indexedField.DataType)
-                        {
-                            case FieldDataType.Number:
-                            case FieldDataType.Boolean:
-                            case FieldDataType.DateTime:
-                            case FieldDataType.Guid:
-                                luceneFields.Add(new StringField(fieldName, nullString, FieldStore.NO));
-                                if (indexedField.IsTopLevel)
-                                    luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(nullString)));
-                                break;
-
-                            case FieldDataType.Text:
-                            case FieldDataType.Unknown:
-                                luceneFields.Add(new TextField(fieldName, nullString, FieldStore.NO));
-                                if (indexedField.IsTopLevel)
-                                    luceneFields.Add(new SortedDocValuesField(fieldName, new BytesRef(nullString)));
-                                break;                                
-                        }                       
-                    }
+                case TypeCode.Empty: // value is null
+                    luceneFields.AddNullField(indexedField);
                     break;
             }
 
             return luceneFields;
-        }        
+        }
+        
 
-        private static void EnsureSameFieldDataType(IndexedField indexedField, FieldDataType dataType)
+        private static void ValidateDataType(this IndexedField indexedField, FieldDataType dataType)
         {
-            if (indexedField.DataType != dataType)
+            if (indexedField.DataType == FieldDataType.Unknown)
             {
-                var message = $"Cannot change the data type of the field '{indexedField.Name}' from {indexedField.DataType} to {dataType}.";
-                throw new IndexSchemaException(message);
+                indexedField.DataType = dataType;
+            }
+            else
+            {
+                if ( !(indexedField.DataType == dataType || indexedField.DataType == FieldDataType.Array) )
+                {
+                    var message = $"Cannot change the data type of the field '{indexedField.Name}' from {indexedField.DataType} to {dataType}.";
+                    throw new IndexSchemaException(message);
+                }
             }
         }
 
@@ -390,62 +327,7 @@ namespace ExpandoDB.Search
 
             return buffer.ToString();
         }
-
-        /// <summary>
-        /// Generates the Lucene text representation of the given date.
-        /// </summary>
-        /// <param name="date">The value.</param>
-        /// <returns></returns>
-        public static string ToLuceneDateString(this DateTime date)
-        {
-            return date.ToString(DATE_TIME_FORMAT);
-        }
-
-        /// <summary>
-        /// Generates the Lucene text representation of the given number.
-        /// </summary>
-        /// <param name="number">The number.</param>
-        /// <returns></returns>
-        public static string ToLuceneNumberString(this double number)
-        {
-            if (Double.IsNaN(number))
-                number = 0;
-            else if (Double.IsPositiveInfinity(number))
-                number = Double.MaxValue;
-            else if (Double.IsNegativeInfinity(number))
-                number = Double.MinValue;
-
-            var numberString = number.ToString(NUMBER_FORMAT);
-            if (numberString.StartsWith("-", StringComparison.InvariantCulture))
-            {
-                numberString = numberString.Remove(0, 1);
-                numberString = "n" + InvertNegativeNumber(numberString);
-            }
-            else
-            {
-                if (numberString.StartsWith("+", StringComparison.InvariantCulture))
-                    numberString = numberString.Remove(0, 1);
-
-                numberString = "p" + numberString;
-            }
-
-            return numberString.Replace(".", "d");
-        }
-
-        private static string InvertNegativeNumber(string negativeNumber)
-        {
-            var buffer = new StringBuilder();
-            for (int i = 0; i < negativeNumber.Length; i++)
-            {
-                char digit = negativeNumber[i];
-                if (digit >= '0' && digit <= '9')
-                    buffer.Append(('9' - digit));
-                else
-                    buffer.Append(digit);
-            }
-
-            return buffer.ToString();
-        }
+        
 
         /// <summary>
         /// Produces a string representation (for Lucene indexing) of all items in the list.
@@ -552,27 +434,173 @@ namespace ExpandoDB.Search
         /// <param name="indexSchema">The indexSchema.</param>
         /// <param name="fieldName">Name of the field.</param>
         /// <returns></returns>
-        public static IndexedField FindField(this IndexSchema indexSchema, string fieldName)
+        public static IndexedField FindField(this IndexSchema indexSchema, string fieldName, bool recursive = true)
         {
             if (indexSchema.Fields.ContainsKey(fieldName))
                 return indexSchema.Fields[fieldName];
 
-            IndexedField foundField = null;         
-            foreach (var indexedField in indexSchema.Fields.Values)
+            IndexedField foundField = null;
+            if (recursive)
             {
-                if (indexedField.DataType == FieldDataType.Array || indexedField.DataType == FieldDataType.Object)
+                foreach (var indexedField in indexSchema.Fields.Values)
                 {
-                    var childSchema = indexedField.ObjectSchema;
-                    if (childSchema != null)
+                    if (indexedField.DataType == FieldDataType.Array || indexedField.DataType == FieldDataType.Object)
                     {
-                        foundField = childSchema.FindField(fieldName);
-                        if (foundField != null)
-                            break;
+                        var childSchema = indexedField.ObjectSchema;
+                        if (childSchema != null)
+                        {
+                            foundField = childSchema.FindField(fieldName, true);
+                            if (foundField != null)
+                                break;
+                        }
                     }
                 }
             }
 
             return foundField;
+        }
+
+        /// <summary>
+        /// Converts the given Lucene field name to a special field name for use in sorting.
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <returns></returns>
+        public static string ToSortFieldName(this string fieldName)
+        {
+            return $"__{fieldName}_sort__";
+
+        }
+
+        /// <summary>
+        /// Converts the given Lucene field name to a special field name for use in tagging fields with null value.
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <returns></returns>
+        public static string ToNullFieldName(this string fieldName)
+        {
+            return $"__{fieldName}_null__";
+
+        }
+
+        /// <summary>
+        /// Adds a Number field to the given list of Lucene fields.
+        /// </summary>
+        /// <param name="luceneFields">The lucene fields.</param>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <param name="value">The value.</param>           
+        private static void AddNumberField(this List<Field> luceneFields, IndexedField indexedField, object value)
+        {
+            var doubleValue = Convert.ToDouble(value);
+            var fieldName = indexedField.Name.Trim();
+
+            luceneFields.Add(new DoubleField(fieldName, doubleValue, FieldStore.NO));
+
+            // Only top-level and non-array fields are sortable
+            if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
+            {
+                var sortFieldName = fieldName.ToSortFieldName();
+                luceneFields.Add(new DoubleDocValuesField(sortFieldName, doubleValue));
+            }
+        }
+
+
+        /// <summary>
+        /// Adds a Booean field to the given list of Lucene fields.
+        /// </summary>
+        /// <param name="luceneFields">The lucene fields.</param>
+        /// <param name="indexedField">The indexed field.</param>
+        /// <param name="value">The value.</param>        
+        private static void AddBooleanField(this List<Field> luceneFields, IndexedField indexedField, object value)
+        {
+            var booleanString = value.ToString().ToLower();
+            var fieldName = indexedField.Name.Trim();
+
+            luceneFields.Add(new StringField(fieldName, booleanString, FieldStore.NO));
+
+            // Only top-level and non-array fields are sortable
+            if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
+            {
+                var sortFieldName = fieldName.ToSortFieldName();
+                luceneFields.Add(new SortedDocValuesField(sortFieldName, new BytesRef(booleanString)));
+            }
+        }
+
+        /// <summary>
+        /// Adds a Text field to the given list of Lucene fields.
+        /// </summary>
+        /// <param name="luceneFields">The lucene fields.</param>
+        /// <param name="indexedField">The indexed field.</param>
+        /// <param name="value">The value.</param>
+        private static void AddTextField(this List<Field> luceneFields, IndexedField indexedField, object value)
+        {
+            var stringValue = (string)value;
+            var fieldName = indexedField.Name.Trim();
+
+            luceneFields.Add(new TextField(fieldName, stringValue, FieldStore.NO));
+
+            // Only top-level and non-array fields are sortable
+            if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
+            {
+                var stringValueForSorting = (stringValue.Length > 50 ? stringValue.Substring(0, 50) : stringValue).Trim().ToLowerInvariant();
+                var sortFieldName = fieldName.ToSortFieldName();
+                luceneFields.Add(new SortedDocValuesField(sortFieldName, new BytesRef(stringValueForSorting)));
+            }
+        }
+
+        /// <summary>
+        /// Adds a DateTime field to the given list of Lucene fields.
+        /// </summary>
+        /// <param name="luceneFields">The lucene fields.</param>
+        /// <param name="indexedField">The indexed field.</param>
+        /// <param name="value">The value.</param>        
+        private static void AddDateTimeField(this List<Field> luceneFields, IndexedField indexedField, object value)
+        {
+            var dateTimeValue = (DateTime)value;
+            var dateTimeTicks = dateTimeValue.Ticks;
+            var fieldName = indexedField.Name.Trim();
+
+            luceneFields.Add(new LongField(fieldName, dateTimeTicks, FieldStore.NO));
+
+            // Only top-level and non-array fields are sortable
+            if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
+            {
+                var sortFieldName = fieldName.ToSortFieldName();
+                luceneFields.Add(new NumericDocValuesField(sortFieldName, dateTimeTicks));
+            }
+        }
+
+
+        /// <summary>
+        /// Adds a Guid field to the given list of Lucene fields.
+        /// </summary>
+        /// <param name="luceneFields">The lucene fields.</param>
+        /// <param name="indexedField">The indexed field.</param>
+        /// <param name="value">The value.</param>
+        private static void AddGuidField(this List<Field> luceneFields, IndexedField indexedField, object value)
+        {
+            var guidValue = ((Guid)value).ToString().ToLower();
+            var isStored = (indexedField.Name == Content.ID_FIELD_NAME ? FieldStore.YES : FieldStore.NO);
+            var fieldName = indexedField.Name.Trim();
+
+            luceneFields.Add(new StringField(fieldName, guidValue, isStored));
+
+            // Only top-level and non-array fields are sortable
+            if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
+            {
+                var sortFieldName = fieldName.ToSortFieldName();
+                luceneFields.Add(new SortedDocValuesField(sortFieldName, new BytesRef(guidValue)));
+            }
+        }
+
+        /// <summary>
+        /// Adds a null field to the given list of Lucene fields.
+        /// </summary>
+        /// <param name="luceneFields">The lucene fields.</param>
+        /// <param name="indexedField">The indexed field.</param>        
+        private static void AddNullField(this List<Field> luceneFields, IndexedField indexedField)
+        {
+            var fieldName = indexedField.Name.Trim().ToNullFieldName();
+            luceneFields.Add(new IntField(fieldName, INDEX_NULL_VALUE, FieldStore.NO));            
         }
     }
 }

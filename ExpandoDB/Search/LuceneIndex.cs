@@ -10,6 +10,9 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Threading;
 using System.Threading.Tasks;
+using LuceneDouble = java.lang.Double;
+using LuceneLong = java.lang.Long;
+using LuceneInteger = java.lang.Integer;
 
 namespace ExpandoDB.Search
 {
@@ -208,16 +211,48 @@ namespace ExpandoDB.Search
         private Sort GetSortCriteria(string sortByField = null)
         {
             if (String.IsNullOrWhiteSpace(sortByField))
-                return Sort.RELEVANCE;
+                return Sort.RELEVANCE;            
 
             var sortFields = new List<SortField>();            
             var fieldName = sortByField.Trim().TrimStart('+');
-            var reverse = fieldName.StartsWith("-", StringComparison.InvariantCulture);
-            if (reverse)
+            var isDescending = fieldName.StartsWith("-", StringComparison.InvariantCulture);
+            if (isDescending)
                 fieldName = fieldName.TrimStart('-');
-            
-            sortFields.Add(new SortField(fieldName, SortFieldType.STRING, reverse));            
-            return new Sort(sortFields.ToArray());
+
+            var indexedField = _indexSchema.FindField(fieldName, false);
+            if (indexedField == null)
+                throw new QueryParserException($"Invalid sortBy field: '{fieldName}'.");
+
+            // Notes: 
+            // 1. The actual sort fieldname is different, e.g. 'fieldName' ==> '__fieldName_sort__'
+            // 2. If a document does not have a value for the sort field, a default 'missing value' is assigned
+            //    so that the document always appears last in the resultset.
+
+            var sortFieldName = fieldName.ToSortFieldName();
+            SortField sortField = null;
+
+            switch (indexedField.DataType)
+            {
+                case FieldDataType.Number:
+                    sortField = new SortField(sortFieldName, SortFieldType.DOUBLE, isDescending);
+                    sortField.SetMissingValue(isDescending ? LuceneExtensions.DOUBLE_MIN_VALUE : LuceneExtensions.DOUBLE_MAX_VALUE);
+                    break;
+
+                case FieldDataType.DateTime:
+                    sortField = new SortField(sortFieldName, SortFieldType.LONG, isDescending);
+                    sortField.SetMissingValue(isDescending ? LuceneExtensions.LONG_MIN_VALUE : LuceneExtensions.LONG_MAX_VALUE);
+                    break;
+
+                default:
+                    sortField = new SortField(sortFieldName, SortFieldType.STRING, isDescending);
+                    sortField.SetMissingValue(isDescending ?  SortField.STRING_FIRST : SortField.STRING_LAST );
+                    break;
+            }
+
+            if (sortField == null)
+                return Sort.RELEVANCE;
+            else   
+                return new Sort(new[] { sortField });
         }       
 
         /// <summary>

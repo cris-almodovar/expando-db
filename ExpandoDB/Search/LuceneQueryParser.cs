@@ -2,7 +2,11 @@
 using FlexLucene.Analysis;
 using FlexLucene.Queryparser.Classic;
 using FlexLucene.Search;
+using FlexLucene.Util;
 using System;
+using LuceneDouble = java.lang.Double;
+using LuceneLong = java.lang.Long;
+using LuceneInteger = java.lang.Integer;
 
 namespace ExpandoDB.Search
 {
@@ -13,6 +17,7 @@ namespace ExpandoDB.Search
     public class LuceneQueryParser : QueryParser
     {
         private readonly IndexSchema _indexSchema;
+        private static readonly LuceneInteger _indexNullValue = new LuceneInteger(LuceneExtensions.INDEX_NULL_VALUE);
 
         public LuceneQueryParser(string defaultFieldName, Analyzer analyzer, IndexSchema indexSchema) 
             : base (defaultFieldName, analyzer)
@@ -33,94 +38,104 @@ namespace ExpandoDB.Search
             if (indexedField == null)
                 throw new QueryParserException($"'{fieldName}' is not an indexed field.");
 
+            if (!String.IsNullOrWhiteSpace(Config.LuceneNullToken) && (part1 == Config.LuceneNullToken || part2 == Config.LuceneNullToken))
+                throw new QueryParserException($"Cannot use null token: '{Config.LuceneNullToken}' in a range query.");
+
+            Query query = null;
             switch (indexedField.DataType)
             {
                 case FieldDataType.Number:
-                    part1 = ValidateAndFormatAsLuceneNumberString(part1);
-                    part2 = ValidateAndFormatAsLuceneNumberString(part2);
+                    var number1 = part1.ToLuceneDouble();
+                    var number2 = part2.ToLuceneDouble();
+                    query = NumericRangeQuery.NewDoubleRange(fieldName, number1, number2, startInclusive, endInclusive);
                     break;
 
                 case FieldDataType.DateTime:
-                    part1 = ValidateAndFormatAsLuceneDateTimeString(part1);
-                    part2 = ValidateAndFormatAsLuceneDateTimeString(part2);
+                    var ticks1 = part1.ToLuceneDateTimeTicks();
+                    var ticks2 = part2.ToLuceneDateTimeTicks();
+                    query = NumericRangeQuery.NewLongRange(fieldName, ticks1, ticks2, startInclusive, endInclusive);
                     break;
 
                 case FieldDataType.Boolean:
-                    part1 = ValidateAndFormatAsLuceneBooleanString(part1);
-                    part2 = ValidateAndFormatAsLuceneBooleanString(part2);
+                    part1 = part1.ToLuceneBooleanString();
+                    part2 = part2.ToLuceneBooleanString();
                     break;
 
                 case FieldDataType.Guid:
-                    part1 = ValidateAndFormatAsLuceneGuidString(part1);
-                    part2 = ValidateAndFormatAsLuceneGuidString(part2);
+                    part1 = part1.ToLuceneGuidString();
+                    part2 = part2.ToLuceneGuidString();
                     break;
             }                    
             
-            return base.GetRangeQuery(fieldName, part1, part2, startInclusive, endInclusive);
-        }       
+            return query ?? base.GetRangeQuery(fieldName, part1, part2, startInclusive, endInclusive);
+        } 
 
         protected override Query GetFieldQuery(string fieldName, string queryText, bool quoted)
         {
             var indexedField = _indexSchema.FindField(fieldName);
             if (indexedField == null)
                 throw new QueryParserException($"'{fieldName}' is not an indexed field.");
-
-            switch (indexedField.DataType)
-            {
-                case FieldDataType.Number:
-                    queryText = ValidateAndFormatAsLuceneNumberString(queryText);
-                    break;
-
-                case FieldDataType.DateTime:
-                    queryText = ValidateAndFormatAsLuceneDateTimeString(queryText);
-                    break;
-
-                case FieldDataType.Boolean:
-                    queryText = ValidateAndFormatAsLuceneBooleanString(queryText);
-                    break;
-
-                case FieldDataType.Guid:
-                    queryText = ValidateAndFormatAsLuceneGuidString(queryText);
-                    break;
-            }
             
-            return base.GetFieldQuery(fieldName, queryText, quoted);
-        }       
+            if (!String.IsNullOrWhiteSpace(Config.LuceneNullToken) && queryText == Config.LuceneNullToken)
+            {
+                // Special case: searching for null value
+                var nullFieldName = fieldName.ToNullFieldName();
+                return NumericRangeQuery.NewIntRange(nullFieldName, _indexNullValue, _indexNullValue, true, true);
+            }
+            else
+            {
+                Query query = null;
+                switch (indexedField.DataType)
+                {
+                    case FieldDataType.Number:
+                        var number = queryText.ToLuceneDouble();
+                        query = NumericRangeQuery.NewDoubleRange(fieldName, number, number, true, true);
+                        break;
 
-        private static string ValidateAndFormatAsLuceneNumberString(string value)
+                    case FieldDataType.DateTime:
+                        var ticks = queryText.ToLuceneDateTimeTicks();
+                        query = NumericRangeQuery.NewLongRange(fieldName, ticks, ticks, true, true);
+                        break;
+
+                    case FieldDataType.Boolean:
+                        queryText = queryText.ToLuceneBooleanString();
+                        break;
+
+                    case FieldDataType.Guid:
+                        queryText = queryText.ToLuceneGuidString();
+                        break;
+                }
+
+                return query ?? base.GetFieldQuery(fieldName, queryText, quoted);
+            }
+        }
+    }
+
+    internal static class LuceneQueryParserExtensions
+    {
+        public static LuceneDouble ToLuceneDouble(this string value)
         {
-            if (value == Config.LuceneNullToken)
-                return value;
-
-            double number;
-            if (!Double.TryParse(value, out number))
+            double doubleValue;
+            if (!Double.TryParse(value, out doubleValue))
                 throw new QueryParserException($"Invalid number in query: '{value}'");
 
-            return number.ToLuceneNumberString();
+            return new LuceneDouble(doubleValue);
+
         }
 
-        private static string ValidateAndFormatAsLuceneDateTimeString(string value)
+        public static LuceneLong ToLuceneDateTimeTicks(this string value)
         {
-            if (value == Config.LuceneNullToken)
-                return value;
-
-            var dateTime = DateTime.MinValue;
-
-            if (!DynamicSerializer.TryParseDateTime(value, ref dateTime))
+            var dateTimeValue = DateTime.MinValue;
+            if (!DynamicSerializer.TryParseDateTime(value, ref dateTimeValue))
                 throw new QueryParserException($"Invalid DateTime in query: '{value}'");
 
-            var luceneDateTimeString = dateTime.ToUniversalTime().ToString(LuceneExtensions.DATE_TIME_FORMAT);
-            if (luceneDateTimeString.Length < LuceneExtensions.DATE_TIME_FORMAT.Length)
-                luceneDateTimeString = luceneDateTimeString.PadRight(LuceneExtensions.DATE_TIME_FORMAT.Length, '0');
+            var utcDateTime = dateTimeValue.ToUniversalTime();
 
-            return luceneDateTimeString;
+            return new LuceneLong(utcDateTime.Ticks);
         }
 
-        private string ValidateAndFormatAsLuceneBooleanString(string value)
+        public static string ToLuceneBooleanString(this string value)
         {
-            if (value == Config.LuceneNullToken)
-                return value;
-
             bool boolValue;
             if (!Boolean.TryParse(value, out boolValue))
                 throw new QueryParserException($"Invalid boolean in query: '{value}'");
@@ -128,16 +143,14 @@ namespace ExpandoDB.Search
             return boolValue.ToString().ToLower();
         }
 
-        private string ValidateAndFormatAsLuceneGuidString(string value)
-        {
-            if (value == Config.LuceneNullToken)
-                return value;
-
+        public static string ToLuceneGuidString(this string value)
+        {            
             Guid guid;
             if (!Guid.TryParse(value, out guid))
                 throw new QueryParserException($"Invalid GUID in query: '{value}'");
 
             return guid.ToString().ToLower();
         }
+
     }
 }
