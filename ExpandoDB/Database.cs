@@ -2,6 +2,7 @@
 using ExpandoDB.Storage;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Data.SQLite;
 using System.IO;
@@ -20,7 +21,7 @@ namespace ExpandoDB
     /// </remarks>
     public class Database : IDisposable
     {
-        internal const string DB_FILENAME = "expando-db.s3db";
+        internal const string DB_FILENAME = "ExpandoDB.s3db";
         internal const string DB_DIRECTORY_NAME = "db";
         internal const string INDEX_DIRECTORY_NAME = "index";
 
@@ -177,6 +178,17 @@ namespace ExpandoDB
 
                 return collection;
             }
+        }
+
+        /// <summary>
+        /// Gets the names of all ContentCollections in the Database.
+        /// </summary>
+        /// <value>
+        /// The name of all ContentCollections in the Database.
+        /// </value>
+        internal IEnumerable<string> GetCollectionNames()
+        {
+            return _contentCollections.Keys;
         }
 
         /// <summary>

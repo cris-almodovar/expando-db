@@ -19,12 +19,12 @@ namespace ExpandoDB.Search
     {
         public const string FULL_TEXT_FIELD_NAME = "_full_text_";     
         public const string DEFAULT_NULL_TOKEN = "_null_";
-        public const int INDEX_NULL_VALUE = 1;
+        public const int INDEX_NULL_VALUE = 1; // This is a marker value for NULL in the Lucene index.
         public const int SORT_FIELD_MAX_TEXT_LENGTH = 20;
         public static readonly LuceneDouble DOUBLE_MIN_VALUE = new LuceneDouble(Double.MinValue);
-        public static readonly LuceneDouble DOUBLE_MAX_VALUE = new LuceneDouble(LuceneDouble.MAX_VALUE);
-        public static readonly LuceneLong LONG_MIN_VALUE = new LuceneLong(LuceneLong.MIN_VALUE);
-        public static readonly LuceneLong LONG_MAX_VALUE = new LuceneLong(LuceneLong.MAX_VALUE);
+        public static readonly LuceneDouble DOUBLE_MAX_VALUE = new LuceneDouble(Double.MaxValue);
+        public static readonly LuceneLong LONG_MIN_VALUE = new LuceneLong(Int64.MinValue);
+        public static readonly LuceneLong LONG_MAX_VALUE = new LuceneLong(Int64.MaxValue);
 
         /// <summary>
         /// Converts a <see cref="Content"/> object to a <see cref="LuceneDocument"/> object.

@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace ExpandoDB.Rest
 {
@@ -27,13 +28,14 @@ namespace ExpandoDB.Rest
         /// <param name="db">The Database instance; this is auto-injected by NancyFX's IOC container.</param>
         public DbService(Database db) : base("/db")
         {
-            _db = db;            
+            _db = db;
 
             // Here we define the routes and their corresponding handlers.
             // Note that all handlers except OnGetCount() and OnGetCollectionSchema() are async.
 
-            Post["/{collection}", true] = OnInsertContentAsync;
-            Get["/{collection}/schema"] = OnGetCollectionSchema;
+            Get["/_schemas"] = OnGetDatabaseSchema;
+            Get["/_schemas/{collection}"] = OnGetCollectionSchema;
+            Post["/{collection}", true] = OnInsertContentAsync;            
             Get["/{collection}", true] = OnSearchContentsAsync;            
             Get["/{collection}/count"] = OnGetCount;
             Get["/{collection}/{id:guid}", true] = OnGetContentAsync;
@@ -42,6 +44,8 @@ namespace ExpandoDB.Rest
             Delete["/{collection}/{id:guid}", true] = OnDeleteContentAsync;
             Delete["/{collection}", true] = OnDeleteCollectionAsync;
         }
+
+        
 
         /// <summary>
         /// Inserts a new Content object into a ContentCollection.
@@ -111,6 +115,33 @@ namespace ExpandoDB.Rest
                 timestamp = DateTime.UtcNow,
                 elapsed = stopwatch.Elapsed.ToString(),
                 schema = schema
+            };
+
+            return responseDto;
+        }
+
+        /// <summary>
+        /// Returns the schemas of all ContentCollections in the database; a schema is simply a set of fields and their corresponding data types.
+        /// </summary>
+        /// <param name="req">The request object.</param>
+        /// <returns></returns>        
+        private object OnGetDatabaseSchema(dynamic req)
+        {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            var schemas = (from collectionName in _db.GetCollectionNames().OrderBy(n=> n)
+                          let schema = _db[collectionName]?.GetSchema()
+                          where schema != null
+                          select schema).ToList();                        
+
+            stopwatch.Stop();
+
+            var responseDto = new DatabaseSchemaResponseDto
+            {
+                timestamp = DateTime.UtcNow,
+                elapsed = stopwatch.Elapsed.ToString(),
+                schemas = schemas
             };
 
             return responseDto;

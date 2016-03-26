@@ -2,7 +2,7 @@
     "swagger": "2.0",
     "info": {
         "title": "ExpandoDB",
-        "description": "A dynamic JSON database with integrated Lucene search.",
+        "description": "A JSON document database with integrated Lucene search.",
         "version": "0.9.7"
     },
     "host": "localhost:9000",
@@ -161,7 +161,7 @@
                 }
             }
         },
-        "/db/{collection}/schema": {
+        "/db/_schemas/{collection}": {
             "get": {
                 "summary": "Returns the schema of the specified ContentCollection.",
                 "parameters": [
@@ -181,6 +181,28 @@
                         "description": "A response DTO",
                         "schema": {
                             "$ref": "#/definitions/SchemaResponseDTO"
+                        }
+                    },
+                    "default": {
+                        "description": "An error DTO",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponseDTO"
+                        }
+                    }
+                }
+            }
+        },
+        "/db/_schemas": {
+            "get": {
+                "summary": "Returns the schemas of all ContentCollections in the Database.",                
+                "tags": [
+                    "Metadata"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A response DTO",
+                        "schema": {
+                            "$ref": "#/definitions/DatabaseSchemaResponseDTO"
                         }
                     },
                     "default": {
@@ -640,6 +662,27 @@
                 "ObjectSchema": {
                     "type": "object",
                     "description": "If the DataType is Object(7), this property specifies the schema of the object."
+                }
+            }
+        },
+        "DatabaseSchemaResponseDTO": {
+            "type": "object",
+            "properties": {
+                "schemas": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/SchemaDTO"
+                    },
+                    "description": "The schemas of all ContentCollections in the database."
+                },
+                "timestamp": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "The date/time (UTC) when the Response was generated on the server."
+                },
+                "elapsed": {
+                    "type": "string",
+                    "description": "The time it took to process the Request on the server."
                 }
             }
         },
