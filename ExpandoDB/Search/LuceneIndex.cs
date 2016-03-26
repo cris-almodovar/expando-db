@@ -211,9 +211,8 @@ namespace ExpandoDB.Search
         private Sort GetSortCriteria(string sortByField = null)
         {
             if (String.IsNullOrWhiteSpace(sortByField))
-                return Sort.RELEVANCE;            
-
-            var sortFields = new List<SortField>();            
+                return Sort.RELEVANCE;
+                      
             var fieldName = sortByField.Trim().TrimStart('+');
             var isDescending = fieldName.StartsWith("-", StringComparison.InvariantCulture);
             if (isDescending)

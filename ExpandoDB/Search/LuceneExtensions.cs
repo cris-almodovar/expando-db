@@ -20,7 +20,8 @@ namespace ExpandoDB.Search
         public const string FULL_TEXT_FIELD_NAME = "_full_text_";     
         public const string DEFAULT_NULL_TOKEN = "_null_";
         public const int INDEX_NULL_VALUE = 1;
-        public static readonly LuceneDouble DOUBLE_MIN_VALUE = new LuceneDouble(LuceneDouble.MIN_VALUE);
+        public const int SORT_FIELD_MAX_TEXT_LENGTH = 20;
+        public static readonly LuceneDouble DOUBLE_MIN_VALUE = new LuceneDouble(Double.MinValue);
         public static readonly LuceneDouble DOUBLE_MAX_VALUE = new LuceneDouble(LuceneDouble.MAX_VALUE);
         public static readonly LuceneLong LONG_MIN_VALUE = new LuceneLong(LuceneLong.MIN_VALUE);
         public static readonly LuceneLong LONG_MAX_VALUE = new LuceneLong(LuceneLong.MAX_VALUE);
@@ -541,7 +542,7 @@ namespace ExpandoDB.Search
             // Only top-level and non-array fields are sortable
             if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
             {
-                var stringValueForSorting = (stringValue.Length > 50 ? stringValue.Substring(0, 50) : stringValue).Trim().ToLowerInvariant();
+                var stringValueForSorting = (stringValue.Length > SORT_FIELD_MAX_TEXT_LENGTH ? stringValue.Substring(0, SORT_FIELD_MAX_TEXT_LENGTH) : stringValue).Trim().ToLowerInvariant();
                 var sortFieldName = fieldName.ToSortFieldName();
                 luceneFields.Add(new SortedDocValuesField(sortFieldName, new BytesRef(stringValueForSorting)));
             }
