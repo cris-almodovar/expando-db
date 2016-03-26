@@ -3,7 +3,7 @@
     "info": {
         "title": "ExpandoDB",
         "description": "A JSON document database with integrated Lucene search.",
-        "version": "0.9.7"
+        "version": "0.9.8"
     },
     "host": "localhost:9000",
     "schemes": [
@@ -76,7 +76,7 @@
                     }
                 ],
                 "tags": [
-                    "Searching for Content"
+                    "Search for Content"
                 ],
                 "responses": {
                     "200": {
@@ -114,7 +114,7 @@
                     }
                 ],
                 "tags": [
-                    "Inserting Content"
+                    "Insert Content"
                 ],
                 "responses": {
                     "200": {
@@ -143,7 +143,7 @@
                     }
                 ],
                 "tags": [
-                    "Removing Content"
+                    "Remove Content"
                 ],
                 "responses": {
                     "200": {
@@ -174,7 +174,7 @@
                     }
                 ],
                 "tags": [
-                    "Metadata"
+                    "Get Metadata"
                 ],
                 "responses": {
                     "200": {
@@ -196,7 +196,7 @@
             "get": {
                 "summary": "Returns the schemas of all ContentCollections in the Database.",                
                 "tags": [
-                    "Metadata"
+                    "Get Metadata"
                 ],
                 "responses": {
                     "200": {
@@ -234,7 +234,7 @@
                     }
                 ],
                 "tags": [
-                    "Searching for Content"
+                    "Search for Content"
                 ],
                 "responses": {
                     "200": {
@@ -272,7 +272,7 @@
                     }
                 ],
                 "tags": [
-                    "Searching for Content"
+                    "Search for Content"
                 ],
                 "responses": {
                     "200": {
@@ -317,7 +317,7 @@
                     }
                 ],
                 "tags": [
-                    "Updating Content"
+                    "Update Content"
                 ],
                 "responses": {
                     "200": {
@@ -362,7 +362,7 @@
                     }
                 ],
                 "tags": [
-                    "Updating Content"
+                    "Update Content"
                 ],
                 "responses": {
                     "200": {
@@ -398,7 +398,7 @@
                     }
                 ],
                 "tags": [
-                    "Removing Content"
+                    "Remove Content"
                 ],
                 "responses": {
                     "200": {
