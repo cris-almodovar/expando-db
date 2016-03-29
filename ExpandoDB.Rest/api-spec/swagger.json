@@ -2,7 +2,7 @@
     "swagger": "2.0",
     "info": {
         "title": "ExpandoDB",
-        "description": "A JSON document database with integrated Lucene search.",
+        "description": "A JSON document database with super-fast search.",
         "version": "0.9.8"
     },
     "host": "localhost:9000",
