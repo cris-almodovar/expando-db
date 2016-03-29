@@ -13,7 +13,7 @@ fa-icon: bolt
   ![Search Content](img/search-content.png)
 - To insert new JSON content, use the `POST /db/{collection}` endpoint.
   ![Insert Content](img/insert-content.png)
-- To update existing JSON content, use the `POST /db/{collection}/{id}` and `PATCH /db/{collection}/{id}` endpoints.
+- To update existing JSON content, use the `PUT /db/{collection}/{id}` and `PATCH /db/{collection}/{id}` endpoints.
   ![Update Content](img/update-content.png)
 - To remove existing JSON content or to remove a content collection, use the `DELETE /db/{collection}/{id}` and `DELETE /db/{collection}` endpoints.
   ![Remove Content](img/remove-content.png) 
