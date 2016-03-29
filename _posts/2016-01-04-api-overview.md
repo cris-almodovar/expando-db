@@ -2,7 +2,7 @@
 title: "api overview"
 bg: green 
 color: black
-fa-icon: bolt
+fa-icon: codepen
 ---
 
 # **it's got an easy to use REST API**
