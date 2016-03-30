@@ -11,7 +11,7 @@ fa-icon: codepen
   ![Get Metadata](img/get-metadata.png)  
 - To search a collection, use the `GET /db/{collection}` endpoints.  
   ![Search Content](img/search-content.png)
-- To insert new JSON content, use the `POST /db/{collection}` endpoint.
+- To insert new JSON content, use the `POST /db/{collection}` endpoint. ExpandoDB auto-creates the target Content Collection if it doesn't exist.
   ![Insert Content](img/insert-content.png)
 - To update existing JSON content, use the `PUT /db/{collection}/{id}` and `PATCH /db/{collection}/{id}` endpoints.
   ![Update Content](img/update-content.png)
