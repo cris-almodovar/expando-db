@@ -55,7 +55,7 @@ namespace ExpandoDB
 
     public enum FieldDataType
     {       
-        Unknown,      
+        Null,      
         Guid,
         Text,
         Number,

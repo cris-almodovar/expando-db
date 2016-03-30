@@ -2,7 +2,7 @@
     "swagger": "2.0",
     "info": {
         "title": "ExpandoDB",
-        "description": "A JSON document database with super-fast search.",
+        "description": "A JSON document database with super-fast search",
         "version": "0.9.8"
     },
     "host": "localhost:9000",
@@ -653,7 +653,7 @@
                 },
                 "DataType": {
                     "type": "integer",
-                    "description": "The data type of the field - Unknown(0), Guid(1), Text(2), Number(3), Boolean(4), DateTime(5), Array(6), Object(7)"
+                    "description": "The data type of the field - Null(0), Guid(1), Text(2), Number(3), Boolean(4), DateTime(5), Array(6), Object(7)"
                 },
                 "ArrayElementDataType": {
                     "type": "integer",

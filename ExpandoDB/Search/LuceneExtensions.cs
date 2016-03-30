@@ -157,7 +157,7 @@ namespace ExpandoDB.Search
 
         private static void ValidateDataType(this IndexedField indexedField, FieldDataType dataType)
         {
-            if (indexedField.DataType == FieldDataType.Unknown)
+            if (indexedField.DataType == FieldDataType.Null)
             {
                 indexedField.DataType = dataType;
             }
@@ -174,7 +174,7 @@ namespace ExpandoDB.Search
         private static FieldDataType GetFieldDataType(object value)
         {
             if (value == null)
-                return FieldDataType.Unknown;
+                return FieldDataType.Null;
 
             var type = value.GetType();
             var typeCode = Type.GetTypeCode(type);
@@ -211,7 +211,7 @@ namespace ExpandoDB.Search
                     break;
             }
 
-            return FieldDataType.Unknown;
+            return FieldDataType.Null;
         }
 
         private static List<Field> ToLuceneFields(this IList list, IndexedField indexedField)
@@ -224,7 +224,7 @@ namespace ExpandoDB.Search
                     if (item == null)
                         continue;
 
-                    if (indexedField.ArrayElementDataType == FieldDataType.Unknown)
+                    if (indexedField.ArrayElementDataType == FieldDataType.Null)
                         indexedField.ArrayElementDataType = GetFieldDataType(item);
                     else if (indexedField.ArrayElementDataType != GetFieldDataType(item))
                         throw new IndexSchemaException($"All the elements of '{indexedField.Name}' must be of type '{indexedField.DataType}'");
@@ -276,7 +276,7 @@ namespace ExpandoDB.Search
 
                 switch (childFieldDataType)
                 {
-                    case FieldDataType.Unknown:
+                    case FieldDataType.Null:
                     case FieldDataType.Guid:
                     case FieldDataType.Text:
                     case FieldDataType.Number:
