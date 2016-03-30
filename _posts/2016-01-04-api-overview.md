@@ -17,4 +17,4 @@ fa-icon: codepen
   ![Update Content](img/update-content.png)
 - To remove existing JSON content or to remove a content collection, use the `DELETE /db/{collection}/{id}` and `DELETE /db/{collection}` endpoints.
   ![Remove Content](img/remove-content.png) 
-
+- Check out the full [Swagger API spec](http://localhost:9000/api-spec/index.html) to learn more.
