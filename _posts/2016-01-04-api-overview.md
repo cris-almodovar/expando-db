@@ -10,7 +10,7 @@ fa-icon: codepen
 - To insert new JSON content, use the `POST /db/{collection}` endpoint. ExpandoDB will auto-create the target Content Collection if it doesn't exist.  
   ![Post Spec](img/post-spec.png)
 - To find out what fields comprise the schema of a Content Collection are, use the `GET /db/_schemas/{collection}` endpoint.  
-  ![Get Schema](img/get-schema.png)
+  ![Get Schema](img/get-schema.PNG)
 - To find out what Content Collection are in the Database and what their schemas are, use the `GET /db/_schemas` endpoint.
   ![Get Schemas](img/get-schemas.png)    
 - To search a Content Collection, use the `GET /db/{collection}` endpoint.  
