@@ -3,6 +3,7 @@ using FlexLucene.Analysis;
 using FlexLucene.Analysis.Standard;
 using FlexLucene.Document;
 using FlexLucene.Index;
+using FlexLucene.Queryparser.Classic;
 using FlexLucene.Search;
 using FlexLucene.Search.Vectorhighlight;
 using FlexLucene.Store;
@@ -11,6 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using java.util;
 
 namespace ExpandoDB.Search
 {
@@ -81,9 +83,8 @@ namespace ExpandoDB.Search
         {
             var contentHightlightMap = contents.ToDictionary(c => c._id.ToString());
 
-            var reader = DirectoryReader.Open(writer, true);
-            var indexSchema = CreateIndexSchema();
-            var queryParser = new LuceneQueryParser(LuceneExtensions.FULL_TEXT_FIELD_NAME, writer.GetAnalyzer(), indexSchema);
+            var reader = DirectoryReader.Open(writer, true);            
+            var queryParser = new HighlighterQueryParser(writer.GetAnalyzer());
             queryParser.SetMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
 
             var query = queryParser.Parse(criteria.Query)
@@ -98,7 +99,7 @@ namespace ExpandoDB.Search
 
             foreach (var sd in scoreDocs)
             {
-                var bestFragment = highlighter.GetBestFragment(fieldQuery, reader, sd.Doc, LuceneExtensions.FULL_TEXT_FIELD_NAME, 256);
+                var bestFragment = highlighter.GetBestFragment(fieldQuery, reader, sd.Doc, LuceneExtensions.FULL_TEXT_FIELD_NAME, 150);
                 var document = searcher.Doc(sd.Doc);
                 var docId = document.Get(Content.ID_FIELD_NAME);
 
@@ -108,20 +109,7 @@ namespace ExpandoDB.Search
                     dictionary[HIGHLIGHT_FIELD_NAME] = bestFragment;
                 }
             }            
-        }
-
-        private static IndexSchema CreateIndexSchema()
-        {
-            var indexSchema = new IndexSchema();
-            foreach (var indexedField in new[] { new IndexedField { Name = Content.ID_FIELD_NAME, DataType = FieldDataType.Guid },
-                                                  new IndexedField { Name = LuceneExtensions.FULL_TEXT_FIELD_NAME, DataType = FieldDataType.Text }
-                                                })
-            {
-                indexSchema.Fields.TryAdd(indexedField.Name, indexedField);
-            }
-
-            return indexSchema;
-        }
+        }        
 
         private static void BuidIndex(IEnumerable<Content> hits, IndexWriter writer)
         {
@@ -145,6 +133,95 @@ namespace ExpandoDB.Search
             var fragListBuilder = new SimpleFragListBuilder();
             var fragmentBuilder = new ScoreOrderFragmentsBuilder(BaseFragmentsBuilder.COLORED_PRE_TAGS, BaseFragmentsBuilder.COLORED_POST_TAGS);
             return new FastVectorHighlighter(true, true, fragListBuilder, fragmentBuilder);
-        }        
+        }
+
+        class HighlighterQueryParser : QueryParser
+        {
+            public HighlighterQueryParser(Analyzer analyzer)
+                : base(LuceneExtensions.FULL_TEXT_FIELD_NAME, analyzer)
+            {
+            }
+
+            protected override Query GetFieldQuery(string fieldName, string queryText, bool quoted)
+            {
+                if (fieldName != LuceneExtensions.FULL_TEXT_FIELD_NAME)
+                    return null;
+
+                return base.GetFieldQuery(fieldName, queryText, quoted);
+            }
+
+            protected override Query GetFieldQuery(string fieldName, string queryText, int slop)
+            {
+                if (fieldName != LuceneExtensions.FULL_TEXT_FIELD_NAME)
+                    return null;
+
+                return base.GetFieldQuery(fieldName, queryText, slop);
+            }
+
+            protected override Query GetRangeQuery(string fieldName, string part1, string part2, bool startInclusive, bool endInclusive)
+            {
+                if (fieldName != LuceneExtensions.FULL_TEXT_FIELD_NAME)
+                    return null;
+
+                return base.GetRangeQuery(fieldName, part1, part2, startInclusive, endInclusive);
+            }
+
+            protected override Query GetFuzzyQuery(string fieldName, string termString, float minSimilarity)
+            {
+                if (fieldName != LuceneExtensions.FULL_TEXT_FIELD_NAME)
+                    return null;
+
+                return base.GetFuzzyQuery(fieldName, termString, minSimilarity);
+            }
+
+            protected override Query GetPrefixQuery(string fieldName, string termString)
+            {
+                if (fieldName != LuceneExtensions.FULL_TEXT_FIELD_NAME)
+                    return null;
+
+                return base.GetPrefixQuery(fieldName, termString);
+            }
+
+            protected override Query GetRegexpQuery(string fieldName, string termString)
+            {
+                if (fieldName != LuceneExtensions.FULL_TEXT_FIELD_NAME)
+                    return null;
+
+                return base.GetRegexpQuery(fieldName, termString);
+            }
+
+            protected override Query GetWildcardQuery(string fieldName, string termString)
+            {
+                if (fieldName != LuceneExtensions.FULL_TEXT_FIELD_NAME)
+                    return null;
+
+                return base.GetWildcardQuery(fieldName, termString);
+            }
+
+            protected override Query GetBooleanQuery(List list)
+            {
+                if (list.size() == 1)                
+                {
+                    var clause = list.get(0) as BooleanClause;
+                    if (clause != null)
+                        return clause.GetQuery(); 
+                }
+                return base.GetBooleanQuery(list);
+            }
+
+            protected override Query GetBooleanQuery(List list, bool disableCoord)
+            {
+                if (list.size() == 1)
+                {
+                    var clause = list.get(0) as BooleanClause;
+                    if (clause != null)
+                        return clause.GetQuery();
+                }
+                return base.GetBooleanQuery(list, disableCoord);
+            }
+
+        }
     }
+
+    
 }
