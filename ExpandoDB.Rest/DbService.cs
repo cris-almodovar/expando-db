@@ -326,13 +326,12 @@ namespace ExpandoDB.Rest
             var guid = (Guid)req["id"];
             if (guid == Guid.Empty)
                 throw new ArgumentException("id cannot be Guid.Empty");
-
-            var excludedFields = new[] { "collection", "id" };
-            var dictionary = this.Bind<DynamicDictionary>(excludedFields).ToDictionary();
-            if (dictionary == null || dictionary.Count == 0)
+            
+            var operations = this.Bind<IList<PatchOperationDto>>();
+            if (operations == null || operations.Count == 0)
                 throw new InvalidOperationException("There is no data for this operation");
 
-            var contentPatch = new Content(dictionary);
+            var contentPatch = new Content();
             var collection = _db[collectionName];
 
             var count = collection.Count(new SearchCriteria { Query = $"{Content.ID_FIELD_NAME}: {guid}" });
