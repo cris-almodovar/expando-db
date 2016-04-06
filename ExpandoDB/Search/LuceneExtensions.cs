@@ -427,39 +427,7 @@ namespace ExpandoDB.Search
             }
 
             return buffer.ToString();
-        }
-
-        /// <summary>
-        /// Finds (recursively) the field with the specified name.
-        /// </summary>
-        /// <param name="indexSchema">The indexSchema.</param>
-        /// <param name="fieldName">Name of the field.</param>
-        /// <returns></returns>
-        public static IndexedField FindField(this IndexSchema indexSchema, string fieldName, bool recursive = true)
-        {
-            if (indexSchema.Fields.ContainsKey(fieldName))
-                return indexSchema.Fields[fieldName];
-
-            IndexedField foundField = null;
-            if (recursive)
-            {
-                foreach (var indexedField in indexSchema.Fields.Values)
-                {
-                    if (indexedField.DataType == FieldDataType.Array || indexedField.DataType == FieldDataType.Object)
-                    {
-                        var childSchema = indexedField.ObjectSchema;
-                        if (childSchema != null)
-                        {
-                            foundField = childSchema.FindField(fieldName, true);
-                            if (foundField != null)
-                                break;
-                        }
-                    }
-                }
-            }
-
-            return foundField;
-        }
+        }        
 
         /// <summary>
         /// Converts the given Lucene field name to a special field name for use in sorting.

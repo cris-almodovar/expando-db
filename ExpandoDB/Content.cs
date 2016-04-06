@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ExpandoDB.Serialization;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Dynamic;
@@ -42,7 +43,7 @@ namespace ExpandoDB
         /// </summary>
         /// <param name="dictionary">The dictionary.</param>
         public Content(IDictionary<string, object> dictionary)
-            : this (dictionary.ToExpando())
+            : this (dictionary.Unwrap().ToExpando())
         {
         }        
 

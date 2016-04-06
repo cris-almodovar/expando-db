@@ -40,8 +40,40 @@ namespace ExpandoDB
             indexSchema.Fields[LuceneExtensions.FULL_TEXT_FIELD_NAME] = new IndexedField { Name = LuceneExtensions.FULL_TEXT_FIELD_NAME, DataType = FieldDataType.Text };
             
             return indexSchema;      
-        }         
-                   
+        }
+
+        /// <summary>
+        /// Finds (recursively) the field with the specified name.
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <param name="recursive">if set to <c>true</c>, the FindField method will search child objects.</param>
+        /// <returns></returns>
+        public IndexedField FindField(string fieldName, bool recursive = true)
+        {
+            if (Fields.ContainsKey(fieldName))
+                return Fields[fieldName];
+
+            IndexedField foundField = null;
+            if (recursive)
+            {
+                foreach (var indexedField in Fields.Values)
+                {
+                    if (indexedField.DataType == FieldDataType.Array || indexedField.DataType == FieldDataType.Object)
+                    {
+                        var childSchema = indexedField.ObjectSchema;
+                        if (childSchema != null)
+                        {
+                            foundField = childSchema.FindField(fieldName, true);
+                            if (foundField != null)
+                                break;
+                        }
+                    }
+                }
+            }
+
+            return foundField;
+        }
+
     }   
 
     public class IndexedField

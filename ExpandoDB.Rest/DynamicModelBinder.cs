@@ -1,8 +1,10 @@
-﻿using ExpandoDB.Serialization;
+﻿using ExpandoDB.Rest.DTO;
+using ExpandoDB.Serialization;
 using Nancy;
 using Nancy.Extensions;
 using Nancy.ModelBinding;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -16,11 +18,17 @@ namespace ExpandoDB.Rest
     {
         public object Bind(NancyContext context, Type modelType, object instance, BindingConfig configuration, params string[] blackListedProperties)
         {
-            var data =
-                GetDataFields(context, blackListedProperties);
-
-            var model =
-                DynamicDictionary.Create(data);
+            object model = null;
+            if (modelType == typeof(DynamicDictionary))
+            {
+                var data = GetDataFields(context, blackListedProperties);
+                model = DynamicDictionary.Create(data);
+                
+            }
+            else if (modelType == typeof(IList<PatchOperationDto>))
+            {
+                model = ParsePatchOperationsList(context.Request);
+            }
 
             return model;
         }
@@ -37,7 +45,7 @@ namespace ExpandoDB.Rest
                     ConvertDynamicDictionary(context.Request.Form), 
                     ConvertDynamicDictionary(context.Request.Query), 
                     ConvertDynamicDictionary(context.Parameters),
-                    ParseRequestBody(context.Request)
+                    ParseDictionary(context.Request)
                 },
                 blackListedProperties
             );
@@ -75,22 +83,35 @@ namespace ExpandoDB.Rest
                     memberName => dictionary[memberName]);
         }
 
-        private static IDictionary<string, object> ParseRequestBody(Request request)
+        private static IDictionary<string, object> ParseDictionary(Request request)
         {
             var json = request.Body.AsString();
             if (String.IsNullOrWhiteSpace(json))
                 throw new ArgumentException("The JSON string is empty");
 
-            var dictionary = DynamicSerializer.Deserialize<IDictionary<string, object>>(json);
-            if (dictionary == null)
+            var model = DynamicSerializer.Deserialize<IDictionary<string, object>>(json);
+            if (model == null)
                 return new Dictionary<string, object>();
             
-            return dictionary;            
+            return model;            
         }
-        
+
+        private static IList<PatchOperationDto> ParsePatchOperationsList(Request request)
+        {
+            var json = request.Body.AsString();
+            if (String.IsNullOrWhiteSpace(json))
+                throw new ArgumentException("The JSON string is empty");
+
+            var model = DynamicSerializer.Deserialize<IList<PatchOperationDto>>(json);
+            if (model == null)
+                return new List<PatchOperationDto>();
+
+            return model;
+        }
+
         public bool CanBind(Type modelType)
         {
-            return modelType == typeof(DynamicDictionary);
+            return (modelType == typeof(DynamicDictionary) || modelType == typeof(IList<PatchOperationDto>));
         }
     }
 }

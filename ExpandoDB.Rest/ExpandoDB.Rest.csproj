@@ -85,6 +85,7 @@
     <Compile Include="DTO\SearchResponseDto.cs" />
     <Compile Include="DTO\UpdateResponseDto.cs" />
     <Compile Include="DynamicModelBinder.cs" />
+    <Compile Include="PatchOperationExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StatusCodeHandler.cs" />
   </ItemGroup>

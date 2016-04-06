@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using ExpandoDB.Serialization;
 
 namespace ExpandoDB.Rest
 {
@@ -326,30 +327,29 @@ namespace ExpandoDB.Rest
             var guid = (Guid)req["id"];
             if (guid == Guid.Empty)
                 throw new ArgumentException("id cannot be Guid.Empty");
-            
-            var operations = this.Bind<IList<PatchOperationDto>>();
-            if (operations == null || operations.Count == 0)
-                throw new InvalidOperationException("There is no data for this operation");
 
-            var contentPatch = new Content();
+            // Read in the PATCH payload.            
+            var operations = this.Bind<IList<PatchOperationDto>>();
+            
+            // Retrieve the Content to be PATCHed.
             var collection = _db[collectionName];
 
             var count = collection.Count(new SearchCriteria { Query = $"{Content.ID_FIELD_NAME}: {guid}" });
             if (count == 0)
                 return HttpStatusCode.NotFound;
 
-            var content = await collection.GetAsync(guid).ConfigureAwait(false);
-            if (content == null)
+            var origContent = await collection.GetAsync(guid).ConfigureAwait(false);
+            if (origContent == null)
                 return HttpStatusCode.NotFound;
 
-            var patchDictionary = contentPatch.AsDictionary();
-            var contentDictionary = content.AsDictionary();
+            // Apply the PATCH operations to the Content
+            foreach (var op in operations)
+                op.Apply(origContent, collection.IndexSchema);
 
-            var keysToUpdate = patchDictionary.Keys.Except(new[] { "collection", Content.ID_FIELD_NAME, Content.CREATED_TIMESTAMP_FIELD_NAME, Content.MODIFIED_TIMESTAMP_FIELD_NAME });
-            foreach (var key in keysToUpdate)
-                contentDictionary[key] = patchDictionary[key];
-
-            var affected = await collection.UpdateAsync(content).ConfigureAwait(false);
+            var patchedContent = new Content(origContent.AsDictionary());            
+           
+            // Update the PATCHed Content.
+            var affected = await collection.UpdateAsync(patchedContent).ConfigureAwait(false);
 
             stopwatch.Stop();
 

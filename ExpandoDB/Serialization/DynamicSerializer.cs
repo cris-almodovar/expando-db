@@ -134,7 +134,7 @@ namespace ExpandoDB.Serialization
             return JSON.Deserialize<T>(reader);
         }       
 
-        private static IDictionary<string, object> Unwrap(this IDictionary<string, object> dictionary)
+        internal static IDictionary<string, object> Unwrap(this IDictionary<string, object> dictionary)
         {
             if (dictionary == null)
                 throw new ArgumentNullException(nameof(dictionary));
