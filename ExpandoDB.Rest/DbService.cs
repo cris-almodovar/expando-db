@@ -329,7 +329,9 @@ namespace ExpandoDB.Rest
                 throw new ArgumentException("id cannot be Guid.Empty");
 
             // Read in the PATCH payload.            
-            var operations = this.Bind<IList<PatchOperationDto>>();
+            var patchOperations = this.Bind<IList<PatchOperationDto>>();
+            if (patchOperations == null || patchOperations.Count == 0)
+                throw new InvalidOperationException("PATCH operations must be specified.");
             
             // Retrieve the Content to be PATCHed.
             var collection = _db[collectionName];
@@ -338,18 +340,16 @@ namespace ExpandoDB.Rest
             if (count == 0)
                 return HttpStatusCode.NotFound;
 
-            var origContent = await collection.GetAsync(guid).ConfigureAwait(false);
-            if (origContent == null)
+            var content = await collection.GetAsync(guid).ConfigureAwait(false);
+            if (content == null)
                 return HttpStatusCode.NotFound;
 
             // Apply the PATCH operations to the Content
-            foreach (var op in operations)
-                op.Apply(origContent, collection.IndexSchema);
-
-            var patchedContent = new Content(origContent.AsDictionary());            
+            foreach (var operation in patchOperations)
+                operation.Apply(content);                     
            
             // Update the PATCHed Content.
-            var affected = await collection.UpdateAsync(patchedContent).ConfigureAwait(false);
+            var affected = await collection.UpdateAsync(content).ConfigureAwait(false);
 
             stopwatch.Stop();
 

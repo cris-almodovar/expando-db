@@ -63,40 +63,38 @@ namespace ExpandoDB.Rest
             }
         }
 
-        public static void Apply(this PatchOperationDto operation, Content content, IndexSchema indexSchema)
+        public static void Apply(this PatchOperationDto operation, Content content)
         {
             operation.Validate();
 
             if (content == null)
-                throw new ArgumentNullException(nameof(content));
-            if (indexSchema == null)
-                throw new ArgumentNullException(nameof(indexSchema));
+                throw new ArgumentNullException(nameof(content));            
 
-            var contentDictionary = content.AsDictionary();
+            var dictionary = content.AsDictionary();
             var pathPointer = new JsonPointer(operation.path);
 
             switch (operation.op)
             {
                 case PatchOp.ADD:
-                    Add(contentDictionary, pathPointer, operation.value, indexSchema);
+                    Add(dictionary, pathPointer, operation.value);
                     break;
 
                 case PatchOp.REPLACE:
-                    Replace(contentDictionary, pathPointer, operation.value, indexSchema);
+                    Replace(dictionary, pathPointer, operation.value);
                     break;
 
                 case PatchOp.REMOVE:
-                    Remove(contentDictionary, pathPointer, indexSchema);
+                    Remove(dictionary, pathPointer);
                     break;
             }
         }        
 
-        private static void Add(IDictionary<string, object> dictionary, JsonPointer pathPointer, object value, IndexSchema indexSchema)
+        private static void Add(IDictionary<string, object> dictionary, JsonPointer pathPointer, object value)
         {            
             var fieldName = pathPointer.Parts[0];
-            var indexedField = indexSchema.FindField(fieldName, false);
+            var fieldValue = dictionary.ContainsKey(fieldName) ? dictionary[fieldName] : null;        
 
-            if (indexedField == null)
+            if (!dictionary.ContainsKey(fieldName))
             {
                 // The field does not exist, add it.
                 dictionary.Add(fieldName, value); 
@@ -104,30 +102,37 @@ namespace ExpandoDB.Rest
             else
             {
                 // The field exists; check if it's an array.
-                if (indexedField.DataType == FieldDataType.Array)
+                if (fieldValue is IList)
                 {
-                    if (pathPointer.Parts.Count < 2)
-                        throw new ArgumentException("PATH path must include an array index parameter.");
-
-                    var array = dictionary.ContainsKey(fieldName) ? dictionary[fieldName] as IList : null;
-                    if (array == null)
-                        throw new InvalidOperationException($"Content does not have an array field named '{fieldName}'");
-                    
-                    var arrayIndexPart = pathPointer.Parts[1];
-                    if (arrayIndexPart == "-")
+                    if (value is IList)
                     {
-                        // Append to the array.
-                        array.Add(value);
+                        dictionary[fieldName] = value;
                     }
                     else
                     {
-                        var arrayIndex = -1;
-                        Int32.TryParse(arrayIndexPart, out arrayIndex);
-                        
-                        if (arrayIndex < 0 || arrayIndex > array.Count)                        
-                            throw new InvalidOperationException($"Invalid array index for PATCH add operation: '{arrayIndexPart}'");
+                        if (pathPointer.Parts.Count < 2)
+                            throw new ArgumentException("PATH path must include an array index parameter.");
 
-                        array.Insert(arrayIndex, value);
+                        var array = fieldValue as IList;
+                        if (array == null)
+                            throw new InvalidOperationException($"Content does not have an array field named '{fieldName}'");
+
+                        var arrayIndexPart = pathPointer.Parts[1];
+                        if (arrayIndexPart == "-")
+                        {
+                            // Append to the array.
+                            array.Add(value);
+                        }
+                        else
+                        {
+                            var arrayIndex = -1;
+                            Int32.TryParse(arrayIndexPart, out arrayIndex);
+
+                            if (arrayIndex < 0 || arrayIndex > array.Count)
+                                throw new InvalidOperationException($"Invalid array index for PATCH add operation: '{arrayIndexPart}'");
+
+                            array.Insert(arrayIndex, value);
+                        }
                     }
                 }
                 else
@@ -139,31 +144,38 @@ namespace ExpandoDB.Rest
             
         }        
 
-        private static void Replace(IDictionary<string, object> dictionary, JsonPointer pathPointer, object value, IndexSchema indexSchema)
+        private static void Replace(IDictionary<string, object> dictionary, JsonPointer pathPointer, object value)
         {
             var fieldName = pathPointer.Parts[0];
-            var indexedField = indexSchema.FindField(fieldName, false);
-            if (indexedField == null || !dictionary.ContainsKey(fieldName))
+            var fieldValue = dictionary.ContainsKey(fieldName) ? dictionary[fieldName] : null;
+            if (!dictionary.ContainsKey(fieldName))
                 throw new InvalidOperationException($"Content does not have a field named '{fieldName}'");
 
             // The field exists; check if it's an array.
-            if (indexedField.DataType == FieldDataType.Array)
+            if (fieldValue is IList)
             {
-                if (pathPointer.Parts.Count < 2)
-                    throw new ArgumentException("PATH path must include an array index parameter.");
+                if (value is IList)
+                {
+                    dictionary[fieldName] = value;
+                }
+                else
+                {
+                    if (pathPointer.Parts.Count < 2)
+                        throw new ArgumentException("PATH path must include an array index parameter.");
 
-                var array = dictionary.ContainsKey(fieldName) ? dictionary[fieldName] as IList : null;
-                if (array == null)
-                    throw new InvalidOperationException($"Content does not have an array field named '{fieldName}'");
+                    var array = fieldValue as IList;
+                    if (array == null)
+                        throw new InvalidOperationException($"Content does not have an array field named '{fieldName}'");
 
-                var arrayIndexPart = pathPointer.Parts[1];                                
-                var arrayIndex = -1;
-                Int32.TryParse(arrayIndexPart, out arrayIndex);
+                    var arrayIndexPart = pathPointer.Parts[1];
+                    var arrayIndex = -1;
+                    Int32.TryParse(arrayIndexPart, out arrayIndex);
 
-                if (arrayIndex < 0 || arrayIndex >= array.Count)
-                    throw new InvalidOperationException($"Invalid array index for PATCH replace operation: '{arrayIndexPart}'");
+                    if (arrayIndex < 0 || arrayIndex >= array.Count)
+                        throw new InvalidOperationException($"Invalid array index for PATCH replace operation: '{arrayIndexPart}'");
 
-                array[arrayIndex] = value;                
+                    array[arrayIndex] = value;
+                }         
             }
             else
             {
@@ -172,31 +184,38 @@ namespace ExpandoDB.Rest
             }
         }
 
-        private static void Remove(IDictionary<string, object> dictionary, JsonPointer pathPointer, IndexSchema indexSchema)
+        private static void Remove(IDictionary<string, object> dictionary, JsonPointer pathPointer)
         {
             var fieldName = pathPointer.Parts[0];
-            var indexedField = indexSchema.FindField(fieldName, false);
-            if (indexedField == null || !dictionary.ContainsKey(fieldName))
+            var fieldValue = dictionary.ContainsKey(fieldName) ? dictionary[fieldName] : null;
+            if (!dictionary.ContainsKey(fieldName))
                 throw new InvalidOperationException($"Content does not have a field named '{fieldName}'");
 
             // The field exists; check if it's an array.
-            if (indexedField.DataType == FieldDataType.Array)
+            if (fieldValue is IList)
             {
-                if (pathPointer.Parts.Count < 2)
-                    throw new ArgumentException("PATH path must include an array index parameter.");
+                if (pathPointer.Parts.Count == 1)
+                {
+                    dictionary.Remove(fieldName);
+                }
+                else
+                {
+                    if (pathPointer.Parts.Count < 2)
+                        throw new ArgumentException("PATH path must include an array index parameter.");
 
-                var array = dictionary.ContainsKey(fieldName) ? dictionary[fieldName] as IList : null;
-                if (array == null)
-                    throw new InvalidOperationException($"Content does not have an array field named '{fieldName}'");
+                    var array = fieldValue as IList;
+                    if (array == null)
+                        throw new InvalidOperationException($"Content does not have an array field named '{fieldName}'");
 
-                var arrayIndexPart = pathPointer.Parts[1];
-                var arrayIndex = -1;
-                Int32.TryParse(arrayIndexPart, out arrayIndex);
+                    var arrayIndexPart = pathPointer.Parts[1];
+                    var arrayIndex = -1;
+                    Int32.TryParse(arrayIndexPart, out arrayIndex);
 
-                if (arrayIndex < 0 || arrayIndex >= array.Count)
-                    throw new InvalidOperationException($"Invalid array index for PATCH replace operation: '{arrayIndexPart}'");
+                    if (arrayIndex < 0 || arrayIndex >= array.Count)
+                        throw new InvalidOperationException($"Invalid array index for PATCH replace operation: '{arrayIndexPart}'");
 
-                array.RemoveAt(arrayIndex);
+                    array.RemoveAt(arrayIndex);
+                }
             }
             else
             {

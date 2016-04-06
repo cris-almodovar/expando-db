@@ -43,7 +43,7 @@ namespace ExpandoDB
         /// </summary>
         /// <param name="dictionary">The dictionary.</param>
         public Content(IDictionary<string, object> dictionary)
-            : this (dictionary.Unwrap().ToExpando())
+            : this (dictionary.ToExpando())
         {
         }        
 

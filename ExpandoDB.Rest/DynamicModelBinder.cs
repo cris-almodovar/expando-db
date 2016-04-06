@@ -102,11 +102,11 @@ namespace ExpandoDB.Rest
             if (String.IsNullOrWhiteSpace(json))
                 throw new ArgumentException("The JSON string is empty");
 
-            var model = DynamicSerializer.Deserialize<IList<PatchOperationDto>>(json);
-            if (model == null)
-                return new List<PatchOperationDto>();
-
-            return model;
+            var operations = DynamicSerializer.Deserialize<IList<PatchOperationDto>>(json) ?? new List<PatchOperationDto>();
+            foreach (var op in operations)
+                op.value = op.value.Unwrap();
+            
+            return operations;
         }
 
         public bool CanBind(Type modelType)
