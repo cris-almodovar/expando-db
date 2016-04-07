@@ -56,8 +56,9 @@ namespace ExpandoDB.Search
                     break;
 
                 case FieldDataType.Boolean:
-                    part1 = part1.ToLuceneBooleanString();
-                    part2 = part2.ToLuceneBooleanString();
+                    var numericBool1 = part1.ToLuceneNumericBoolean();
+                    var numericBool2 = part2.ToLuceneNumericBoolean();
+                    query = NumericRangeQuery.NewIntRange(fieldName, numericBool1, numericBool2, startInclusive, endInclusive);
                     break;
 
                 case FieldDataType.Guid:
@@ -97,7 +98,8 @@ namespace ExpandoDB.Search
                         break;
 
                     case FieldDataType.Boolean:
-                        queryText = queryText.ToLuceneBooleanString();
+                        var numericBool = queryText.ToLuceneNumericBoolean();
+                        query = NumericRangeQuery.NewIntRange(fieldName, numericBool, numericBool, true, true);
                         break;
 
                     case FieldDataType.Guid:
@@ -188,13 +190,14 @@ namespace ExpandoDB.Search
             return new LuceneLong(utcDateTime.Ticks);
         }
 
-        public static string ToLuceneBooleanString(this string value)
+        public static LuceneInteger ToLuceneNumericBoolean(this string value)
         {
             bool boolValue;
             if (!Boolean.TryParse(value, out boolValue))
                 throw new QueryParserException($"Invalid boolean in query: '{value}'");
 
-            return boolValue.ToString().ToLower();
+            var numericBool =  boolValue ? 1 : 0;
+            return new LuceneInteger(numericBool);
         }
 
         public static string ToLuceneGuidString(this string value)

@@ -29,15 +29,9 @@ namespace ExpandoDB.Rest
             {
                 case PatchOpCode.ADD:
                 case PatchOpCode.REPLACE:
-                    if (operation.path == null || operation.value == null)
-                        throw new InvalidOperationException($"Invalid parameters for PATCH '{operation.op}' operation.");
-                    if (operation.path == String.Empty)
-                        throw new InvalidOperationException($"Update of whole document currently not supported for PATCH '{operation.op}' operation. Use PUT instead.");
-                    break;
-
                 case PatchOpCode.REMOVE:
-                    if (operation.path == null)
-                        throw new InvalidOperationException($"Invalid parameters for PATCH '{operation.op}' operation.");
+                    if (String.IsNullOrWhiteSpace(operation.path))
+                        throw new InvalidOperationException($"Invalid parameters for PATCH '{operation.op}' operation.");                    
                     break;
 
                 default:
@@ -47,10 +41,7 @@ namespace ExpandoDB.Rest
             if (!operation.path.StartsWith("/", StringComparison.InvariantCulture))
                 throw new ArgumentException($"Invalid path for PATCH '{operation.op}' operation.");
 
-            var pathDepth = operation.path.Count(c => c == '/');
-            if (pathDepth > 2)
-                throw new ArgumentException("Path depth > 2 is currently not supported. If path depth = 2, the second part must be a numeric array index.");
-
+            var pathDepth = operation.path.Count(c => c == '/');            
             if (pathDepth == 1)
             {
                 // If we are modifying a top-level field, make sure it's not one of the metadata fields.
@@ -59,7 +50,7 @@ namespace ExpandoDB.Rest
                     fieldName == Content.CREATED_TIMESTAMP_FIELD_NAME ||
                     fieldName == Content.MODIFIED_TIMESTAMP_FIELD_NAME ||
                     fieldName == LuceneExtensions.FULL_TEXT_FIELD_NAME )
-                    throw new ArgumentException($"Invalid parameters for PATCH '{operation.op}' operation.");
+                    throw new ArgumentException($"Cannot modify field '{fieldName}'.");
             }
         }
 
@@ -79,9 +70,9 @@ namespace ExpandoDB.Rest
         private static void Apply(this PatchOperationDto operation, object parentObject, JsonPath path)
         {
             if (parentObject == null)
-                throw new ArgumentException(nameof(parentObject));
+                throw new ArgumentNullException(nameof(parentObject));
             if (path == null)
-                throw new ArgumentException(nameof(path));
+                throw new ArgumentNullException(nameof(path));
             if (path.Segments.Count < 1)
                 throw new ArgumentException($"Invalid path: '{path}'");
 
