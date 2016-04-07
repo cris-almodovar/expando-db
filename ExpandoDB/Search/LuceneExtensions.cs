@@ -164,9 +164,7 @@ namespace ExpandoDB.Search
             }
             else
             {
-                if ( (indexedField.DataType != FieldDataType.Array && indexedField.DataType != dataType) || 
-                     (indexedField.DataType == FieldDataType.Array  && indexedField.ArrayElementDataType != dataType)
-                      )
+                if ( !(indexedField.DataType == dataType || indexedField.DataType == FieldDataType.Array) )
                 {
                     var message = $"Cannot change the data type of the field '{indexedField.Name}' from {indexedField.DataType} to {dataType}.";
                     throw new IndexSchemaException(message);
