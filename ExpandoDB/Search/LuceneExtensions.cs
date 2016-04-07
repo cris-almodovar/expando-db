@@ -157,13 +157,16 @@ namespace ExpandoDB.Search
 
         private static void ValidateDataType(this IndexedField indexedField, FieldDataType dataType)
         {
+            // TODO: Make sure array fields can only be replaced by array fields
             if (indexedField.DataType == FieldDataType.Null)
             {
                 indexedField.DataType = dataType;
             }
             else
             {
-                if ( !(indexedField.DataType == dataType || indexedField.DataType == FieldDataType.Array) )
+                if ( (indexedField.DataType != FieldDataType.Array && indexedField.DataType != dataType) || 
+                     (indexedField.DataType == FieldDataType.Array  && indexedField.ArrayElementDataType != dataType)
+                      )
                 {
                     var message = $"Cannot change the data type of the field '{indexedField.Name}' from {indexedField.DataType} to {dataType}.";
                     throw new IndexSchemaException(message);

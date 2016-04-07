@@ -87,11 +87,12 @@ namespace ExpandoDB.Rest
         protected override void ConfigureApplicationContainer(TinyIoCContainer container)
         {
             base.ConfigureApplicationContainer(container);
-            
+
+            Config.LuceneNullToken = ConfigurationManager.AppSettings["LuceneNullToken"] ?? Config.LuceneNullToken;
+
             // There is only one instance of the Database object in the application.
             // It is created here, and registered with the IOC container so that 
-            // it can be auto-injected into DbService instances.
-            
+            // it can be auto-injected into DbService instances.            
             var db = new Database(Config.DbPath);
             container.Register<Database>(db);                       
         }

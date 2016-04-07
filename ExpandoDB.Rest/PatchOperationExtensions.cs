@@ -27,15 +27,15 @@ namespace ExpandoDB.Rest
 
             switch (operation.op)
             {
-                case PatchOp.ADD:
-                case PatchOp.REPLACE:
+                case PatchOpCode.ADD:
+                case PatchOpCode.REPLACE:
                     if (operation.path == null || operation.value == null)
                         throw new InvalidOperationException($"Invalid parameters for PATCH '{operation.op}' operation.");
                     if (operation.path == String.Empty)
                         throw new InvalidOperationException($"Update of whole document currently not supported for PATCH '{operation.op}' operation. Use PUT instead.");
                     break;
 
-                case PatchOp.REMOVE:
+                case PatchOpCode.REMOVE:
                     if (operation.path == null)
                         throw new InvalidOperationException($"Invalid parameters for PATCH '{operation.op}' operation.");
                     break;
@@ -71,179 +71,142 @@ namespace ExpandoDB.Rest
                 throw new ArgumentNullException(nameof(content));            
 
             var dictionary = content.AsDictionary();
-            var pathPointer = new JsonPointer(operation.path);
+            var path = new JsonPath(operation.path);
 
-            switch (operation.op)
-            {
-                case PatchOp.ADD:
-                    Add(dictionary, pathPointer, operation.value);
-                    break;
-
-                case PatchOp.REPLACE:
-                    Replace(dictionary, pathPointer, operation.value);
-                    break;
-
-                case PatchOp.REMOVE:
-                    Remove(dictionary, pathPointer);
-                    break;
-            }
+            operation.Apply(dictionary, path);
         }        
 
-        private static void Add(IDictionary<string, object> dictionary, JsonPointer pathPointer, object value)
-        {            
-            var fieldName = pathPointer.Parts[0];
-            var fieldValue = dictionary.ContainsKey(fieldName) ? dictionary[fieldName] : null;        
-
-            if (!dictionary.ContainsKey(fieldName))
-            {
-                // The field does not exist, add it.
-                dictionary.Add(fieldName, value); 
-            }
-            else
-            {
-                // The field exists; check if it's an array.
-                if (fieldValue is IList)
-                {
-                    if (value is IList)
-                    {
-                        dictionary[fieldName] = value;
-                    }
-                    else
-                    {
-                        if (pathPointer.Parts.Count < 2)
-                            throw new ArgumentException("PATH path must include an array index parameter.");
-
-                        var array = fieldValue as IList;
-                        if (array == null)
-                            throw new InvalidOperationException($"Content does not have an array field named '{fieldName}'");
-
-                        var arrayIndexPart = pathPointer.Parts[1];
-                        if (arrayIndexPart == "-")
-                        {
-                            // Append to the array.
-                            array.Add(value);
-                        }
-                        else
-                        {
-                            var arrayIndex = -1;
-                            Int32.TryParse(arrayIndexPart, out arrayIndex);
-
-                            if (arrayIndex < 0 || arrayIndex > array.Count)
-                                throw new InvalidOperationException($"Invalid array index for PATCH add operation: '{arrayIndexPart}'");
-
-                            array.Insert(arrayIndex, value);
-                        }
-                    }
-                }
-                else
-                {
-                    // The field is not an array; replace its value.
-                    dictionary[fieldName] = value; 
-                }
-            }
-            
-        }        
-
-        private static void Replace(IDictionary<string, object> dictionary, JsonPointer pathPointer, object value)
+        private static void Apply(this PatchOperationDto operation, object parentObject, JsonPath path)
         {
-            var fieldName = pathPointer.Parts[0];
-            var fieldValue = dictionary.ContainsKey(fieldName) ? dictionary[fieldName] : null;
-            if (!dictionary.ContainsKey(fieldName))
-                throw new InvalidOperationException($"Content does not have a field named '{fieldName}'");
+            if (parentObject == null)
+                throw new ArgumentException(nameof(parentObject));
+            if (path == null)
+                throw new ArgumentException(nameof(path));
+            if (path.Segments.Count < 1)
+                throw new ArgumentException($"Invalid path: '{path}'");
 
-            // The field exists; check if it's an array.
-            if (fieldValue is IList)
+            var currentSegment = path.Segments[0];            
+            if (parentObject is IList)
             {
-                if (value is IList)
+                var array = parentObject as IList;
+                var index = currentSegment.ToArrayIndex(array);                
+
+                if (path.HasNext())
                 {
-                    dictionary[fieldName] = value;
+                    // We're not yet on the target location, continue traversing the path.
+                    var nextPath = path.GetNext();
+                    object childObject = index < array.Count ? array[index] : null;
+                    operation.Apply(childObject, nextPath);
                 }
                 else
                 {
-                    if (pathPointer.Parts.Count < 2)
-                        throw new ArgumentException("PATH path must include an array index parameter.");
+                    // We are on the target location, perform the operation.
+                    switch (operation.op)
+                    {
+                        case PatchOpCode.ADD:
+                            array.Insert(index, operation.value);
+                            break;
 
-                    var array = fieldValue as IList;
-                    if (array == null)
-                        throw new InvalidOperationException($"Content does not have an array field named '{fieldName}'");
+                        case PatchOpCode.REPLACE:
+                            array[index] = operation.value;
+                            break;
 
-                    var arrayIndexPart = pathPointer.Parts[1];
-                    var arrayIndex = -1;
-                    Int32.TryParse(arrayIndexPart, out arrayIndex);
-
-                    if (arrayIndex < 0 || arrayIndex >= array.Count)
-                        throw new InvalidOperationException($"Invalid array index for PATCH replace operation: '{arrayIndexPart}'");
-
-                    array[arrayIndex] = value;
-                }         
+                        case PatchOpCode.REMOVE:
+                            array.RemoveAt(index);
+                            break;
+                    }                    
+                }
             }
-            else
+            else if (parentObject is IDictionary<string, object>)
             {
-                // The field is not an array; replace its value.
-                dictionary[fieldName] = value;
-            }
+                var dictionary = parentObject as IDictionary<string, object>;
+                var fieldName = currentSegment;
+
+                if (path.HasNext())
+                {
+                    // We're not yet on the target location, continue traversing the path.
+                    var nextPath = path.GetNext();
+                    object childObject = dictionary.ContainsKey(fieldName) ? dictionary[fieldName] : null;
+                    operation.Apply(childObject, nextPath);
+                }
+                else
+                {
+                    // We are on the target location, perform the operation.
+                    switch (operation.op)
+                    {
+                        case PatchOpCode.ADD:
+                        case PatchOpCode.REPLACE:
+                            dictionary[fieldName] = operation.value;
+                            break;
+
+                        case PatchOpCode.REMOVE:
+                            dictionary.Remove(fieldName);
+                            break;
+                    }                    
+                }
+            }               
+
         }
 
-        private static void Remove(IDictionary<string, object> dictionary, JsonPointer pathPointer)
+        private static int ToArrayIndex(this string segment, IList array)
         {
-            var fieldName = pathPointer.Parts[0];
-            var fieldValue = dictionary.ContainsKey(fieldName) ? dictionary[fieldName] : null;
-            if (!dictionary.ContainsKey(fieldName))
-                throw new InvalidOperationException($"Content does not have a field named '{fieldName}'");
+            if (String.IsNullOrWhiteSpace(segment))
+                throw new ArgumentException(nameof(segment));
+            if (array == null)
+                throw new ArgumentNullException(nameof(array));
 
-            // The field exists; check if it's an array.
-            if (fieldValue is IList)
-            {
-                if (pathPointer.Parts.Count == 1)
-                {
-                    dictionary.Remove(fieldName);
-                }
-                else
-                {
-                    if (pathPointer.Parts.Count < 2)
-                        throw new ArgumentException("PATH path must include an array index parameter.");
+            if (segment == "-")
+                return array.Count;
 
-                    var array = fieldValue as IList;
-                    if (array == null)
-                        throw new InvalidOperationException($"Content does not have an array field named '{fieldName}'");
+            var arrayIndex = -1;
+            Int32.TryParse(segment, out arrayIndex);
+            if (arrayIndex < 0 || arrayIndex > array.Count)
+                throw new InvalidOperationException($"Invalid array index for PATCH add operation: '{segment}'");
 
-                    var arrayIndexPart = pathPointer.Parts[1];
-                    var arrayIndex = -1;
-                    Int32.TryParse(arrayIndexPart, out arrayIndex);
-
-                    if (arrayIndex < 0 || arrayIndex >= array.Count)
-                        throw new InvalidOperationException($"Invalid array index for PATCH replace operation: '{arrayIndexPart}'");
-
-                    array.RemoveAt(arrayIndex);
-                }
-            }
-            else
-            {
-                // The field is not an array; remove it from the dictionary.
-                dictionary.Remove(fieldName);
-            }
-        }       
+            return arrayIndex;
+        }             
+       
     }
 
-    internal static class PatchOp
+    internal static class PatchOpCode
     {
         public const string ADD = "add";
         public const string REMOVE = "remove";
         public const string REPLACE = "replace";
     }
 
-    internal class JsonPointer
+    internal class JsonPath
     {
-        public string Path { get; private set; }
-        public IList<string> Parts { get; private set; }
+        public string Path { get { var joined = String.Join("/", Segments); return joined.Length > 0 ? $"/{joined}" : joined; } }
+        public IList<string> Segments { get; private set; }
 
-        public JsonPointer(string path)
+        public JsonPath(string path)
         {
             if (String.IsNullOrWhiteSpace(path) || !path.StartsWith("/", StringComparison.InvariantCulture))
                 throw new ArgumentException(nameof(path));
+            
+            Segments = path.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+        }
 
-            Path = path;
-            Parts = path.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+        public override string ToString()
+        {
+            return Path;
+        }
+
+        public bool HasNext()
+        {
+            return Segments.Count > 1;
+        }
+
+        public JsonPath GetNext()
+        {
+            if (HasNext())
+            {
+                var newPath = "/" + String.Join("/", Segments.Skip(1));
+                return new JsonPath(newPath);
+            }
+            else
+                throw new InvalidOperationException("JsonPath is in the last segment");
         }
     }
 
