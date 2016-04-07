@@ -65,6 +65,14 @@ namespace ExpandoDB.Search
                 }
 
                 var fieldValue = contentDictionary[fieldName];
+
+                // TODO: Special validation for Array fields.
+                if (indexedField.DataType == FieldDataType.Array && fieldValue != null && !(fieldValue is IList))
+                {
+                    var message = $"Cannot change the data type of the field '{indexedField.Name}' from {indexedField.DataType} to dataType.";
+                    throw new IndexSchemaException(message);
+                }
+
                 var luceneFields = fieldValue.ToLuceneFields(indexedField);
                 foreach (var luceneField in luceneFields)
                     luceneDocument.Add(luceneField);
@@ -164,7 +172,7 @@ namespace ExpandoDB.Search
             }
             else
             {
-                if ( !(indexedField.DataType == dataType || indexedField.DataType == FieldDataType.Array) )
+                if (indexedField.DataType != dataType && indexedField.DataType != FieldDataType.Array)
                 {
                     var message = $"Cannot change the data type of the field '{indexedField.Name}' from {indexedField.DataType} to {dataType}.";
                     throw new IndexSchemaException(message);
