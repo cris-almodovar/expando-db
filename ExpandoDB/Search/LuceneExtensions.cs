@@ -153,9 +153,7 @@ namespace ExpandoDB.Search
             }
             else
             {
-                if (indexedField.DataType != dataType && 
-                    dataType != FieldDataType.Null &&
-                    indexedField.DataType != FieldDataType.Array)
+                if (indexedField.DataType != dataType && dataType != FieldDataType.Null)
                 {
                     var message = $"Cannot change the data type of the field '{indexedField.Name}' from {indexedField.DataType} to {dataType}.";
                     throw new IndexSchemaException(message);
@@ -214,6 +212,8 @@ namespace ExpandoDB.Search
             var luceneFields = new List<Field>();
             if (list.Count > 0)
             {
+                IndexedField scalarIndexedField = null;
+
                 foreach (var item in list)
                 {
                     if (item == null)
@@ -231,12 +231,21 @@ namespace ExpandoDB.Search
                         case FieldDataType.Number:
                         case FieldDataType.DateTime:
                         case FieldDataType.Boolean:
-                            luceneFields.AddRange(item.ToLuceneFields(indexedField));
+                            if (scalarIndexedField == null && indexedField.ArrayElementDataType != FieldDataType.Null)
+                            {
+                                scalarIndexedField = new IndexedField()
+                                {
+                                    Name = indexedField.Name,
+                                    DataType = indexedField.ArrayElementDataType,
+                                    IsArrayElement = true
+                                };
+                            }
+                            luceneFields.AddRange(item.ToLuceneFields(scalarIndexedField ?? indexedField));
                             break;
 
                         case FieldDataType.Array:
                             throw new IndexSchemaException("JSON with nested arrays are currently not supported.");
-                        //break;
+                            //break;
 
                         case FieldDataType.Object:
                             var dictionary = item as IDictionary<string, object>;

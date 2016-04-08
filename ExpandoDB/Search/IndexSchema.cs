@@ -82,7 +82,8 @@ namespace ExpandoDB
         public FieldDataType DataType { get; set; }
         public FieldDataType ArrayElementDataType { get; set; }
         public IndexSchema ObjectSchema { get; set; }
-        public bool IsTopLevel { get { return (Name ?? String.Empty).IndexOf('.') < 0; } }
+        public bool IsTopLevel { get { return (Name ?? String.Empty).IndexOf('.') < 0 && !IsArrayElement; } }
+        public bool IsArrayElement { get; set; }
     }
 
     public enum FieldDataType
