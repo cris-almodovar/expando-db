@@ -16,12 +16,12 @@ highlighter: rouge
 
 ### content configuration ###
 title:       "ExpandoDB"
-keywords:    "JSON, document database, Lucene, search, full-text search, REST, microservice, SQLite"
-description: "A JSON document database with integrated Lucene search"
+keywords:    "JSON, document database, Lucene, search, full-text search, Lucene index, information retrieval, REST, microservice, SQLite"
+description: "A JSON document database with super-fast Lucene search"
 source_link: "https://github.com/cris-almodovar/expando-db"
 favicon:     "img/expando-db.ico"
 touch_icon:  "img/apple-touch-icon.png"
-google_analytics_key: "UA-75633558-1"  ## put YOUR key here to enable tracking! (blank to disable)
+google_analytics_key: "UA-75633558-1"  
 
 
 ### template colors, used site-wide via css ###
