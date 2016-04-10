@@ -2,7 +2,6 @@
 using FlexLucene.Analysis;
 using FlexLucene.Queryparser.Classic;
 using FlexLucene.Search;
-using FlexLucene.Util;
 using System;
 using LuceneDouble = java.lang.Double;
 using LuceneLong = java.lang.Long;
@@ -57,8 +56,9 @@ namespace ExpandoDB.Search
                     break;
 
                 case FieldDataType.Boolean:
-                    part1 = part1.ToLuceneBooleanString();
-                    part2 = part2.ToLuceneBooleanString();
+                    var numericBool1 = part1.ToLuceneNumericBoolean();
+                    var numericBool2 = part2.ToLuceneNumericBoolean();
+                    query = NumericRangeQuery.NewIntRange(fieldName, numericBool1, numericBool2, startInclusive, endInclusive);
                     break;
 
                 case FieldDataType.Guid:
@@ -98,7 +98,8 @@ namespace ExpandoDB.Search
                         break;
 
                     case FieldDataType.Boolean:
-                        queryText = queryText.ToLuceneBooleanString();
+                        var numericBool = queryText.ToLuceneNumericBoolean();
+                        query = NumericRangeQuery.NewIntRange(fieldName, numericBool, numericBool, true, true);
                         break;
 
                     case FieldDataType.Guid:
@@ -108,7 +109,62 @@ namespace ExpandoDB.Search
 
                 return query ?? base.GetFieldQuery(fieldName, queryText, quoted);
             }
+        }        
+
+        protected override Query GetFuzzyQuery(string fieldName, string termString, float minSimilarity)
+        {
+            var indexedField = _indexSchema.FindField(fieldName);
+            if (indexedField == null)
+                throw new QueryParserException($"'{fieldName}' is not an indexed field.");
+
+            if (!(indexedField.DataType == FieldDataType.Text || 
+                 (indexedField.DataType == FieldDataType.Array && indexedField.ArrayElementDataType == FieldDataType.Text)))
+                throw new QueryParserException($"'{fieldName}' cannot be used for fuzzy search because it is not Text.");
+
+            return base.GetFuzzyQuery(fieldName, termString, minSimilarity);
         }
+
+        protected override Query GetPrefixQuery(string fieldName, string termString)
+        {
+            var indexedField = _indexSchema.FindField(fieldName);
+            if (indexedField == null)
+                throw new QueryParserException($"'{fieldName}' is not an indexed field.");
+
+            if (!(indexedField.DataType == FieldDataType.Text ||
+                 (indexedField.DataType == FieldDataType.Array && indexedField.ArrayElementDataType == FieldDataType.Text)))
+                throw new QueryParserException($"'{fieldName}' cannot be used for Prefix search because it is not Text.");
+
+            return base.GetPrefixQuery(fieldName, termString);
+        }
+
+        protected override Query GetRegexpQuery(string fieldName, string termString)
+        {
+            var indexedField = _indexSchema.FindField(fieldName);
+            if (indexedField == null)
+                throw new QueryParserException($"'{fieldName}' is not an indexed field.");
+
+            if (!(indexedField.DataType == FieldDataType.Text ||
+                 (indexedField.DataType == FieldDataType.Array && indexedField.ArrayElementDataType == FieldDataType.Text)))
+                throw new QueryParserException($"'{fieldName}' cannot be used for Regex search because it is not Text.");
+
+            return base.GetRegexpQuery(fieldName, termString);
+        }
+
+        protected override Query GetWildcardQuery(string fieldName, string termString)
+        {
+            if (fieldName != "*")
+            {
+                var indexedField = _indexSchema.FindField(fieldName);
+                if (indexedField == null)
+                    throw new QueryParserException($"'{fieldName}' is not an indexed field.");
+
+                if (!(indexedField.DataType == FieldDataType.Text ||
+                     (indexedField.DataType == FieldDataType.Array && indexedField.ArrayElementDataType == FieldDataType.Text)))
+                    throw new QueryParserException($"'{fieldName}' cannot be used for Wildcard search because it is not Text.");
+            }
+
+            return base.GetWildcardQuery(fieldName, termString);
+        }        
     }
 
     internal static class LuceneQueryParserExtensions
@@ -134,13 +190,14 @@ namespace ExpandoDB.Search
             return new LuceneLong(utcDateTime.Ticks);
         }
 
-        public static string ToLuceneBooleanString(this string value)
+        public static LuceneInteger ToLuceneNumericBoolean(this string value)
         {
             bool boolValue;
             if (!Boolean.TryParse(value, out boolValue))
                 throw new QueryParserException($"Invalid boolean in query: '{value}'");
 
-            return boolValue.ToString().ToLower();
+            var numericBool =  boolValue ? 1 : 0;
+            return new LuceneInteger(numericBool);
         }
 
         public static string ToLuceneGuidString(this string value)

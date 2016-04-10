@@ -61,7 +61,9 @@
     <None Include="reuters\reut2-000.sgm">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="reuters\reuters21578.tar.gz" />
+    <None Include="reuters\reuters21578.tar.gz">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Content Include="reuters\README.txt">

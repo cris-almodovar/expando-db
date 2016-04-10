@@ -134,7 +134,7 @@ namespace ExpandoDB.Serialization
             return JSON.Deserialize<T>(reader);
         }       
 
-        private static IDictionary<string, object> Unwrap(this IDictionary<string, object> dictionary)
+        public static IDictionary<string, object> Unwrap(this IDictionary<string, object> dictionary)
         {
             if (dictionary == null)
                 throw new ArgumentNullException(nameof(dictionary));
@@ -151,7 +151,7 @@ namespace ExpandoDB.Serialization
             return unwrappedDictionary;
         }
 
-        private static IList<object> Unwrap(this IEnumerable enumerable)
+        public static IList<object> Unwrap(this IEnumerable enumerable)
         {
             var list = new List<object>();
             foreach (var item in enumerable)
@@ -161,7 +161,7 @@ namespace ExpandoDB.Serialization
             return list;
         }
 
-        private static object Unwrap(this object value)
+        public static object Unwrap(this object value)
         {
             if (value == null)
                 return null;

@@ -59,7 +59,7 @@ namespace ExpandoDB.Search
 
             switch (dataType)
             {
-                case FieldDataType.Unknown:
+                case FieldDataType.Null:
                 case FieldDataType.Guid:
                 case FieldDataType.Number:
                 case FieldDataType.DateTime:

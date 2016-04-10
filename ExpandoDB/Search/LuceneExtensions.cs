@@ -90,63 +90,53 @@ namespace ExpandoDB.Search
 
             var luceneFields = new List<Field>();  // This will contain the generated Lucene fields for the passed in value.
 
-            var fieldName = indexedField.Name.Trim();
-            var fieldType = value?.GetType();
-            var typeCode = fieldType != null ? Type.GetTypeCode(fieldType) : TypeCode.Empty;
+            var fieldName = indexedField.Name.Trim();            
+            var fieldDataType = GetFieldDataType(value);
 
-            switch (typeCode)
+            indexedField.ValidateDataType(fieldDataType);
+
+            //// Special validation for Array fields.
+            //if (indexedField.DataType == FieldDataType.Array && 
+            //    fieldDataType != FieldDataType.Null && 
+            //    fieldDataType != FieldDataType.Array)
+            //{
+            //    var message = $"Cannot change the data type of the field '{indexedField.Name}' from Array to {fieldDataType}.";
+            //    throw new IndexSchemaException(message);
+            //}
+
+            switch (fieldDataType)
             {
-                case TypeCode.UInt16:
-                case TypeCode.UInt32:
-                case TypeCode.UInt64:
-                case TypeCode.Int16:
-                case TypeCode.Int32:
-                case TypeCode.Int64:
-                case TypeCode.Decimal:
-                case TypeCode.Double:
-                case TypeCode.Single:
-                    indexedField.ValidateDataType(FieldDataType.Number);
+                case FieldDataType.Number:                    
                     luceneFields.AddNumberField(indexedField, value);
                     break;
 
-                case TypeCode.Boolean:
-                    indexedField.ValidateDataType(FieldDataType.Boolean);
-                    luceneFields.AddBooleanField(indexedField, value);                   
+                case FieldDataType.Boolean:                    
+                    luceneFields.AddBooleanField(indexedField, value);
                     break;
 
-                case TypeCode.String:
-                    indexedField.ValidateDataType(FieldDataType.Text);
+                case FieldDataType.Text:                    
                     luceneFields.AddTextField(indexedField, value);
                     break;
 
-                case TypeCode.DateTime:
-                    indexedField.ValidateDataType(FieldDataType.DateTime);
-                    luceneFields.AddDateTimeField(indexedField, value);                    
+                case FieldDataType.DateTime:                    
+                    luceneFields.AddDateTimeField(indexedField, value);
                     break;
 
-                case TypeCode.Object:
-                    if (fieldType == typeof(Guid) || fieldType == typeof(Guid?))
-                    {
-                        indexedField.ValidateDataType(FieldDataType.Guid);
-                        luceneFields.AddGuidField(indexedField, value);
-                    }
-                    else if (value is IList)
-                    {
-                        indexedField.ValidateDataType(FieldDataType.Array);
-
-                        var list = value as IList;
-                        luceneFields.AddRange(list.ToLuceneFields(indexedField));
-                    }
-                    else if (value is IDictionary<string, object>)
-                    {
-                        indexedField.ValidateDataType(FieldDataType.Object);
-
-                        var dictionary = value as IDictionary<string, object>;
-                        luceneFields.AddRange(dictionary.ToLuceneFields(indexedField));
-                    }
+                case FieldDataType.Guid:                    
+                    luceneFields.AddGuidField(indexedField, value);
                     break;
 
-                case TypeCode.Empty: // value is null
+                case FieldDataType.Array:          
+                    var list = value as IList;
+                    luceneFields.AddRange(list.ToLuceneFields(indexedField));
+                    break;
+
+                case FieldDataType.Object:
+                    var dictionary = value as IDictionary<string, object>;
+                    luceneFields.AddRange(dictionary.ToLuceneFields(indexedField));
+                    break;
+
+                case FieldDataType.Null: 
                     luceneFields.AddNullField(indexedField);
                     break;
             }
@@ -156,14 +146,14 @@ namespace ExpandoDB.Search
         
 
         private static void ValidateDataType(this IndexedField indexedField, FieldDataType dataType)
-        {
-            if (indexedField.DataType == FieldDataType.Unknown)
+        { 
+            if (indexedField.DataType == FieldDataType.Null)
             {
                 indexedField.DataType = dataType;
             }
             else
             {
-                if ( !(indexedField.DataType == dataType || indexedField.DataType == FieldDataType.Array) )
+                if (indexedField.DataType != dataType && dataType != FieldDataType.Null)
                 {
                     var message = $"Cannot change the data type of the field '{indexedField.Name}' from {indexedField.DataType} to {dataType}.";
                     throw new IndexSchemaException(message);
@@ -174,7 +164,7 @@ namespace ExpandoDB.Search
         private static FieldDataType GetFieldDataType(object value)
         {
             if (value == null)
-                return FieldDataType.Unknown;
+                return FieldDataType.Null;
 
             var type = value.GetType();
             var typeCode = Type.GetTypeCode(type);
@@ -209,9 +199,12 @@ namespace ExpandoDB.Search
                     else if (value is IDictionary<string, object>)
                         return FieldDataType.Object;
                     break;
+
+                case TypeCode.Empty:
+                    return FieldDataType.Null;
             }
 
-            return FieldDataType.Unknown;
+            throw new IndexSchemaException($"Unsupported data type: '{type.Name}'");
         }
 
         private static List<Field> ToLuceneFields(this IList list, IndexedField indexedField)
@@ -219,15 +212,17 @@ namespace ExpandoDB.Search
             var luceneFields = new List<Field>();
             if (list.Count > 0)
             {
+                IndexedField scalarIndexedField = null;
+
                 foreach (var item in list)
                 {
                     if (item == null)
                         continue;
 
-                    if (indexedField.ArrayElementDataType == FieldDataType.Unknown)
+                    if (indexedField.ArrayElementDataType == FieldDataType.Null)
                         indexedField.ArrayElementDataType = GetFieldDataType(item);
                     else if (indexedField.ArrayElementDataType != GetFieldDataType(item))
-                        throw new IndexSchemaException($"All the elements of '{indexedField.Name}' must be of type '{indexedField.DataType}'");
+                        throw new IndexSchemaException($"All the elements of '{indexedField.Name}' must be of type '{indexedField.ArrayElementDataType}'");
 
                     switch (indexedField.ArrayElementDataType)
                     {
@@ -236,11 +231,21 @@ namespace ExpandoDB.Search
                         case FieldDataType.Number:
                         case FieldDataType.DateTime:
                         case FieldDataType.Boolean:
-                            luceneFields.AddRange(item.ToLuceneFields(indexedField));
+                            if (scalarIndexedField == null && indexedField.ArrayElementDataType != FieldDataType.Null)
+                            {
+                                scalarIndexedField = new IndexedField()
+                                {
+                                    Name = indexedField.Name,
+                                    DataType = indexedField.ArrayElementDataType,
+                                    IsArrayElement = true
+                                };
+                            }
+                            luceneFields.AddRange(item.ToLuceneFields(scalarIndexedField ?? indexedField));
                             break;
 
                         case FieldDataType.Array:
                             throw new IndexSchemaException("JSON with nested arrays are currently not supported.");
+                            //break;
 
                         case FieldDataType.Object:
                             var dictionary = item as IDictionary<string, object>;
@@ -276,7 +281,7 @@ namespace ExpandoDB.Search
 
                 switch (childFieldDataType)
                 {
-                    case FieldDataType.Unknown:
+                    case FieldDataType.Null:
                     case FieldDataType.Guid:
                     case FieldDataType.Text:
                     case FieldDataType.Number:
@@ -427,39 +432,7 @@ namespace ExpandoDB.Search
             }
 
             return buffer.ToString();
-        }
-
-        /// <summary>
-        /// Finds (recursively) the field with the specified name.
-        /// </summary>
-        /// <param name="indexSchema">The indexSchema.</param>
-        /// <param name="fieldName">Name of the field.</param>
-        /// <returns></returns>
-        public static IndexedField FindField(this IndexSchema indexSchema, string fieldName, bool recursive = true)
-        {
-            if (indexSchema.Fields.ContainsKey(fieldName))
-                return indexSchema.Fields[fieldName];
-
-            IndexedField foundField = null;
-            if (recursive)
-            {
-                foreach (var indexedField in indexSchema.Fields.Values)
-                {
-                    if (indexedField.DataType == FieldDataType.Array || indexedField.DataType == FieldDataType.Object)
-                    {
-                        var childSchema = indexedField.ObjectSchema;
-                        if (childSchema != null)
-                        {
-                            foundField = childSchema.FindField(fieldName, true);
-                            if (foundField != null)
-                                break;
-                        }
-                    }
-                }
-            }
-
-            return foundField;
-        }
+        }        
 
         /// <summary>
         /// Converts the given Lucene field name to a special field name for use in sorting.
@@ -513,16 +486,16 @@ namespace ExpandoDB.Search
         /// <param name="value">The value.</param>        
         private static void AddBooleanField(this List<Field> luceneFields, IndexedField indexedField, object value)
         {
-            var booleanString = value.ToString().ToLower();
+            var intValue = (bool)value ? 1 : 0;
             var fieldName = indexedField.Name.Trim();
 
-            luceneFields.Add(new StringField(fieldName, booleanString, FieldStore.NO));
+            luceneFields.Add(new IntField(fieldName, intValue, FieldStore.NO));
 
             // Only top-level and non-array fields are sortable
             if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
             {
                 var sortFieldName = fieldName.ToSortFieldName();
-                luceneFields.Add(new SortedDocValuesField(sortFieldName, new BytesRef(booleanString)));
+                luceneFields.Add(new NumericDocValuesField(sortFieldName, intValue));
             }
         }
 

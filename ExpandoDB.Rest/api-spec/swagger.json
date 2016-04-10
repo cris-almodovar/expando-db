@@ -2,7 +2,7 @@
     "swagger": "2.0",
     "info": {
         "title": "ExpandoDB",
-        "description": "A JSON document database with integrated Lucene search.",
+        "description": "A JSON document database with super-fast search",
         "version": "0.9.8"
     },
     "host": "localhost:9000",
@@ -194,7 +194,7 @@
         },
         "/db/_schemas": {
             "get": {
-                "summary": "Returns the schemas of all ContentCollections in the Database.",                
+                "summary": "Returns the schemas of all ContentCollections in the Database.",
                 "tags": [
                     "Get Metadata"
                 ],
@@ -352,12 +352,15 @@
                         "type": "string"
                     },
                     {
-                        "name": "content",
+                        "name": "operations",
                         "in": "body",
-                        "description": "The Content object that will be used to partially update the existing Content object.",
+                        "description": "An array of PATCH operations to be applied to the target Content object.",
                         "required": true,
                         "schema": {
-                            "type": "object"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/PatchOperationDTO"
+                            }
                         }
                     }
                 ],
@@ -653,7 +656,7 @@
                 },
                 "DataType": {
                     "type": "integer",
-                    "description": "The data type of the field - Unknown(0), Guid(1), Text(2), Number(3), Boolean(4), DateTime(5), Array(6), Object(7)"
+                    "description": "The data type of the field - Null(0), Guid(1), Text(2), Number(3), Boolean(4), DateTime(5), Array(6), Object(7)"
                 },
                 "ArrayElementDataType": {
                     "type": "integer",
@@ -683,6 +686,23 @@
                 "elapsed": {
                     "type": "string",
                     "description": "The time it took to process the Request on the server."
+                }
+            }
+        },
+        "PatchOperationDTO": {
+            "type": "object",
+            "properties": {
+                "op": {
+                    "type": "string",
+                    "description": "The operation to be applied. Supported operations are add, remove, replace."
+                },
+                "path": {
+                    "type": "string",
+                    "description": "The path to the target of the operation, in JSON Pointer format."
+                },
+                "value": {
+                    "type": "object",
+                    "description": "The value to be applied to the target of the operation."
                 }
             }
         },

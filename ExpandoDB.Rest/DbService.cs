@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using ExpandoDB.Serialization;
 
 namespace ExpandoDB.Rest
 {
@@ -327,12 +328,12 @@ namespace ExpandoDB.Rest
             if (guid == Guid.Empty)
                 throw new ArgumentException("id cannot be Guid.Empty");
 
-            var excludedFields = new[] { "collection", "id" };
-            var dictionary = this.Bind<DynamicDictionary>(excludedFields).ToDictionary();
-            if (dictionary == null || dictionary.Count == 0)
-                throw new InvalidOperationException("There is no data for this operation");
-
-            var contentPatch = new Content(dictionary);
+            // Read in the PATCH payload.            
+            var patchOperations = this.Bind<IList<PatchOperationDto>>();
+            if (patchOperations == null || patchOperations.Count == 0)
+                throw new InvalidOperationException("PATCH operations must be specified.");
+            
+            // Retrieve the Content to be PATCHed.
             var collection = _db[collectionName];
 
             var count = collection.Count(new SearchCriteria { Query = $"{Content.ID_FIELD_NAME}: {guid}" });
@@ -343,13 +344,11 @@ namespace ExpandoDB.Rest
             if (content == null)
                 return HttpStatusCode.NotFound;
 
-            var patchDictionary = contentPatch.AsDictionary();
-            var contentDictionary = content.AsDictionary();
-
-            var keysToUpdate = patchDictionary.Keys.Except(new[] { "collection", Content.ID_FIELD_NAME, Content.CREATED_TIMESTAMP_FIELD_NAME, Content.MODIFIED_TIMESTAMP_FIELD_NAME });
-            foreach (var key in keysToUpdate)
-                contentDictionary[key] = patchDictionary[key];
-
+            // Apply the PATCH operations to the Content
+            foreach (var operation in patchOperations)
+                operation.Apply(content);                     
+           
+            // Update the PATCHed Content.
             var affected = await collection.UpdateAsync(content).ConfigureAwait(false);
 
             stopwatch.Stop();
