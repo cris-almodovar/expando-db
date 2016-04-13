@@ -1,0 +1,728 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "ExpandoDB",
+        "description": "A JSON document database with super-fast search",
+        "version": "0.9.8"
+    },
+    "host": "localhost:9000",
+    "schemes": [
+        "http"
+    ],
+    "basePath": "/",
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/db/{collection}": {
+            "get": {
+                "summary": "Searches a Document Collection for Documents that satisfy a query expression. This API is analogous to the SQL SELECT statement; as such, it adopts the names of the different parts/clauses of the SQL SELECT statement as the names of the API parameters. This API returns the resultset in pages of P items, where P is the value of the itemsPerPage parameter.",
+                "parameters": [
+                    {
+                        "name": "collection",
+                        "in": "path",
+                        "description": "The name of the Document Collection to be searched. A Document Collection is a collection of Documents that share the same schema, similar to a table in SQL. This parameter is analogous to the FROM clause in SQL.",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "select",
+                        "in": "query",
+                        "description": "A comma-separated list of fields; only these fields will be included in the resultset. This parameter is analogous to the SELECT list in SQL. If not specified, all fields will be included.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "topN",
+                        "in": "query",
+                        "description": "The maximum number of items to be included in the resultset. This parameter is analogous to the TOP N clause in SQL. If not specified, this parameter defaults to 10000.",
+                        "required": false,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "where",
+                        "in": "query",
+                        "description": "A Lucene query expression to be used in matching Documents; see <a href=\"http://www.lucenetutorial.com/lucene-query-syntax.html\">this article</a> for a brief tutorial on Lucene query syntax. The where parameter is analogous to the WHERE predicate in SQL. If this parameter is blank, a Lucene \"match-all\" query will be used.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "orderBy",
+                        "in": "query",
+                        "description": "The field to be used for sorting the resultset. If not specified, the resultset will be sorted by relevance score (<a href=\"https://en.wikipedia.org/wiki/Tf%E2%80%93idf\">tf-idf</a> computed by Lucene). This parameter is analogous to the ORDER BY clause in SQL. You can only specify a single field to sort on. To sort in ascending order, prefix the field name with '+' (or don't use a prefix). To sort in descending order, prefix the field name with a '-' (minus sign).",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "itemsPerPage",
+                        "in": "query",
+                        "description": "The number of Documents in one page of the resultset. This parameter and the pageNumber parameter are analogous to the OFFSET-FETCH filter in T-SQL. If not specified, this parameter defaults to 10.",
+                        "required": false,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "pageNumber",
+                        "in": "query",
+                        "description": "Specifies the page number to return, if the resultset consists of more than one page. This parameter and the itemsPerPage parameter are analogous to the OFFSET-FETCH filter in T-SQL. If not specified, this parameter defaults to 1.",
+                        "required": false,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "highlight",
+                        "in": "query",
+                        "description": "Specifies whether to generate a '_highlight' field for each item in the resultset. The '_highlight' field contains a snippet from the text of each Document, with the matching search terms highlighted.",
+                        "required": false,
+                        "type": "boolean"
+                    }
+                ],
+                "tags": [
+                    "Search for Document"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A response DTO",
+                        "schema": {
+                            "$ref": "#/definitions/SearchResponseDTO"
+                        }
+                    },
+                    "default": {
+                        "description": "An error DTO",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponseDTO"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "Inserts a Document into the target Document Collection. A Document is simply a JSON object. This API returns the unique ID of the newly inserted Document.",
+                "parameters": [
+                    {
+                        "name": "collection",
+                        "in": "path",
+                        "description": "The name of the target Document Collection.",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "document",
+                        "in": "body",
+                        "description": "The Document to be inserted.",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "tags": [
+                    "Insert Document"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A response DTO",
+                        "schema": {
+                            "$ref": "#/definitions/InsertResponseDTO"
+                        }
+                    },
+                    "default": {
+                        "description": "An error DTO",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponseDTO"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Drops the target Document Collection. This deletes all data and index information.",
+                "parameters": [
+                    {
+                        "name": "collection",
+                        "in": "path",
+                        "description": "The name of the target Document Collection.",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "tags": [
+                    "Remove Document"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A response DTO",
+                        "schema": {
+                            "$ref": "#/definitions/DropResponseDTO"
+                        }
+                    },
+                    "default": {
+                        "description": "An error DTO",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponseDTO"
+                        }
+                    }
+                }
+            }
+        },
+        "/db/_schemas/{collection}": {
+            "get": {
+                "summary": "Returns the schema of the specified Document Collection.",
+                "parameters": [
+                    {
+                        "name": "collection",
+                        "in": "path",
+                        "description": "The name of the target Document Collection.",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "tags": [
+                    "Get Metadata"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A response DTO",
+                        "schema": {
+                            "$ref": "#/definitions/SchemaResponseDTO"
+                        }
+                    },
+                    "default": {
+                        "description": "An error DTO",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponseDTO"
+                        }
+                    }
+                }
+            }
+        },
+        "/db/_schemas": {
+            "get": {
+                "summary": "Returns the schemas of all Document Collections in the Database.",
+                "tags": [
+                    "Get Metadata"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A response DTO",
+                        "schema": {
+                            "$ref": "#/definitions/DatabaseSchemaResponseDTO"
+                        }
+                    },
+                    "default": {
+                        "description": "An error DTO",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponseDTO"
+                        }
+                    }
+                }
+            }
+        },
+        "/db/{collection}/count": {
+            "get": {
+                "summary": "Counts the number of Documents in the specified Document Collection; optionally, the Documents can be matched against a query expression.",
+                "parameters": [
+                    {
+                        "name": "collection",
+                        "in": "path",
+                        "description": "The name of the target Document Collection.",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "where",
+                        "in": "query",
+                        "description": "A Lucene query expression to be used in matching Documents; see <a href=\"http://www.lucenetutorial.com/lucene-query-syntax.html\">this article</a> for a brief tutorial on Lucene query syntax. The where parameter is analogous to the WHERE predicate in SQL. If this parameter is blank, the API will simply return the size of the Document Collection.",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "tags": [
+                    "Search for Document"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A response DTO",
+                        "schema": {
+                            "$ref": "#/definitions/CountResponseDTO"
+                        }
+                    },
+                    "default": {
+                        "description": "An error DTO",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponseDTO"
+                        }
+                    }
+                }
+            }
+        },
+        "/db/{collection}/{id}": {
+            "get": {
+                "summary": "Gets the Document with the specified id.",
+                "parameters": [
+                    {
+                        "name": "collection",
+                        "in": "path",
+                        "description": "The name of the Document Collection that contains the Document.",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "The unique id (GUID) of the Document.",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "tags": [
+                    "Search for Document"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A response DTO",
+                        "schema": {
+                            "$ref": "#/definitions/DocumentResponseDTO"
+                        }
+                    },
+                    "default": {
+                        "description": "An error DTO",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponseDTO"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "summary": "Completely replaces the Document whose ID is specified.",
+                "parameters": [
+                    {
+                        "name": "collection",
+                        "in": "path",
+                        "description": "The name of the Document Collection that contains the Document.",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "The unique id (GUID) of the Document.",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "document",
+                        "in": "body",
+                        "description": "The replacement Document.",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "tags": [
+                    "Update Document"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A response DTO",
+                        "schema": {
+                            "$ref": "#/definitions/UpdateResponseDTO"
+                        }
+                    },
+                    "default": {
+                        "description": "An error DTO",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponseDTO"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Partially updates the Document whose ID is specified.",
+                "parameters": [
+                    {
+                        "name": "collection",
+                        "in": "path",
+                        "description": "The name of the Document Collection that contains the Document.",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "The unique id (GUID) of the Document.",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "operations",
+                        "in": "body",
+                        "description": "An array of PATCH operations to be applied to the target Document.",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/PatchOperationDTO"
+                            }
+                        }
+                    }
+                ],
+                "tags": [
+                    "Update Document"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A response DTO",
+                        "schema": {
+                            "$ref": "#/definitions/UpdateResponseDTO"
+                        }
+                    },
+                    "default": {
+                        "description": "An error DTO",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponseDTO"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Deletes the Document whose ID is specified.",
+                "parameters": [
+                    {
+                        "name": "collection",
+                        "in": "path",
+                        "description": "The name of the Document Collection that contains the Document.",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "The unique id (GUID) of the Document.",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "tags": [
+                    "Remove Document"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A response DTO",
+                        "schema": {
+                            "$ref": "#/definitions/UpdateResponseDTO"
+                        }
+                    },
+                    "default": {
+                        "description": "An error DTO",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponseDTO"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "SearchResponseDTO": {
+            "type": "object",
+            "properties": {
+                "select": {
+                    "type": "string",
+                    "description": "A copy of the 'select' request parameter."
+                },
+                "topN": {
+                    "type": "integer",
+                    "description": "A copy of the 'topN' request parameter."
+                },
+                "from": {
+                    "type": "string",
+                    "description": "The name of the source Document Collection."
+                },
+                "where": {
+                    "type": "string",
+                    "description": "A copy of the 'where' request parameter."
+                },
+                "orderBy": {
+                    "type": "string",
+                    "description": "A copy of the 'orderBy' request parameter."
+                },
+                "itemCount": {
+                    "type": "string",
+                    "description": "The number of items in the resultset. This value is <= topN."
+                },
+                "totalHits": {
+                    "type": "integer",
+                    "description": "The total number of Documents in the Document Collection that match the search query. This value is >= itemCount."
+                },
+                "pageCount": {
+                    "type": "integer",
+                    "description": "The total number of pages in the resultset."
+                },
+                "pageNumber": {
+                    "type": "integer",
+                    "description": "The current page number in the resultset."
+                },
+                "itemsPerPage": {
+                    "type": "integer",
+                    "description": "The number of items in one page of the resultset."
+                },
+                "higlight": {
+                    "type": "boolean",
+                    "description": "A copy of the 'highlight' request parameter."
+                },
+                "items": {
+                    "type": "array",
+                    "description": "An array of Documents that match the query expression.",
+                    "items": {
+                        "$ref": "#/definitions/DocumentDTO"
+                    }
+                },
+                "timestamp": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "The date/time (UTC) when the Response was generated on the server."
+                },
+                "elapsed": {
+                    "type": "string",
+                    "description": "The time it took to process the Request on the server."
+                }
+            }
+        },
+        "InsertResponseDTO": {
+            "type": "object",
+            "properties": {
+                "from": {
+                    "type": "string",
+                    "description": "The name of the target Document Collection."
+                },
+                "_id": {
+                    "type": "string",
+                    "description": "The unique ID (GUID)of the newly created Document"
+                },
+                "timestamp": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "The date/time (UTC) when the Response was generated on the server."
+                },
+                "elapsed": {
+                    "type": "string",
+                    "description": "The time it took to process the Request on the server."
+                }
+            }
+        },
+        "DropResponseDTO": {
+            "type": "object",
+            "properties": {
+                "isDropped": {
+                    "type": "boolean",
+                    "description": "Specifies whether the target Document Collection was dropped successfully."
+                },
+                "timestamp": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "The date/time (UTC) when the Response was generated on the server."
+                },
+                "elapsed": {
+                    "type": "string",
+                    "description": "The time it took to process the Request on the server."
+                }
+            }
+        },
+        "DocumentResponseDTO": {
+            "type": "object",
+            "properties": {
+                "from": {
+                    "type": "string",
+                    "description": "The name of the source Document Collection."
+                },
+                "document": {
+                    "$ref": "#/definitions/DocumentDTO"
+                },
+                "timestamp": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "The date/time (UTC) when the Response was generated on the server."
+                },
+                "elapsed": {
+                    "type": "string",
+                    "description": "The time it took to process the Request on the server."
+                }
+            }
+        },
+        "DocumentDTO": {
+            "type": "object",
+            "properties": {
+                "_id": {
+                    "type": "string",
+                    "description": "The unique ID (GUID)of the Document."
+                },
+                "_createTimestamp": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "The date/time (UTC) when the Document was created on the server."
+                },
+                "_modifiedTimestamp": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "The date/time (UTC) when the Document was last modified on the server."
+                }
+            }
+        },
+        "UpdateResponseDTO": {
+            "type": "object",
+            "properties": {
+                "from": {
+                    "type": "string",
+                    "description": "The name of the target Document Collection."
+                },
+                "affectedCount": {
+                    "type": "integer",
+                    "description": "The number of affected Documents."
+                },
+                "timestamp": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "The date/time (UTC) when the Response was generated on the server."
+                },
+                "elapsed": {
+                    "type": "string",
+                    "description": "The time it took to process the Request on the server."
+                }
+            }
+        },
+        "CountResponseDTO": {
+            "type": "object",
+            "properties": {
+                "from": {
+                    "type": "string",
+                    "description": "The name of the target Document Collection."
+                },
+                "where": {
+                    "type": "string",
+                    "description": "A copy of the 'where' request parameter."
+                },
+                "count": {
+                    "type": "integer",
+                    "description": "The number of Documents that match the query expression."
+                },
+                "timestamp": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "The date/time (UTC) when the Response was generated on the server."
+                },
+                "elapsed": {
+                    "type": "string",
+                    "description": "The time it took to process the Request on the server."
+                }
+            }
+        },
+        "SchemaResponseDTO": {
+            "type": "object",
+            "properties": {
+                "schema": {
+                    "$ref": "#/definitions/SchemaDTO"
+                },
+                "timestamp": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "The date/time (UTC) when the Response was generated on the server."
+                },
+                "elapsed": {
+                    "type": "string",
+                    "description": "The time it took to process the Request on the server."
+                }
+            }
+        },
+        "SchemaDTO": {
+            "type": "object",
+            "properties": {
+                "Name": {
+                    "type": "string",
+                    "description": "The name of the schema."
+                },
+                "Fields": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/FieldDTO"
+                    },
+                    "description": "The fields comprising the schema."
+                }
+            }
+        },
+        "FieldDTO": {
+            "type": "object",
+            "properties": {
+                "Name": {
+                    "type": "string",
+                    "description": "The name of the field."
+                },
+                "DataType": {
+                    "type": "integer",
+                    "description": "The data type of the field - Null(0), Guid(1), Text(2), Number(3), Boolean(4), DateTime(5), Array(6), Object(7)"
+                },
+                "ArrayElementDataType": {
+                    "type": "integer",
+                    "description": "If the DataType is Array(6), this property specifies the data type of each element of the array."
+                },
+                "ObjectSchema": {
+                    "type": "object",
+                    "description": "If the DataType is Object(7), this property specifies the schema of the object."
+                }
+            }
+        },
+        "DatabaseSchemaResponseDTO": {
+            "type": "object",
+            "properties": {
+                "schemas": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/SchemaDTO"
+                    },
+                    "description": "The schemas of all Document Collections in the database."
+                },
+                "timestamp": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "The date/time (UTC) when the Response was generated on the server."
+                },
+                "elapsed": {
+                    "type": "string",
+                    "description": "The time it took to process the Request on the server."
+                }
+            }
+        },
+        "PatchOperationDTO": {
+            "type": "object",
+            "properties": {
+                "op": {
+                    "type": "string",
+                    "description": "The operation to be applied. Supported operations are add, remove, replace."
+                },
+                "path": {
+                    "type": "string",
+                    "description": "The path to the target of the operation, in JSON Pointer format."
+                },
+                "value": {
+                    "type": "object",
+                    "description": "The value to be applied to the target of the operation."
+                }
+            }
+        },
+        "ErrorResponseDTO": {
+            "type": "object",
+            "properties": {
+                "timestamp": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "The date/time (UTC) when the error occurred on the server."
+                },
+                "statusCode": {
+                    "type": "integer",
+                    "description": "The HTTP status code."
+                },
+                "errorMessage": {
+                    "type": "string",
+                    "description": "The error message."
+                }
+            }
+        }
+    }
+}
