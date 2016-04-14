@@ -165,8 +165,7 @@ namespace ExpandoDB.Rest
 
             var collection = _db[collectionName];
             var requestDto = this.Bind<SearchRequestDto>();
-            var searchCriteria = requestDto.ToSearchCriteria();
-            var selectedFields = requestDto.select.ToList();
+            var searchCriteria = requestDto.ToSearchCriteria();            
             var result = await collection.SearchAsync(searchCriteria);
 
             stopwatch.Stop();
