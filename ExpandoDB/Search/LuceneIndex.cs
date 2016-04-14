@@ -238,14 +238,19 @@ namespace ExpandoDB.Search
                     break;
 
                 case FieldDataType.DateTime:
+                case FieldDataType.Boolean:
                     sortField = new SortField(sortFieldName, SortFieldType.LONG, isDescending);
                     sortField.SetMissingValue(isDescending ? LuceneExtensions.LONG_MIN_VALUE : LuceneExtensions.LONG_MAX_VALUE);
                     break;
 
-                default:
+                case FieldDataType.Text:
+                case FieldDataType.Guid:
                     sortField = new SortField(sortFieldName, SortFieldType.STRING, isDescending);
                     sortField.SetMissingValue(isDescending ?  SortField.STRING_FIRST : SortField.STRING_LAST );
                     break;
+
+                default:
+                    throw new QueryParserException($"Invalid sortBy field: '{fieldName}'. Only Number, DateTime, Boolean, Text, and GUID fields can be used for sorting.");
             }
 
             if (sortField == null)
