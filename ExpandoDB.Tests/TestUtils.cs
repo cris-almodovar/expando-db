@@ -4,20 +4,20 @@ namespace ExpandoDB.Tests
 {
     public static class TestUtils
     {
-        public static Content CreateBook(string title, string author, DateTime publishDate, int rating, string description)
+        public static Document CreateBook(string title, string author, DateTime publishDate, int rating, string description)
         {
-            var content = new Content();
-            content._id = Guid.NewGuid();
-            content._createdTimestamp = DateTime.UtcNow;
+            var document = new Document();
+            document._id = Guid.NewGuid();
+            document._createdTimestamp = DateTime.UtcNow;
 
-            dynamic book = content;
+            dynamic book = document;
             book.Title = title;
             book.Author = author;
             book.PublishDate = publishDate;
             book.Rating = rating;
             book.Description = description;
 
-            return content;
+            return document;
         }
     }
 }

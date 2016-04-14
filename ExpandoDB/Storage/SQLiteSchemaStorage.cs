@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace ExpandoDB.Storage
 {
     /// <summary>
-    /// A Schema Storage engine that persists Content objects to a SQLite database.
+    /// A Schema Storage engine that persists Document objects to a SQLite database.
     /// </summary>
     /// <seealso cref="ExpandoDB.Storage.ISchemaStorage" />
     internal class SQLiteSchemaStorage : ISchemaStorage
@@ -81,18 +81,18 @@ namespace ExpandoDB.Storage
             return new SQLiteConnection(_connectionString);
         }
 
-        public async Task<IList<ContentCollectionSchema>> GetAllAsync()
+        public async Task<IList<DocumentCollectionSchema>> GetAllAsync()
         {
             using (var conn = GetConnection())
             {
                 var result = await conn.QueryAsync(_selectAllSql).ConfigureAwait(false);
                 var resultLookup = result.ToDictionary(row => row.name as string);
 
-                var collectionSchemas = new List<ContentCollectionSchema>();
+                var collectionSchemas = new List<DocumentCollectionSchema>();
                 foreach (var schemaName in resultLookup.Keys)
                 {
                     var json = resultLookup[schemaName].json as string;
-                    var schema = DynamicSerializer.Deserialize<ContentCollectionSchema>(json);
+                    var schema = DynamicSerializer.Deserialize<DocumentCollectionSchema>(json);
                     collectionSchemas.Add(schema);
                 }
 
@@ -100,7 +100,7 @@ namespace ExpandoDB.Storage
             }
         }       
 
-        public async Task<string> InsertAsync(ContentCollectionSchema collectionSchema)
+        public async Task<string> InsertAsync(DocumentCollectionSchema collectionSchema)
         {
             if (collectionSchema == null)
                 throw new ArgumentNullException(nameof(collectionSchema));
@@ -115,7 +115,7 @@ namespace ExpandoDB.Storage
             }            
         }
 
-        public async Task<int> UpdateAsync(ContentCollectionSchema collectionSchema)
+        public async Task<int> UpdateAsync(DocumentCollectionSchema collectionSchema)
         {
             if (collectionSchema == null)
                 throw new ArgumentNullException(nameof(collectionSchema));

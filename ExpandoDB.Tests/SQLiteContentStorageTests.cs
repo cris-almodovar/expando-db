@@ -16,7 +16,7 @@ namespace ExpandoDB.Tests
         private string _appPath;
         private string _dbPath;
         private string _dbFilePath;        
-        private SQLiteContentStorage _storage;
+        private SQLiteDocumentStorage _storage;
 
         [TestInitialize]
         public void Initialize()
@@ -31,7 +31,7 @@ namespace ExpandoDB.Tests
             if (File.Exists(_dbFilePath))
                 File.Delete(_dbFilePath);
 
-            _storage = new SQLiteContentStorage(_dbFilePath, "books");
+            _storage = new SQLiteDocumentStorage(_dbFilePath, "books");
         }
 
         [TestCleanup]
@@ -44,14 +44,14 @@ namespace ExpandoDB.Tests
         }
 
         [TestMethod]
-        [TestCategory("Content Storage tests")]
+        [TestCategory("Document Storage tests")]
         public void Database_file_is_auto_created()        
         {            
             var dbFilePath = Path.Combine(_dbPath, $"{Guid.NewGuid()}.sdb3");
             if (File.Exists(dbFilePath))
                 File.Delete(dbFilePath);
 
-            var storage = new SQLiteContentStorage(dbFilePath, "test");
+            var storage = new SQLiteDocumentStorage(dbFilePath, "test");
 
             Assert.IsTrue(File.Exists(dbFilePath));
 
@@ -60,10 +60,10 @@ namespace ExpandoDB.Tests
         }
 
         [TestMethod]
-        [TestCategory("Content Storage tests")]
-        public void Can_insert_dynamic_content()
+        [TestCategory("Document Storage tests")]
+        public void Can_insert_dynamic_document()
         {
-            dynamic inserted = new Content();
+            dynamic inserted = new Document();
             inserted.Title = "The Hitchhiker's Guide to the Galaxy";
             inserted.Author = "Douglas Adams";
             inserted.PublishDate = DateTime.Now;
@@ -96,10 +96,10 @@ namespace ExpandoDB.Tests
         }
 
         [TestMethod]
-        [TestCategory("Content Storage tests")]
-        public void Can_delete_dynamic_content()
+        [TestCategory("Document Storage tests")]
+        public void Can_delete_dynamic_document()
         {
-            dynamic inserted = new Content();
+            dynamic inserted = new Document();
             inserted.Title = "The Hitchhiker's Guide to the Galaxy";
             inserted.Author = "Douglas Adams";
             inserted.PublishDate = DateTime.Now;
@@ -118,10 +118,10 @@ namespace ExpandoDB.Tests
         }
 
         [TestMethod]
-        [TestCategory("Content Storage tests")]
-        public void Can_update_dynamic_content()
+        [TestCategory("Document Storage tests")]
+        public void Can_update_dynamic_document()
         {
-            dynamic inserted = new Content();
+            dynamic inserted = new Document();
             inserted.Title = "The Hitchhiker's Guide to the Galaxy";
             inserted.Author = "Douglas Adams";
             inserted.PublishDate = DateTime.Now;

@@ -56,7 +56,7 @@ namespace ExpandoDB.Rest.DTO
         /// <returns></returns>
         /// <exception cref="System.ArgumentNullException">
         /// </exception>
-        public static SearchResponseDto PopulateWith(this SearchResponseDto responseDto, SearchRequestDto searchRequestDto, string collectionName, SearchResult<Content> searchResult)
+        public static SearchResponseDto PopulateWith(this SearchResponseDto responseDto, SearchRequestDto searchRequestDto, string collectionName, SearchResult<Document> searchResult)
         {
             if (searchRequestDto == null)
                 throw new ArgumentNullException(nameof(searchRequestDto));
@@ -87,34 +87,34 @@ namespace ExpandoDB.Rest.DTO
         /// <summary>
         /// Selects only the specified list of fields.
         /// </summary>
-        /// <param name="content">The Content object.</param>
+        /// <param name="document">The Document object.</param>
         /// <param name="selectedFields">The list of fields to be selected.</param>
         /// <returns></returns>
         /// <exception cref="System.ArgumentNullException">
         /// </exception>
-        public static Content Select(this Content content, IList<string> selectedFields)
+        public static Document Select(this Document document, IList<string> selectedFields)
         {
-            if (content == null)
-                throw new ArgumentNullException(nameof(content));
+            if (document == null)
+                throw new ArgumentNullException(nameof(document));
             if (selectedFields == null)
                 throw new ArgumentNullException(nameof(selectedFields));
 
             if (selectedFields.Count == 0)
-                return content;
+                return document;
 
             selectedFields = selectedFields.Distinct().ToList();
 
-            var contentDictionary = content.AsDictionary();
+            var documentDictionary = document.AsDictionary();
 
             // Remove fields that are not in the selectedFields
-            var keysToRemove = contentDictionary.Keys
+            var keysToRemove = documentDictionary.Keys
                                                 .Where(fieldName => !selectedFields.Contains(fieldName))
                                                 .ToList();
 
-            keysToRemove.ForEach(fieldName => contentDictionary.Remove(fieldName));
+            keysToRemove.ForEach(fieldName => documentDictionary.Remove(fieldName));
 
-            // Content should now only contain the fields in the selectedFields list
-            return content;
+            // Document should now only contain the fields in the selectedFields list
+            return document;
         }
 
         /// <summary>

@@ -10,7 +10,7 @@ using System.Linq;
 namespace ExpandoDB.Serialization
 {
     /// <summary>
-    /// Provides methods for serializing/deserializing dynamic Content object to/from JSON.
+    /// Provides methods for serializing/deserializing dynamic Document object to/from JSON.
     /// </summary>
     public static class DynamicSerializer
     {
@@ -60,23 +60,23 @@ namespace ExpandoDB.Serialization
         const int GUID_STRING_LENGTH = 36;
 
         /// <summary>
-        /// Serializes the specified Content object to JSON.
+        /// Serializes the specified Document object to JSON.
         /// </summary>
-        /// <param name="content">The Content object.</param>
+        /// <param name="document">The Document object.</param>
         /// <returns></returns>
-        public static string Serialize(Content content)
+        public static string Serialize(Document document)
         {
-            return JSON.SerializeDynamic(content.AsExpando(), Options.ISO8601IncludeInherited);
+            return JSON.SerializeDynamic(document.AsExpando(), Options.ISO8601IncludeInherited);
         }
 
         /// <summary>
-        /// Serializes the specified Content object to JSON and writes to the provided TextWriter.
+        /// Serializes the specified Document object to JSON and writes to the provided TextWriter.
         /// </summary>
-        /// <param name="content">The Content object.</param>
+        /// <param name="document">The Document object.</param>
         /// <param name="writer">The TextWriter object.</param>
-        public static void Serialize(Content content, TextWriter writer)
+        public static void Serialize(Document document, TextWriter writer)
         {
-            JSON.SerializeDynamic(content.AsExpando(), writer, Options.ISO8601IncludeInherited);
+            JSON.SerializeDynamic(document.AsExpando(), writer, Options.ISO8601IncludeInherited);
         }
 
         /// <summary>

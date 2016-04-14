@@ -46,22 +46,22 @@ namespace ExpandoDB.Rest
             {
                 // If we are modifying a top-level field, make sure it's not one of the metadata fields.
                 var fieldName = operation.path.TrimStart('/');
-                if (fieldName == Content.ID_FIELD_NAME || 
-                    fieldName == Content.CREATED_TIMESTAMP_FIELD_NAME ||
-                    fieldName == Content.MODIFIED_TIMESTAMP_FIELD_NAME ||
+                if (fieldName == Document.ID_FIELD_NAME || 
+                    fieldName == Document.CREATED_TIMESTAMP_FIELD_NAME ||
+                    fieldName == Document.MODIFIED_TIMESTAMP_FIELD_NAME ||
                     fieldName == LuceneExtensions.FULL_TEXT_FIELD_NAME )
                     throw new ArgumentException($"Cannot modify field '{fieldName}'.");
             }
         }
 
-        public static void Apply(this PatchOperationDto operation, Content content)
+        public static void Apply(this PatchOperationDto operation, Document document)
         {
             operation.Validate();
 
-            if (content == null)
-                throw new ArgumentNullException(nameof(content));            
+            if (document == null)
+                throw new ArgumentNullException(nameof(document));            
 
-            var dictionary = content.AsDictionary();
+            var dictionary = document.AsDictionary();
             var path = new JsonPath(operation.path);
 
             operation.Apply(dictionary, path);

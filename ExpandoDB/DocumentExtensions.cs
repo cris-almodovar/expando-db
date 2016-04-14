@@ -9,17 +9,17 @@ using System.Linq;
 namespace ExpandoDB
 {
     /// <summary>
-    /// Provides utility methods for Content objects.
+    /// Provides utility methods for Document objects.
     /// </summary>
-    public static class ContentExtensions
+    public static class DocumentExtensions
     {
         /// <summary>
-        /// Converts all date values inside the Content object to UTC format.
+        /// Converts all date values inside the Document object to UTC format.
         /// </summary>
-        /// <param name="content">The content to process.</param>
-        public static void ConvertDatesToUtc(this Content content)
+        /// <param name="document">The document to process.</param>
+        public static void ConvertDatesToUtc(this Document document)
         {
-            content.AsDictionary().ConvertDatesToUtc();
+            document.AsDictionary().ConvertDatesToUtc();
         }
 
         /// <summary>
@@ -142,23 +142,23 @@ namespace ExpandoDB
         }
 
         /// <summary>
-        /// Deserializes the JSON string into a Content object.
+        /// Deserializes the JSON string into a Document object.
         /// </summary>
         /// <param name="json">The JSON string to deserialize.</param>
         /// <returns></returns>
-        public static Content ToContent(this string json)
+        public static Document ToDocument(this string json)
         {
-            return new Content(json.ToDictionary().ToExpando());
+            return new Document(json.ToDictionary().ToExpando());
         }
 
         /// <summary>
-        /// Deserializes the StorageRow.json string into a Content object.
+        /// Deserializes the StorageRow.json string into a Document object.
         /// </summary>
         /// <param name="row">The StorageRow.</param>
         /// <returns></returns>
-        public static Content ToContent(this StorageRow row)
+        public static Document ToDocument(this StorageRow row)
         {
-            return new Content(row.ToDictionary().ToExpando());
+            return new Document(row.ToDictionary().ToExpando());
         }        
 
         /// <summary>
@@ -188,9 +188,9 @@ namespace ExpandoDB
                 var guid = Guid.Empty;
                 Guid.TryParse(row.id, out guid);
 
-                dictionary[Content.ID_FIELD_NAME] = guid;
-                dictionary[Content.PARSE_ERROR_MESSAGE_FIELD_NAME] = ex.Message;
-                dictionary[Content.PARSE_ERROR_JSON_FIELD_NAME] = row.json;
+                dictionary[Document.ID_FIELD_NAME] = guid;
+                dictionary[Document.PARSE_ERROR_MESSAGE_FIELD_NAME] = ex.Message;
+                dictionary[Document.PARSE_ERROR_JSON_FIELD_NAME] = row.json;
             }
 
             return dictionary;
@@ -201,20 +201,20 @@ namespace ExpandoDB
         /// </summary>
         /// <param name="jsonResults">The json results.</param>
         /// <returns></returns>
-        internal static EnumerableContents ToEnumerableContents(this IEnumerable<StorageRow> rows)
+        internal static EnumerableDocuments ToEnumerableDocuments(this IEnumerable<StorageRow> rows)
         {
-            return new EnumerableContents(rows);
+            return new EnumerableDocuments(rows);
         }
 
 
         /// <summary>
-        /// Serializes the Content object to a JSON string.
+        /// Serializes the Document object to a JSON string.
         /// </summary>
-        /// <param name="content">The content object to serialize.</param>
+        /// <param name="document">The document object to serialize.</param>
         /// <returns></returns>
-        public static string ToJson(this Content content)
+        public static string ToJson(this Document document)
         {
-            var json = DynamicSerializer.Serialize(content);
+            var json = DynamicSerializer.Serialize(document);
             return json;
         }
     }

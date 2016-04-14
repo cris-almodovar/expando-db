@@ -195,10 +195,10 @@
       <Link>Properties\VersionInfo.cs</Link>
     </Compile>
     <Compile Include="Config.cs" />
-    <Compile Include="ContentCollectionSchema.cs" />
-    <Compile Include="ContentCollection.cs" />
-    <Compile Include="Content.cs" />
-    <Compile Include="ContentExtensions.cs" />
+    <Compile Include="DocumentCollectionSchema.cs" />
+    <Compile Include="DocumentCollection.cs" />
+    <Compile Include="Document.cs" />
+    <Compile Include="DocumentExtensions.cs" />
     <Compile Include="Database.cs" />
     <Compile Include="Search\CompositeAnalyzer.cs" />
     <Compile Include="Search\IndexSchemaException.cs" />
@@ -216,10 +216,10 @@
     <Compile Include="Serialization\DynamicSerializer.cs" />
     <Compile Include="Serialization\SerializationException.cs" />
     <Compile Include="Storage\ISchemaStorage.cs" />
-    <Compile Include="Storage\EnumerableContents.cs" />
-    <Compile Include="Storage\IContentStorage.cs" />
+    <Compile Include="Storage\EnumerableDocuments.cs" />
+    <Compile Include="Storage\IDocumentStorage.cs" />
     <Compile Include="Storage\SQLiteSchemaStorage.cs" />
-    <Compile Include="Storage\SQLiteContentStorage.cs" />
+    <Compile Include="Storage\SQLiteDocumentStorage.cs" />
     <Compile Include="Storage\StorageRow.cs" />
   </ItemGroup>
   <ItemGroup>

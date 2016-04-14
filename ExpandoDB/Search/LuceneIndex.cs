@@ -17,7 +17,7 @@ using LuceneInteger = java.lang.Integer;
 namespace ExpandoDB.Search
 {
     /// <summary>
-    /// Represents the Lucene full-text index for a Collection of dynamic Contents objects
+    /// Represents the Lucene full-text index for a Collection of dynamic Documents objects
     /// </summary>
     public class LuceneIndex : IDisposable
     {
@@ -121,23 +121,23 @@ namespace ExpandoDB.Search
         }
 
         /// <summary>
-        /// Inserts a dynamic content into the index.
+        /// Inserts a dynamic document into the index.
         /// </summary>
-        /// <param name="content">The dynamic content.</param>        
-        public void Insert(Content content)
+        /// <param name="document">The dynamic document.</param>        
+        public void Insert(Document document)
         {            
-            if (content == null)
-                throw new ArgumentNullException(nameof(content));
+            if (document == null)
+                throw new ArgumentNullException(nameof(document));
 
-            if (content._id == null || content._id.Value == Guid.Empty)
-                content._id = Guid.NewGuid();
+            if (document._id == null || document._id.Value == Guid.Empty)
+                document._id = Guid.NewGuid();
 
-            var document = content.ToLuceneDocument(_indexSchema);
-            _writer.AddDocument(document);
+            var luceneDocument = document.ToLuceneDocument(_indexSchema);
+            _writer.AddDocument(luceneDocument);
         }
 
         /// <summary>
-        /// Deletes the content identified by the guid.
+        /// Deletes the document identified by the guid.
         /// </summary>
         /// <param name="guid">The unique identifier.</param>
         public void Delete(Guid guid)
@@ -145,32 +145,32 @@ namespace ExpandoDB.Search
             if (guid == Guid.Empty)
                 throw new ArgumentException(nameof(guid) + " cannot be empty");
 
-            var idTerm = new Term(Content.ID_FIELD_NAME, guid.ToString());
+            var idTerm = new Term(Document.ID_FIELD_NAME, guid.ToString());
             _writer.DeleteDocuments(idTerm);
         }
 
         /// <summary>
-        /// Updates the Content identified by its _id field.
+        /// Updates the Document identified by its _id field.
         /// </summary>
-        /// <param name="content">The content.</param>
-        /// <exception cref="ArgumentNullException">content</exception>
-        public void Update(Content content)
+        /// <param name="document">The document.</param>
+        /// <exception cref="ArgumentNullException">document</exception>
+        public void Update(Document document)
         {
-            if (content == null)
-                throw new ArgumentNullException(nameof(content));
+            if (document == null)
+                throw new ArgumentNullException(nameof(document));
 
-            if (content._id == null || content._id == Guid.Empty)
-                throw new InvalidOperationException("Cannot update Content that does not have an _id");
+            if (document._id == null || document._id == Guid.Empty)
+                throw new InvalidOperationException("Cannot update Document that does not have an _id");
 
-            var document = content.ToLuceneDocument(_indexSchema);
-            var id = content._id.ToString();
-            var idTerm = new Term(Content.ID_FIELD_NAME, id);
+            var luceneDocument = document.ToLuceneDocument(_indexSchema);
+            var id = document._id.ToString();
+            var idTerm = new Term(Document.ID_FIELD_NAME, id);
 
-            _writer.UpdateDocument(idTerm, document);
+            _writer.UpdateDocument(idTerm, luceneDocument);
         }        
 
         /// <summary>
-        /// Searches the Lucene index for Contents that match the specified search criteria.
+        /// Searches the Lucene index for Documents that match the specified search criteria.
         /// </summary>
         /// <param name="criteria">The search criteria.</param>
         /// <returns></returns>

@@ -5,17 +5,17 @@ using System.Collections.Generic;
 namespace ExpandoDB.Storage
 {
     /// <summary>
-    /// Represents an enumerable list of Content objects, created from a list of JSON strings.
+    /// Represents an enumerable list of Document objects, created from a list of JSON strings.
     /// </summary>
-    public class EnumerableContents : IEnumerable<Content>
+    public class EnumerableDocuments : IEnumerable<Document>
     {
         private IEnumerable<StorageRow> _rows;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="EnumerableContents"/> class.
+        /// Initializes a new instance of the <see cref="EnumerableDocuments"/> class.
         /// </summary>
         /// <param name="rows">The list of JSON strings</param>
-        public EnumerableContents(IEnumerable<StorageRow> rows)
+        public EnumerableDocuments(IEnumerable<StorageRow> rows)
         {
             if (rows == null)
                 throw new ArgumentNullException(nameof(rows));
@@ -29,10 +29,10 @@ namespace ExpandoDB.Storage
         /// <returns>
         /// An enumerator that can be used to iterate through the collection.
         /// </returns>
-        public IEnumerator<Content> GetEnumerator()
+        public IEnumerator<Document> GetEnumerator()
         {
             foreach (var row in _rows)           
-                yield return row.ToContent();            
+                yield return row.ToDocument();            
         }
 
         /// <summary>
