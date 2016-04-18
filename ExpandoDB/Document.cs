@@ -7,9 +7,9 @@ using System.Dynamic;
 namespace ExpandoDB
 {
     /// <summary>
-    /// Represents a dynamic JSON object.
+    /// Represents a dynamic JSON Document.
     /// </summary>
-    public class Content : DynamicObject
+    public class Document : DynamicObject
     {
         public const string ID_FIELD_NAME = "_id";
         public const string CREATED_TIMESTAMP_FIELD_NAME = "_createdTimestamp";
@@ -22,36 +22,36 @@ namespace ExpandoDB
 
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Content"/> class.
+        /// Initializes a new instance of the <see cref="Document"/> class.
         /// </summary>
-        public Content()
+        public Document()
             : this(new ExpandoObject())
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Content"/> class from a JSON string.
+        /// Initializes a new instance of the <see cref="Document"/> class from a JSON string.
         /// </summary>
-        /// <param name="json">The JSON string to be used to populate the Content object.</param>
-        public Content(string json)
+        /// <param name="json">The JSON string to be used to populate the Document object.</param>
+        public Document(string json)
             : this (json.ToDictionary().ToExpando())
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Content"/> class from a Dictionary object.
+        /// Initializes a new instance of the <see cref="Document"/> class from a Dictionary object.
         /// </summary>
         /// <param name="dictionary">The dictionary.</param>
-        public Content(IDictionary<string, object> dictionary)
+        public Document(IDictionary<string, object> dictionary)
             : this (dictionary.ToExpando())
         {
         }        
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Content"/> class from an ExpandoObject instance.
+        /// Initializes a new instance of the <see cref="Document"/> class from an ExpandoObject instance.
         /// </summary>
-        /// <param name="expando">The ExpandoObject to be used to populate the Content object.</param>
-        public Content(ExpandoObject expando)
+        /// <param name="expando">The ExpandoObject to be used to populate the Document object.</param>
+        public Document(ExpandoObject expando)
         {
             if (expando == null)
                 throw new ArgumentNullException(nameof(expando));
@@ -121,10 +121,10 @@ namespace ExpandoDB
         }       
 
         /// <summary>
-        /// Gets the Content's unique _id.
+        /// Gets the Document's unique _id.
         /// </summary>
         /// <value>
-        /// The value of the Content's _id property.
+        /// The value of the Document's _id property.
         /// </value>        
         public Guid? _id
         {
@@ -144,10 +144,10 @@ namespace ExpandoDB
         }
 
         /// <summary>
-        /// Gets the Content's _createdTimestamp property.
+        /// Gets the Document's _createdTimestamp property.
         /// </summary>
         /// <value>
-        /// The value of the Content's _createdTimestamp property.
+        /// The value of the Document's _createdTimestamp property.
         /// </value>
         /// <exception cref="System.ArgumentNullException">value</exception>
         public DateTime? _createdTimestamp
@@ -169,10 +169,10 @@ namespace ExpandoDB
         }
 
         /// <summary>
-        /// Gets the Content's _modifiedTimestamp property.
+        /// Gets the Document's _modifiedTimestamp property.
         /// </summary>
         /// <value>
-        /// The value of the Content's _modifiedTimestamp property.
+        /// The value of the Document's _modifiedTimestamp property.
         /// </value>        
         public DateTime? _modifiedTimestamp
         {
@@ -224,7 +224,7 @@ namespace ExpandoDB
         }
 
         /// <summary>
-        /// Gets or sets the value of the specified Content field.
+        /// Gets or sets the value of the specified Document field.
         /// </summary>
         /// <value>
         /// The <see cref="System.Object"/>.
@@ -292,12 +292,12 @@ namespace ExpandoDB
         }
 
         /// <summary>
-        /// Determines whether the specified value is allowed as a Content field
+        /// Determines whether the specified value is allowed as a Document field
         /// </summary>
         /// <param name="value">The value.</param>
         /// <returns></returns>
         /// <remarks>
-        /// The Content object only allows String, Guid, DateTime, numeric types,
+        /// The Document object only allows String, Guid, DateTime, numeric types,
         /// IList, and IDictionary. </remarks>
         private bool IsAllowedValue(object value)
         {
@@ -344,7 +344,7 @@ namespace ExpandoDB
         }
 
         /// <summary>
-        /// Returns the Content as an ExpandoObject.
+        /// Returns the Document as an ExpandoObject.
         /// </summary>
         /// <returns></returns>
         internal ExpandoObject AsExpando()
@@ -353,7 +353,7 @@ namespace ExpandoDB
         }
 
         /// <summary>
-        /// Returns the Content as a Dictionary<string, object>.
+        /// Returns the Document as a Dictionary<string, object>.
         /// </summary>
         /// <returns></returns>
         internal IDictionary<string, object> AsDictionary()

@@ -16,12 +16,12 @@
     "paths": {
         "/db/{collection}": {
             "get": {
-                "summary": "Searches a ContentCollection for Content objects that satisfy a query expression. This API is analogous to the SQL SELECT statement; as such, it adopts the names of the different parts/clauses of the SQL SELECT statement as the names of the API parameters. This API returns the resultset in pages of P items, where P is the value of the itemsPerPage parameter.",
+                "summary": "Searches a Document Collection for Documents that satisfy a query expression. This API is analogous to the SQL SELECT statement; as such, it adopts the names of the different parts/clauses of the SQL SELECT statement as the names of the API parameters. This API returns the resultset in pages of P items, where P is the value of the itemsPerPage parameter.",
                 "parameters": [
                     {
                         "name": "collection",
                         "in": "path",
-                        "description": "The name of the ContentCollection to be searched. A ContentCollection is a collection of Content objects that share the same schema, similar to a table in SQL. This parameter is analogous to the FROM clause in SQL.",
+                        "description": "The name of the Document Collection to be searched. A Document Collection is a collection of Documents that share the same schema, similar to a table in SQL. This parameter is analogous to the FROM clause in SQL.",
                         "required": true,
                         "type": "string"
                     },
@@ -42,7 +42,7 @@
                     {
                         "name": "where",
                         "in": "query",
-                        "description": "A Lucene query expression to be used in matching Content objects; see <a href=\"http://www.lucenetutorial.com/lucene-query-syntax.html\">this article</a> for a brief tutorial on Lucene query syntax. The where parameter is analogous to the WHERE predicate in SQL. If this parameter is blank, a Lucene \"match-all\" query will be used.",
+                        "description": "A Lucene query expression to be used in matching Documents; see <a href=\"http://www.lucenetutorial.com/lucene-query-syntax.html\">this article</a> for a brief tutorial on Lucene query syntax. The where parameter is analogous to the WHERE predicate in SQL. If this parameter is blank, a Lucene \"match-all\" query will be used.",
                         "required": false,
                         "type": "string"
                     },
@@ -56,7 +56,7 @@
                     {
                         "name": "itemsPerPage",
                         "in": "query",
-                        "description": "The number of Content objects in one page of the resultset. This parameter and the pageNumber parameter are analogous to the OFFSET-FETCH filter in T-SQL. If not specified, this parameter defaults to 10.",
+                        "description": "The number of Documents in one page of the resultset. This parameter and the pageNumber parameter are analogous to the OFFSET-FETCH filter in T-SQL. If not specified, this parameter defaults to 10.",
                         "required": false,
                         "type": "integer"
                     },
@@ -70,13 +70,13 @@
                     {
                         "name": "highlight",
                         "in": "query",
-                        "description": "Specifies whether to include a '_highlight' field to each item in the resultset. The '_highlight' field contains a snippet from the text of the Content, with the matching search terms highlighted.",
+                        "description": "Specifies whether to generate a '_highlight' field for each item in the resultset. The '_highlight' field contains a snippet from the text of each Document, with the matching search terms highlighted.",
                         "required": false,
                         "type": "boolean"
                     }
                 ],
                 "tags": [
-                    "Search for Content"
+                    "Search for Document"
                 ],
                 "responses": {
                     "200": {
@@ -94,19 +94,19 @@
                 }
             },
             "post": {
-                "summary": "Inserts a Content object into the target ContentCollection. A Content object is simply a JSON object. This API returns the unique ID of the newly inserted Content object.",
+                "summary": "Inserts a Document into the target Document Collection. A Document is simply a JSON object. This API returns the unique ID of the newly inserted Document.",
                 "parameters": [
                     {
                         "name": "collection",
                         "in": "path",
-                        "description": "The name of the target ContentCollection.",
+                        "description": "The name of the target Document Collection.",
                         "required": true,
                         "type": "string"
                     },
                     {
-                        "name": "content",
+                        "name": "document",
                         "in": "body",
-                        "description": "The Content object to be inserted.",
+                        "description": "The Document to be inserted.",
                         "required": true,
                         "schema": {
                             "type": "object"
@@ -114,7 +114,7 @@
                     }
                 ],
                 "tags": [
-                    "Insert Content"
+                    "Insert Document"
                 ],
                 "responses": {
                     "200": {
@@ -132,18 +132,18 @@
                 }
             },
             "delete": {
-                "summary": "Drops the target ContentCollection. This deletes all data and index information.",
+                "summary": "Drops the target Document Collection. This deletes all data and index information.",
                 "parameters": [
                     {
                         "name": "collection",
                         "in": "path",
-                        "description": "The name of the target ContentCollection.",
+                        "description": "The name of the target Document Collection.",
                         "required": true,
                         "type": "string"
                     }
                 ],
                 "tags": [
-                    "Remove Content"
+                    "Remove Document"
                 ],
                 "responses": {
                     "200": {
@@ -163,12 +163,12 @@
         },
         "/db/_schemas/{collection}": {
             "get": {
-                "summary": "Returns the schema of the specified ContentCollection.",
+                "summary": "Returns the schema of the specified Document Collection.",
                 "parameters": [
                     {
                         "name": "collection",
                         "in": "path",
-                        "description": "The name of the target ContentCollection.",
+                        "description": "The name of the target Document Collection.",
                         "required": true,
                         "type": "string"
                     }
@@ -194,7 +194,7 @@
         },
         "/db/_schemas": {
             "get": {
-                "summary": "Returns the schemas of all ContentCollections in the Database.",
+                "summary": "Returns the schemas of all Document Collections in the Database.",
                 "tags": [
                     "Get Metadata"
                 ],
@@ -216,25 +216,25 @@
         },
         "/db/{collection}/count": {
             "get": {
-                "summary": "Counts the number of Content objects in the specified ContentCollection; optionally, the Content objects can be matched against a query expression.",
+                "summary": "Counts the number of Documents in the specified Document Collection; optionally, the Documents can be matched against a query expression.",
                 "parameters": [
                     {
                         "name": "collection",
                         "in": "path",
-                        "description": "The name of the target ContentCollection.",
+                        "description": "The name of the target Document Collection.",
                         "required": true,
                         "type": "string"
                     },
                     {
                         "name": "where",
                         "in": "query",
-                        "description": "A Lucene query expression to be used in matching Content objects; see <a href=\"http://www.lucenetutorial.com/lucene-query-syntax.html\">this article</a> for a brief tutorial on Lucene query syntax. The where parameter is analogous to the WHERE predicate in SQL. If this parameter is blank, the API will simply return the size of the ContentCollection.",
+                        "description": "A Lucene query expression to be used in matching Documents; see <a href=\"http://www.lucenetutorial.com/lucene-query-syntax.html\">this article</a> for a brief tutorial on Lucene query syntax. The where parameter is analogous to the WHERE predicate in SQL. If this parameter is blank, the API will simply return the size of the Document Collection.",
                         "required": false,
                         "type": "string"
                     }
                 ],
                 "tags": [
-                    "Search for Content"
+                    "Search for Document"
                 ],
                 "responses": {
                     "200": {
@@ -254,31 +254,31 @@
         },
         "/db/{collection}/{id}": {
             "get": {
-                "summary": "Gets the Content object with the specified id.",
+                "summary": "Gets the Document with the specified id.",
                 "parameters": [
                     {
                         "name": "collection",
                         "in": "path",
-                        "description": "The name of the ContentCollection that contains the Content object.",
+                        "description": "The name of the Document Collection that contains the Document.",
                         "required": true,
                         "type": "string"
                     },
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "The unique id (GUID) of the Content object.",
+                        "description": "The unique id (GUID) of the Document.",
                         "required": true,
                         "type": "string"
                     }
                 ],
                 "tags": [
-                    "Search for Content"
+                    "Search for Document"
                 ],
                 "responses": {
                     "200": {
                         "description": "A response DTO",
                         "schema": {
-                            "$ref": "#/definitions/ContentResponseDTO"
+                            "$ref": "#/definitions/DocumentResponseDTO"
                         }
                     },
                     "default": {
@@ -290,26 +290,26 @@
                 }
             },
             "put": {
-                "summary": "Completely replaces the Content object whose ID is specified.",
+                "summary": "Completely replaces the Document whose ID is specified.",
                 "parameters": [
                     {
                         "name": "collection",
                         "in": "path",
-                        "description": "The name of the ContentCollection that contains the Content object.",
+                        "description": "The name of the Document Collection that contains the Document.",
                         "required": true,
                         "type": "string"
                     },
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "The unique id (GUID) of the Content object.",
+                        "description": "The unique id (GUID) of the Document.",
                         "required": true,
                         "type": "string"
                     },
                     {
-                        "name": "content",
+                        "name": "document",
                         "in": "body",
-                        "description": "The replacement Content object.",
+                        "description": "The replacement Document.",
                         "required": true,
                         "schema": {
                             "type": "object"
@@ -317,7 +317,7 @@
                     }
                 ],
                 "tags": [
-                    "Update Content"
+                    "Update Document"
                 ],
                 "responses": {
                     "200": {
@@ -335,26 +335,26 @@
                 }
             },
             "patch": {
-                "summary": "Partially updates the Content object whose ID is specified.",
+                "summary": "Partially updates the Document whose ID is specified.",
                 "parameters": [
                     {
                         "name": "collection",
                         "in": "path",
-                        "description": "The name of the ContentCollection that contains the Content object.",
+                        "description": "The name of the Document Collection that contains the Document.",
                         "required": true,
                         "type": "string"
                     },
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "The unique id (GUID) of the Content object.",
+                        "description": "The unique id (GUID) of the Document.",
                         "required": true,
                         "type": "string"
                     },
                     {
                         "name": "operations",
                         "in": "body",
-                        "description": "An array of PATCH operations to be applied to the target Content object.",
+                        "description": "An array of PATCH operations to be applied to the target Document.",
                         "required": true,
                         "schema": {
                             "type": "array",
@@ -365,7 +365,7 @@
                     }
                 ],
                 "tags": [
-                    "Update Content"
+                    "Update Document"
                 ],
                 "responses": {
                     "200": {
@@ -383,25 +383,25 @@
                 }
             },
             "delete": {
-                "summary": "Deletes the Content object whose ID is specified.",
+                "summary": "Deletes the Document whose ID is specified.",
                 "parameters": [
                     {
                         "name": "collection",
                         "in": "path",
-                        "description": "The name of the ContentCollection that contains the Content object.",
+                        "description": "The name of the Document Collection that contains the Document.",
                         "required": true,
                         "type": "string"
                     },
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "The unique id (GUID) of the Content object.",
+                        "description": "The unique id (GUID) of the Document.",
                         "required": true,
                         "type": "string"
                     }
                 ],
                 "tags": [
-                    "Remove Content"
+                    "Remove Document"
                 ],
                 "responses": {
                     "200": {
@@ -434,7 +434,7 @@
                 },
                 "from": {
                     "type": "string",
-                    "description": "The name of the source ContentCollection."
+                    "description": "The name of the source Document Collection."
                 },
                 "where": {
                     "type": "string",
@@ -450,7 +450,7 @@
                 },
                 "totalHits": {
                     "type": "integer",
-                    "description": "The total number of Content objects in the ContentCollection that match the search query. This value is >= itemCount."
+                    "description": "The total number of Documents in the Document Collection that match the search query. This value is >= itemCount."
                 },
                 "pageCount": {
                     "type": "integer",
@@ -470,9 +470,9 @@
                 },
                 "items": {
                     "type": "array",
-                    "description": "An array of Content objects that match the query expression.",
+                    "description": "An array of Documents that match the query expression.",
                     "items": {
-                        "$ref": "#/definitions/ContentDTO"
+                        "$ref": "#/definitions/DocumentDTO"
                     }
                 },
                 "timestamp": {
@@ -491,11 +491,11 @@
             "properties": {
                 "from": {
                     "type": "string",
-                    "description": "The name of the target ContentCollection."
+                    "description": "The name of the target Document Collection."
                 },
                 "_id": {
                     "type": "string",
-                    "description": "The unique ID (GUID)of the newly created Content object"
+                    "description": "The unique ID (GUID)of the newly created Document"
                 },
                 "timestamp": {
                     "type": "string",
@@ -513,7 +513,7 @@
             "properties": {
                 "isDropped": {
                     "type": "boolean",
-                    "description": "Specifies whether the target ContentCollection was dropped successfully."
+                    "description": "Specifies whether the target Document Collection was dropped successfully."
                 },
                 "timestamp": {
                     "type": "string",
@@ -526,15 +526,15 @@
                 }
             }
         },
-        "ContentResponseDTO": {
+        "DocumentResponseDTO": {
             "type": "object",
             "properties": {
                 "from": {
                     "type": "string",
-                    "description": "The name of the source ContentCollection."
+                    "description": "The name of the source Document Collection."
                 },
-                "content": {
-                    "$ref": "#/definitions/ContentDTO"
+                "document": {
+                    "$ref": "#/definitions/DocumentDTO"
                 },
                 "timestamp": {
                     "type": "string",
@@ -547,22 +547,22 @@
                 }
             }
         },
-        "ContentDTO": {
+        "DocumentDTO": {
             "type": "object",
             "properties": {
                 "_id": {
                     "type": "string",
-                    "description": "The unique ID (GUID)of the Content object."
+                    "description": "The unique ID (GUID)of the Document."
                 },
                 "_createTimestamp": {
                     "type": "string",
                     "format": "date-time",
-                    "description": "The date/time (UTC) when the Content was created on the server."
+                    "description": "The date/time (UTC) when the Document was created on the server."
                 },
                 "_modifiedTimestamp": {
                     "type": "string",
                     "format": "date-time",
-                    "description": "The date/time (UTC) when the Content was last modified on the server."
+                    "description": "The date/time (UTC) when the Document was last modified on the server."
                 }
             }
         },
@@ -571,11 +571,11 @@
             "properties": {
                 "from": {
                     "type": "string",
-                    "description": "The name of the target ContentCollection."
+                    "description": "The name of the target Document Collection."
                 },
                 "affectedCount": {
                     "type": "integer",
-                    "description": "The number of affected Content objects."
+                    "description": "The number of affected Documents."
                 },
                 "timestamp": {
                     "type": "string",
@@ -593,7 +593,7 @@
             "properties": {
                 "from": {
                     "type": "string",
-                    "description": "The name of the target ContentCollection."
+                    "description": "The name of the target Document Collection."
                 },
                 "where": {
                     "type": "string",
@@ -601,7 +601,7 @@
                 },
                 "count": {
                     "type": "integer",
-                    "description": "The number of Content objects that match the query expression."
+                    "description": "The number of Documents that match the query expression."
                 },
                 "timestamp": {
                     "type": "string",
@@ -676,7 +676,7 @@
                     "items": {
                         "$ref": "#/definitions/SchemaDTO"
                     },
-                    "description": "The schemas of all ContentCollections in the database."
+                    "description": "The schemas of all Document Collections in the database."
                 },
                 "timestamp": {
                     "type": "string",

@@ -36,25 +36,25 @@ namespace ExpandoDB.Rest
 
             Get["/_schemas"] = OnGetDatabaseSchema;
             Get["/_schemas/{collection}"] = OnGetCollectionSchema;
-            Post["/{collection}", true] = OnInsertContentAsync;            
-            Get["/{collection}", true] = OnSearchContentsAsync;            
+            Post["/{collection}", true] = OnInsertDocumentAsync;            
+            Get["/{collection}", true] = OnSearchDocumentsAsync;            
             Get["/{collection}/count"] = OnGetCount;
-            Get["/{collection}/{id:guid}", true] = OnGetContentAsync;
-            Put["/{collection}/{id:guid}", true] = OnUpdateContentAsync;                       
-            Patch["/{collection}/{id:guid}", true] = OnPatchContentAsync;
-            Delete["/{collection}/{id:guid}", true] = OnDeleteContentAsync;
+            Get["/{collection}/{id:guid}", true] = OnGetDocumentAsync;
+            Put["/{collection}/{id:guid}", true] = OnUpdateDocumentAsync;                       
+            Patch["/{collection}/{id:guid}", true] = OnPatchDocumentAsync;
+            Delete["/{collection}/{id:guid}", true] = OnDeleteDocumentAsync;
             Delete["/{collection}", true] = OnDeleteCollectionAsync;
         }
 
         
 
         /// <summary>
-        /// Inserts a new Content object into a ContentCollection.
+        /// Inserts a new Document object into a DocumentCollection.
         /// </summary>
         /// <param name="req">The request object.</param>
         /// <param name="token">The cancellation token.</param>
         /// <returns></returns>        
-        private async Task<object> OnInsertContentAsync(dynamic req, CancellationToken token)
+        private async Task<object> OnInsertDocumentAsync(dynamic req, CancellationToken token)
         {
             var stopwatch = new Stopwatch();
             stopwatch.Start();
@@ -63,17 +63,17 @@ namespace ExpandoDB.Rest
             if (String.IsNullOrWhiteSpace(collectionName))
                 throw new ArgumentException("collection cannot be null or blank");
 
-            // Get the Content object from the request.
+            // Get the Document object from the request.
             // Note: Bind() will get resolved to DynamicModelBinder.Bind().
             var excludedFields = new[] { "collection" };
             var dictionary = this.Bind<DynamicDictionary>(excludedFields).ToDictionary();
-            var content = new Content(dictionary);
+            var document = new Document(dictionary);
 
-            // Get the target ContentCollection; it will be auto-created if it doesn't exist.
+            // Get the target DocumentCollection; it will be auto-created if it doesn't exist.
             var collection = _db[collectionName];
 
-            // Insert the Content object into the target ContentCollection.
-            var guid = await collection.InsertAsync(content).ConfigureAwait(false);
+            // Insert the Document object into the target DocumentCollection.
+            var guid = await collection.InsertAsync(document).ConfigureAwait(false);
 
             stopwatch.Stop();
 
@@ -89,7 +89,7 @@ namespace ExpandoDB.Rest
         }
 
         /// <summary>
-        /// Returns the schema of a ContentCollection; a schema is simply a set of fields and their corresponding data types.
+        /// Returns the schema of a DocumentCollection; a schema is simply a set of fields and their corresponding data types.
         /// </summary>
         /// <param name="req">The request object.</param>
         /// <returns></returns>
@@ -122,7 +122,7 @@ namespace ExpandoDB.Rest
         }
 
         /// <summary>
-        /// Returns the schemas of all ContentCollections in the database; a schema is simply a set of fields and their corresponding data types.
+        /// Returns the schemas of all DocumentCollections in the database; a schema is simply a set of fields and their corresponding data types.
         /// </summary>
         /// <param name="req">The request object.</param>
         /// <returns></returns>        
@@ -149,12 +149,12 @@ namespace ExpandoDB.Rest
         }
 
         /// <summary>
-        /// Searches a ContentCollection for Contents that match a query expression.
+        /// Searches a DocumentCollection for Documents that match a query expression.
         /// </summary>
         /// <param name="req">The request object.</param>
         /// <param name="token">The cancellation token.</param>
         /// <returns></returns>
-        private async Task<object> OnSearchContentsAsync(dynamic req, CancellationToken token)
+        private async Task<object> OnSearchDocumentsAsync(dynamic req, CancellationToken token)
         {
             var stopwatch = new Stopwatch();
             stopwatch.Start();
@@ -165,8 +165,7 @@ namespace ExpandoDB.Rest
 
             var collection = _db[collectionName];
             var requestDto = this.Bind<SearchRequestDto>();
-            var searchCriteria = requestDto.ToSearchCriteria();
-            var selectedFields = requestDto.select.ToList();
+            var searchCriteria = requestDto.ToSearchCriteria();            
             var result = await collection.SearchAsync(searchCriteria);
 
             stopwatch.Stop();
@@ -179,7 +178,7 @@ namespace ExpandoDB.Rest
         }
 
         /// <summary>
-        /// Returns the number of Content objects in a ContentCollection that match a query expression.
+        /// Returns the number of Document objects in a DocumentCollection that match a query expression.
         /// </summary>
         /// <param name="req">The request object.</param>
         /// <returns></returns>
@@ -216,12 +215,12 @@ namespace ExpandoDB.Rest
         }
 
         /// <summary>
-        /// Gets a Content object identified by its id, from a ContentCollection.
+        /// Gets a Document object identified by its id, from a DocumentCollection.
         /// </summary>
         /// <param name="req">The request object.</param>
         /// <param name="token">The cancellation token.</param>
         /// <returns></returns>        
-        private async Task<object> OnGetContentAsync(dynamic req, CancellationToken token)
+        private async Task<object> OnGetDocumentAsync(dynamic req, CancellationToken token)
         {
             var stopwatch = new Stopwatch();
             stopwatch.Start();
@@ -238,31 +237,31 @@ namespace ExpandoDB.Rest
                 return HttpStatusCode.NotFound;
 
             var collection = _db[collectionName];
-            var content = await collection.GetAsync(guid).ConfigureAwait(false);
-            if (content == null)
+            var document = await collection.GetAsync(guid).ConfigureAwait(false);
+            if (document == null)
                 return HttpStatusCode.NotFound;
 
             stopwatch.Stop();
 
-            var responseDto = new ContentResposeDto
+            var responseDto = new DocumentResposeDto
             {
                 timestamp = DateTime.UtcNow,
                 elapsed = stopwatch.Elapsed.ToString(),
                 from = collectionName,
-                content = content.AsExpando()
+                document = document.AsExpando()
             };
 
             return responseDto;
         }
 
         /// <summary>
-        /// Replaces a Content object identified by its _id, in a ContentCollection.
+        /// Replaces a Document object identified by its _id, in a DocumentCollection.
         /// </summary>
         /// <param name="req">The request object.</param>
         /// <param name="token">The cancellation token.</param>
         /// <returns></returns>       
         /// <exception cref="System.InvalidOperationException">There is no data for this operation</exception>
-        private async Task<object> OnUpdateContentAsync(dynamic req, CancellationToken token)
+        private async Task<object> OnUpdateDocumentAsync(dynamic req, CancellationToken token)
         {
             var stopwatch = new Stopwatch();
             stopwatch.Start();
@@ -279,7 +278,7 @@ namespace ExpandoDB.Rest
                 throw new ArgumentException("id cannot be Guid.Empty");
 
             var collection = _db[collectionName];
-            var count = collection.Count(new SearchCriteria { Query = $"{Content.ID_FIELD_NAME}: {guid}" });
+            var count = collection.Count(new SearchCriteria { Query = $"{Document.ID_FIELD_NAME}: {guid}" });
             if (count == 0)
                 return HttpStatusCode.NotFound;
 
@@ -288,9 +287,9 @@ namespace ExpandoDB.Rest
             if (dictionary == null || dictionary.Count == 0)
                 throw new InvalidOperationException("There is no data for this operation");
 
-            var content = new Content(dictionary);
-            content._id = guid;
-            var affected = await collection.UpdateAsync(content).ConfigureAwait(false);
+            var document = new Document(dictionary);
+            document._id = guid;
+            var affected = await collection.UpdateAsync(document).ConfigureAwait(false);
 
             stopwatch.Stop();
 
@@ -306,13 +305,13 @@ namespace ExpandoDB.Rest
         }
 
         /// <summary>
-        /// Updates specific fields of a Content object identified by its _id, in a ContentCollection.
+        /// Updates specific fields of a Document object identified by its _id, in a DocumentCollection.
         /// </summary>
         /// <param name="req">The request object.</param>
         /// <param name="token">The cancellation token.</param>
         /// <returns></returns>       
         /// <exception cref="System.InvalidOperationException">There is no data for this operation</exception>
-        private async Task<object> OnPatchContentAsync(dynamic req, CancellationToken token)
+        private async Task<object> OnPatchDocumentAsync(dynamic req, CancellationToken token)
         {
             var stopwatch = new Stopwatch();
             stopwatch.Start();
@@ -333,23 +332,23 @@ namespace ExpandoDB.Rest
             if (patchOperations == null || patchOperations.Count == 0)
                 throw new InvalidOperationException("PATCH operations must be specified.");
             
-            // Retrieve the Content to be PATCHed.
+            // Retrieve the Document to be PATCHed.
             var collection = _db[collectionName];
 
-            var count = collection.Count(new SearchCriteria { Query = $"{Content.ID_FIELD_NAME}: {guid}" });
+            var count = collection.Count(new SearchCriteria { Query = $"{Document.ID_FIELD_NAME}: {guid}" });
             if (count == 0)
                 return HttpStatusCode.NotFound;
 
-            var content = await collection.GetAsync(guid).ConfigureAwait(false);
-            if (content == null)
+            var document = await collection.GetAsync(guid).ConfigureAwait(false);
+            if (document == null)
                 return HttpStatusCode.NotFound;
 
-            // Apply the PATCH operations to the Content
+            // Apply the PATCH operations to the Document
             foreach (var operation in patchOperations)
-                operation.Apply(content);                     
+                operation.Apply(document);                     
            
-            // Update the PATCHed Content.
-            var affected = await collection.UpdateAsync(content).ConfigureAwait(false);
+            // Update the PATCHed Document.
+            var affected = await collection.UpdateAsync(document).ConfigureAwait(false);
 
             stopwatch.Stop();
 
@@ -365,12 +364,12 @@ namespace ExpandoDB.Rest
         }
 
         /// <summary>
-        /// Deletes a Content object identified by its _id, in a ContentCollection.
+        /// Deletes a Document object identified by its _id, in a DocumentCollection.
         /// </summary>
         /// <param name="req">The request object.</param>
         /// <param name="token">The cancellation token.</param>
         /// <returns></returns>       
-        private async Task<object> OnDeleteContentAsync(dynamic req, CancellationToken token)
+        private async Task<object> OnDeleteDocumentAsync(dynamic req, CancellationToken token)
         {
             var stopwatch = new Stopwatch();
             stopwatch.Start();
@@ -388,7 +387,7 @@ namespace ExpandoDB.Rest
 
             var collection = _db[collectionName];
 
-            var count = collection.Count(new SearchCriteria { Query = $"{Content.ID_FIELD_NAME}: {guid}" });
+            var count = collection.Count(new SearchCriteria { Query = $"{Document.ID_FIELD_NAME}: {guid}" });
             if (count == 0)
                 return HttpStatusCode.NotFound;
 
@@ -408,7 +407,7 @@ namespace ExpandoDB.Rest
         }
 
         /// <summary>
-        /// Deletes the entire ContentCollection.
+        /// Deletes the entire DocumentCollection.
         /// </summary>
         /// <param name="req">The req.</param>
         /// <param name="token">The token.</param>

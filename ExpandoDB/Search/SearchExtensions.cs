@@ -54,7 +54,7 @@ namespace ExpandoDB.Search
                                             .Take(itemsToTake)
                                             .ToList();
 
-                var contentIds = new List<Guid>();
+                var documentIds = new List<Guid>();
                 for (var i = 0; i < scoreDocs.Count; i++)
                 {
                     var sd = scoreDocs[i];
@@ -62,13 +62,13 @@ namespace ExpandoDB.Search
                     if (doc == null)
                         continue;
 
-                    var idField = doc.GetField(Content.ID_FIELD_NAME);
+                    var idField = doc.GetField(Document.ID_FIELD_NAME);
                     var idValue = idField.StringValue();
 
-                    contentIds.Add(Guid.Parse(idValue));
+                    documentIds.Add(Guid.Parse(idValue));
                 }
 
-                result.Items = contentIds;
+                result.Items = documentIds;
                 result.PageCount = ComputePageCount(result.ItemCount, result.ItemsPerPage);
             }
         }

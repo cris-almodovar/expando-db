@@ -6,9 +6,9 @@ namespace ExpandoDB.Rest.DTO
     /// Represents the JSON data returned by the GET /db/{collection}/{id} API.
     /// </summary>
     /// <seealso cref="ExpandoDB.Rest.DTO.ResponseDto" />
-    public class ContentResposeDto : ResponseDto
+    public class DocumentResposeDto : ResponseDto
     {             
         public string from { get; set; }
-        public ExpandoObject content { get; set; }
+        public ExpandoObject document { get; set; }
     }
 }

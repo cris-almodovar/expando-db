@@ -43,13 +43,13 @@ namespace ExpandoDB.Tests
         public void Cleanup()
         {
             _db.Dispose();
-            Thread.Sleep(TimeSpan.FromSeconds(10));
+            Thread.Sleep(TimeSpan.FromSeconds(15));
             Directory.Delete(_dbPath, true);
         }
 
         [TestMethod]
         [TestCategory("Database tests")]
-        public void Can_count_content()
+        public void Can_count_document()
         {
             var criteria = new SearchCriteria { Query = "*:*" };
             var count = _db["books"].Count(criteria);
@@ -59,7 +59,7 @@ namespace ExpandoDB.Tests
 
         [TestMethod]
         [TestCategory("Database tests")]
-        public void Can_search_for_contents()
+        public void Can_search_for_documents()
         {
             var criteria = new SearchCriteria { Query = "Author:Douglas", SortByField = "-Title", TopN = 1 };
             var result = _db["books"].SearchAsync(criteria).Result;

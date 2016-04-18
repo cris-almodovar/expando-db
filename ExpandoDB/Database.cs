@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 namespace ExpandoDB
 {
     /// <summary>
-    /// Represents a collection of <see cref="ContentCollection"/> objects. 
+    /// Represents a collection of <see cref="DocumentCollection"/> objects. 
     /// </summary>
     /// <remarks>
     /// This class is analogous to a MongoDB database.
@@ -28,9 +28,9 @@ namespace ExpandoDB
         private readonly string _dbPath;        
         private readonly string _dbFilePath;
         private readonly string _indexPath;
-        private readonly ConcurrentDictionary<string, ContentCollection> _contentCollections;
+        private readonly ConcurrentDictionary<string, DocumentCollection> _documentCollections;
         private readonly ISchemaStorage _schemaStorage;
-        private readonly ConcurrentDictionary<string, ContentCollectionSchema> _schemaCache;
+        private readonly ConcurrentDictionary<string, DocumentCollectionSchema> _schemaCache;
         private readonly Timer _schemaPersistenceTimer;
         private readonly double _schemaPersistenceIntervalSeconds;
         private readonly object _schemaPersistenceLock = new object();
@@ -55,19 +55,19 @@ namespace ExpandoDB
             _indexPath = Path.Combine(_dbPath, INDEX_DIRECTORY_NAME);
             EnsureIndexDirectoryExists(_indexPath);
 
-            _contentCollections = new ConcurrentDictionary<string, ContentCollection>();
+            _documentCollections = new ConcurrentDictionary<string, DocumentCollection>();
             _schemaStorage = new SQLiteSchemaStorage(_dbFilePath);
 
             var schemas = _schemaStorage.GetAllAsync().Result.ToDictionary(cs => cs.Name);
             if (schemas != null && schemas.Count > 0)
-                _schemaCache = new ConcurrentDictionary<string, ContentCollectionSchema>(schemas);
+                _schemaCache = new ConcurrentDictionary<string, DocumentCollectionSchema>(schemas);
             else
-                _schemaCache = new ConcurrentDictionary<string, ContentCollectionSchema>();
+                _schemaCache = new ConcurrentDictionary<string, DocumentCollectionSchema>();
 
             foreach (var schema in _schemaCache.Values)
             {
-                var collection = new ContentCollection(schema, _dbPath);
-                _contentCollections.TryAdd(schema.Name, collection);
+                var collection = new DocumentCollection(schema, _dbPath);
+                _documentCollections.TryAdd(schema.Name, collection);
             }
 
             _schemaPersistenceIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["SchemaPersistenceIntervalSeconds"] ?? "1");
@@ -84,39 +84,39 @@ namespace ExpandoDB
 
             try
             {
-                var newSchemasToInsert = _contentCollections.Keys.Except(_schemaCache.Keys);
+                var newSchemasToInsert = _documentCollections.Keys.Except(_schemaCache.Keys);
                 foreach (var schemaName in newSchemasToInsert)
                 {
-                    if (_contentCollections[schemaName] == null)
+                    if (_documentCollections[schemaName] == null)
                         continue;
 
-                    var newSchema = _contentCollections[schemaName].GetSchema();
+                    var newSchema = _documentCollections[schemaName].GetSchema();
                     _schemaCache.TryAdd(newSchema.Name, newSchema);
                     await _schemaStorage.InsertAsync(newSchema).ConfigureAwait(false);
                 }
 
-                var schemasToUpdate = from schemaName in _contentCollections.Keys.Intersect(_schemaCache.Keys)
+                var schemasToUpdate = from schemaName in _documentCollections.Keys.Intersect(_schemaCache.Keys)
                                       let persistedSchema = _schemaCache[schemaName]
-                                      let liveSchema = _contentCollections[schemaName].GetSchema()
+                                      let liveSchema = _documentCollections[schemaName].GetSchema()
                                       where persistedSchema != liveSchema                                      
                                       select schemaName;
 
                 foreach (var schemaName in schemasToUpdate)
                 {
-                    if (_contentCollections[schemaName] == null)
+                    if (_documentCollections[schemaName] == null)
                         continue;
 
-                    var updatedSchema = _contentCollections[schemaName].GetSchema();
+                    var updatedSchema = _documentCollections[schemaName].GetSchema();
                     _schemaCache[schemaName] = updatedSchema;
                     await _schemaStorage.UpdateAsync(updatedSchema).ConfigureAwait(false);
                 }
 
-                var schemasToRemove = from schemaName in _schemaCache.Keys.Except(_contentCollections.Keys)                                      
+                var schemasToRemove = from schemaName in _schemaCache.Keys.Except(_documentCollections.Keys)                                      
                                       select schemaName;
 
                 foreach (var schemaName in schemasToRemove)
                 {
-                    ContentCollectionSchema removedSchema = null;
+                    DocumentCollectionSchema removedSchema = null;
                     _schemaCache.TryRemove(schemaName, out removedSchema);
                     await _schemaStorage.DeleteAsync(schemaName).ConfigureAwait(false);
                 }
@@ -155,25 +155,25 @@ namespace ExpandoDB
         }
 
         /// <summary>
-        /// Gets the <see cref="ContentCollection"/> with the specified name.
+        /// Gets the <see cref="DocumentCollection"/> with the specified name.
         /// </summary>
         /// <value>
-        /// The <see cref="ContentCollection"/> with the specified name.
+        /// The <see cref="DocumentCollection"/> with the specified name.
         /// </value>
-        /// <param name="name">The name of the ContentCollection.</param>
+        /// <param name="name">The name of the DocumentCollection.</param>
         /// <returns></returns>
-        public ContentCollection this [string name]
+        public DocumentCollection this [string name]
         {
             get
             {
                 if (String.IsNullOrWhiteSpace(name))
                     throw new ArgumentException("name cannot be null or blank");
 
-                ContentCollection collection = null;
-                if (!_contentCollections.TryGetValue(name, out collection))
+                DocumentCollection collection = null;
+                if (!_documentCollections.TryGetValue(name, out collection))
                 {
-                    collection = new ContentCollection(name, _dbPath);
-                    _contentCollections.TryAdd(name, collection);
+                    collection = new DocumentCollection(name, _dbPath);
+                    _documentCollections.TryAdd(name, collection);
                 }
 
                 return collection;
@@ -181,30 +181,30 @@ namespace ExpandoDB
         }
 
         /// <summary>
-        /// Gets the names of all ContentCollections in the Database.
+        /// Gets the names of all DocumentCollections in the Database.
         /// </summary>
         /// <value>
-        /// The name of all ContentCollections in the Database.
+        /// The name of all DocumentCollections in the Database.
         /// </value>
         internal IEnumerable<string> GetCollectionNames()
         {
-            return _contentCollections.Keys;
+            return _documentCollections.Keys;
         }
 
         /// <summary>
-        /// Drops the ContentCollection with the specified name.
+        /// Drops the DocumentCollection with the specified name.
         /// </summary>
-        /// <param name="collectionName">The name of the ContentCollection to drop.</param>
+        /// <param name="collectionName">The name of the DocumentCollection to drop.</param>
         /// <returns></returns>
         public async Task<bool> DropCollectionAsync(string collectionName)
         {
-            if (!_contentCollections.ContainsKey(collectionName))
+            if (!_documentCollections.ContainsKey(collectionName))
                 return false;            
 
             var isSuccessful = false;
-            ContentCollection collection = null;
+            DocumentCollection collection = null;
 
-            if (_contentCollections.TryRemove(collectionName, out collection))            
+            if (_documentCollections.TryRemove(collectionName, out collection))            
                 isSuccessful = await collection.DropAsync().ConfigureAwait(false);
 
             if (isSuccessful)
@@ -214,13 +214,13 @@ namespace ExpandoDB
         }
 
         /// <summary>
-        /// Determines whether the Database contains a ContentCollection with the specified name.
+        /// Determines whether the Database contains a DocumentCollection with the specified name.
         /// </summary>
-        /// <param name="collectionName">The name of the ContentCollection.</param>
+        /// <param name="collectionName">The name of the DocumentCollection.</param>
         /// <returns></returns>
         public bool ContainsCollection(string collectionName)
         {
-            return _contentCollections.ContainsKey(collectionName);
+            return _documentCollections.ContainsKey(collectionName);
         }
 
         /// <summary>
@@ -228,7 +228,7 @@ namespace ExpandoDB
         /// </summary>        
         public void Dispose()
         {
-            foreach (var collection in _contentCollections.Values)            
+            foreach (var collection in _documentCollections.Values)            
                 collection.Dispose();
 
             SQLiteConnection.ClearAllPools();

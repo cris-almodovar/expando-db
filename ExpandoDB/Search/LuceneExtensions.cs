@@ -13,7 +13,7 @@ using LuceneInteger = java.lang.Integer;
 namespace ExpandoDB.Search
 {
     /// <summary>
-    /// Implements extension methods for converting Content objects to Lucene documents.
+    /// Implements extension methods for converting Document objects to Lucene documents.
     /// </summary>
     public static class LuceneExtensions
     {
@@ -27,30 +27,30 @@ namespace ExpandoDB.Search
         public static readonly LuceneLong LONG_MAX_VALUE = new LuceneLong(Int64.MaxValue);
 
         /// <summary>
-        /// Converts a <see cref="Content"/> object to a <see cref="LuceneDocument"/> object.
+        /// Converts a <see cref="Document"/> object to a <see cref="LuceneDocument"/> object.
         /// </summary>
-        /// <param name="content">The Content object</param>
+        /// <param name="document">The Document object</param>
         /// <param name="indexSchema">The index schema.</param>
         /// <returns></returns>
         /// <exception cref="System.ArgumentNullException"></exception>
-        /// <exception cref="System.InvalidOperationException">Cannot index a Content that does not have an _id.</exception>
-        public static LuceneDocument ToLuceneDocument(this Content content, IndexSchema indexSchema = null)
+        /// <exception cref="System.InvalidOperationException">Cannot index a Document that does not have an _id.</exception>
+        public static LuceneDocument ToLuceneDocument(this Document document, IndexSchema indexSchema = null)
         {
-            if (content == null)
-                throw new ArgumentNullException(nameof(content));
+            if (document == null)
+                throw new ArgumentNullException(nameof(document));
 
             if (indexSchema == null)
                 indexSchema = IndexSchema.CreateDefault();
 
-            var contentDictionary = content.AsDictionary();
-            if (!contentDictionary.ContainsKey(Content.ID_FIELD_NAME))
-                throw new InvalidOperationException("Cannot index a Content that does not have an _id.");
+            var documentDictionary = document.AsDictionary();
+            if (!documentDictionary.ContainsKey(Document.ID_FIELD_NAME))
+                throw new InvalidOperationException("Cannot index a Document that does not have an _id.");
 
             var luceneDocument = new LuceneDocument();
 
             // Make sure the _id field is the first field added to the Lucene document
-            var keys = contentDictionary.Keys.Except(new[] { Content.ID_FIELD_NAME }).ToList();
-            keys.Insert(0, Content.ID_FIELD_NAME);
+            var keys = documentDictionary.Keys.Except(new[] { Document.ID_FIELD_NAME }).ToList();
+            keys.Insert(0, Document.ID_FIELD_NAME);
 
             foreach (var fieldName in keys)
             {
@@ -64,14 +64,14 @@ namespace ExpandoDB.Search
                     indexSchema.Fields.TryAdd(fieldName, indexedField);
                 }
 
-                var fieldValue = contentDictionary[fieldName];
+                var fieldValue = documentDictionary[fieldName];
                 var luceneFields = fieldValue.ToLuceneFields(indexedField);
                 foreach (var luceneField in luceneFields)
                     luceneDocument.Add(luceneField);
             }
 
             // The full-text field is always auto-generated and added to the Lucene document.
-            var fullText = content.ToLuceneFullTextString();
+            var fullText = document.ToLuceneFullTextString();
             luceneDocument.Add(new TextField(FULL_TEXT_FIELD_NAME, fullText, FieldStore.NO));
 
             return luceneDocument;
@@ -308,19 +308,19 @@ namespace ExpandoDB.Search
         }
 
         /// <summary>
-        /// Generates the Lucene full-text representation of the Content object.
+        /// Generates the Lucene full-text representation of the Document object.
         /// </summary>
-        /// <param name="content">The Content object.</param>
+        /// <param name="document">The Document object.</param>
         /// <returns></returns>        
-        public static string ToLuceneFullTextString(this Content content)
+        public static string ToLuceneFullTextString(this Document document)
         {
-            if (content == null)
-                throw new ArgumentNullException(nameof(content));
+            if (document == null)
+                throw new ArgumentNullException(nameof(document));
 
             var buffer = new StringBuilder();
 
-            var dictionary = content.AsDictionary();
-            var keys = dictionary.Keys.Except(new[] { Content.ID_FIELD_NAME, Content.CREATED_TIMESTAMP_FIELD_NAME, Content.MODIFIED_TIMESTAMP_FIELD_NAME });
+            var dictionary = document.AsDictionary();
+            var keys = dictionary.Keys.Except(new[] { Document.ID_FIELD_NAME, Document.CREATED_TIMESTAMP_FIELD_NAME, Document.MODIFIED_TIMESTAMP_FIELD_NAME });
 
             foreach (var fieldName in keys)
             {
@@ -553,7 +553,7 @@ namespace ExpandoDB.Search
         private static void AddGuidField(this List<Field> luceneFields, IndexedField indexedField, object value)
         {
             var guidValue = ((Guid)value).ToString().ToLower();
-            var isStored = (indexedField.Name == Content.ID_FIELD_NAME ? FieldStore.YES : FieldStore.NO);
+            var isStored = (indexedField.Name == Document.ID_FIELD_NAME ? FieldStore.YES : FieldStore.NO);
             var fieldName = indexedField.Name.Trim();
 
             luceneFields.Add(new StringField(fieldName, guidValue, isStored));

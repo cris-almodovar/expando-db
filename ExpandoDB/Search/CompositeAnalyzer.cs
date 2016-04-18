@@ -12,7 +12,7 @@ namespace ExpandoDB.Search
     /// </summary>
     /// <remarks>
     /// An instance of CompositeAnalyzer is associated with an instance of <see cref="LuceneIndex"/>,
-    /// which in turn is associated with an instance of <see cref="ContentCollection"/>.
+    /// which in turn is associated with an instance of <see cref="DocumentCollection"/>.
     /// </remarks>
     /// <seealso cref="FlexLucene.Analysis.AnalyzerWrapper" />
     public class CompositeAnalyzer : AnalyzerWrapper

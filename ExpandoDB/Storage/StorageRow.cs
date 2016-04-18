@@ -1,7 +1,7 @@
 ﻿namespace ExpandoDB.Storage
 {
     /// <summary>
-    /// Represents a row from the Content Storage engine.
+    /// Represents a row from the Document Storage engine.
     /// </summary>
     public class StorageRow
     {

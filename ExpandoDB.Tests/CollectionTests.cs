@@ -15,7 +15,7 @@ namespace ExpandoDB.Tests
     {
         private string _appPath;
         private string _dbPath;       
-        private ContentCollection _collection;
+        private DocumentCollection _collection;
 
         [TestInitialize]
         public void Initialize()
@@ -26,7 +26,7 @@ namespace ExpandoDB.Tests
             if (Directory.Exists(_dbPath))
                 Directory.Delete(_dbPath, true); 
 
-            _collection = new ContentCollection("books", _dbPath);
+            _collection = new DocumentCollection("books", _dbPath);
         }
 
         [TestCleanup]
@@ -41,8 +41,8 @@ namespace ExpandoDB.Tests
         
 
         [TestMethod]
-        [TestCategory("Content Collection tests")]
-        public void Can_insert_content()
+        [TestCategory("Document Collection tests")]
+        public void Can_insert_document()
         {
             var book = TestUtils.CreateBook("The Hitchhiker's Guide to the Galaxy", "Douglas Adams", new DateTime(1979, 10, 12, 12, 0, 0, DateTimeKind.Utc), 10, "The Hitchhiker's Guide to the Galaxy is a comedy science fiction series created by Douglas Adams. Originally a radio comedy broadcast on BBC Radio 4 in 1978, it was later adapted to other formats, and over several years it gradually became an international multi-media phenomenon.");
             var guid = _collection.InsertAsync(book).Result;
@@ -51,8 +51,8 @@ namespace ExpandoDB.Tests
         }
 
         [TestMethod]
-        [TestCategory("Content Collection tests")]
-        public void Can_search_for_content()
+        [TestCategory("Document Collection tests")]
+        public void Can_search_for_document()
         {
             var book1 = TestUtils.CreateBook("The Hitchhiker's Guide to the Galaxy", "Douglas Adams", new DateTime(1979, 10, 12, 12, 0, 0, DateTimeKind.Utc), 10, "The Hitchhiker's Guide to the Galaxy is a comedy science fiction series created by Douglas Adams. Originally a radio comedy broadcast on BBC Radio 4 in 1978, it was later adapted to other formats, and over several years it gradually became an international multi-media phenomenon.");
             var book2 = TestUtils.CreateBook("The Restaurant at the End of the Universe", "Douglas Adams", new DateTime(1980, 10, 12, 12, 0, 0, DateTimeKind.Utc), 9, "The Restaurant at the End of the Universe (1980, ISBN 0-345-39181-0) is the second book in the Hitchhiker's Guide to the Galaxy comedy science fiction 'trilogy' by Douglas Adams, and is a sequel.");
@@ -81,7 +81,7 @@ namespace ExpandoDB.Tests
 
 
         [TestMethod]
-        [TestCategory("Content Collection tests")]
+        [TestCategory("Document Collection tests")]
         public void Can_search_for_null_value()
         {
             var book1 = TestUtils.CreateBook("The Hitchhiker's Guide to the Galaxy", "Douglas Adams", new DateTime(1979, 10, 12, 12, 0, 0, DateTimeKind.Utc), 10, "The Hitchhiker's Guide to the Galaxy is a comedy science fiction series created by Douglas Adams. Originally a radio comedy broadcast on BBC Radio 4 in 1978, it was later adapted to other formats, and over several years it gradually became an international multi-media phenomenon.");

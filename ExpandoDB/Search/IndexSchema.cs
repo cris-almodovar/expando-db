@@ -6,7 +6,7 @@ using System.Diagnostics.Contracts;
 namespace ExpandoDB
 {
     /// <summary>
-    /// Represents the set of indexed fields for a ContentCollection.
+    /// Represents the set of indexed fields for a DocumentCollection.
     /// </summary>
     public class IndexSchema
     {
@@ -34,9 +34,9 @@ namespace ExpandoDB
                 name = "Default";
 
             var indexSchema = new IndexSchema(name);
-            indexSchema.Fields[Content.ID_FIELD_NAME] = new IndexedField { Name = Content.ID_FIELD_NAME, DataType = FieldDataType.Guid };
-            indexSchema.Fields[Content.CREATED_TIMESTAMP_FIELD_NAME] = new IndexedField { Name = Content.CREATED_TIMESTAMP_FIELD_NAME, DataType = FieldDataType.DateTime };
-            indexSchema.Fields[Content.MODIFIED_TIMESTAMP_FIELD_NAME] = new IndexedField { Name = Content.MODIFIED_TIMESTAMP_FIELD_NAME, DataType = FieldDataType.DateTime };
+            indexSchema.Fields[Document.ID_FIELD_NAME] = new IndexedField { Name = Document.ID_FIELD_NAME, DataType = FieldDataType.Guid };
+            indexSchema.Fields[Document.CREATED_TIMESTAMP_FIELD_NAME] = new IndexedField { Name = Document.CREATED_TIMESTAMP_FIELD_NAME, DataType = FieldDataType.DateTime };
+            indexSchema.Fields[Document.MODIFIED_TIMESTAMP_FIELD_NAME] = new IndexedField { Name = Document.MODIFIED_TIMESTAMP_FIELD_NAME, DataType = FieldDataType.DateTime };
             indexSchema.Fields[LuceneExtensions.FULL_TEXT_FIELD_NAME] = new IndexedField { Name = LuceneExtensions.FULL_TEXT_FIELD_NAME, DataType = FieldDataType.Text };
             
             return indexSchema;      

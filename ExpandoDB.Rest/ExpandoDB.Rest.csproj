@@ -71,7 +71,7 @@
     </Compile>
     <Compile Include="Bootstrapper.cs" />
     <Compile Include="DbService.cs" />
-    <Compile Include="DTO\ContentResposeDto.cs" />
+    <Compile Include="DTO\DocumentResposeDto.cs" />
     <Compile Include="DTO\CountRequestDto.cs" />
     <Compile Include="DTO\CountResponseDto.cs" />
     <Compile Include="DTO\DropCollectionResponseDto.cs" />

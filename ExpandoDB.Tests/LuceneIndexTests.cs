@@ -43,23 +43,23 @@ namespace ExpandoDB.Tests
 
         [TestMethod]
         [TestCategory("Lucene Index tests")]
-        public void Can_convert_content_to_Lucene_document()
+        public void Can_convert_document_to_Lucene_document()
         {
-            var content = CreateContent();
-            var luceneDocument = content.ToLuceneDocument();
-            var idField = luceneDocument.GetField(Content.ID_FIELD_NAME);            
+            var document = CreateDocument();
+            var luceneDocument = document.ToLuceneDocument();
+            var idField = luceneDocument.GetField(Document.ID_FIELD_NAME);            
             var id = idField.StringValue();
 
-            Assert.AreEqual<string>(content._id.ToString(), id);
+            Assert.AreEqual<string>(document._id.ToString(), id);
         }
 
-        private static Content CreateContent()
+        private static Document CreateDocument()
         {
-            var content = new Content();
-            content._id = Guid.NewGuid();
-            content._createdTimestamp = DateTime.UtcNow;
+            var document = new Document();
+            document._id = Guid.NewGuid();
+            document._createdTimestamp = DateTime.UtcNow;
 
-            dynamic book = content;
+            dynamic book = document;
             book.Title = "The Hitchhiker's Guide to the Galaxy";
             book.Author = "Douglas Adams";
             book.PublishDate = new DateTime(1979, 10, 12, 12, 0, 0, DateTimeKind.Utc);
@@ -69,27 +69,27 @@ namespace ExpandoDB.Tests
             book.Characters = new Dictionary<string, object> { { "Name", "Arthur Dent" }, { "Character", "Ford Prefect" } };
             book.X = null;
 
-            return content;
+            return document;
         }
 
         [TestMethod]
         [TestCategory("Lucene Index tests")]
-        public void Can_add_contents_and_search()
+        public void Can_add_documents_and_search()
         {
-            var contents = new List<Content>();
+            var documents = new List<Document>();
             for(var i = 0; i < 10; i++)
             {
-                dynamic newContent = CreateContent();                
-                newContent.BookId = 9-i;
+                dynamic newDocument = CreateDocument();                
+                newDocument.BookId = 9-i;
 
-                contents.Add(newContent);
-                _luceneIndex.Insert(newContent);
+                documents.Add(newDocument);
+                _luceneIndex.Insert(newDocument);
                 Thread.Sleep(1200);
                 
             }
 
-            var contentIds = contents.Select(c => c._id.Value).ToList();
-            contentIds.Reverse();
+            var documentIds = documents.Select(c => c._id.Value).ToList();
+            documentIds.Reverse();
 
             _luceneIndex.Refresh();
 
@@ -104,7 +104,7 @@ namespace ExpandoDB.Tests
 
             Assert.AreEqual<int?>(result.ItemCount, 10);
             Assert.AreEqual<int?>(result.ItemCount, result.TotalHits);
-            Assert.IsTrue(result.Items.SequenceEqual(contentIds));
+            Assert.IsTrue(result.Items.SequenceEqual(documentIds));
         }
 
         [TestMethod]

@@ -5,35 +5,35 @@ using System.Linq;
 
 namespace ExpandoDB
 {
-    // TODO: Merge ContentCollectionSchema and IndexSchema
-    public class ContentCollectionSchema : IEquatable<ContentCollectionSchema>
+    // TODO: Merge DocumentCollectionSchema and IndexSchema
+    public class DocumentCollectionSchema : IEquatable<DocumentCollectionSchema>
     {
         public string Name { get; set; }
-        public List<ContentCollectionSchemaField> Fields { get; set; }        
+        public List<DocumentCollectionSchemaField> Fields { get; set; }        
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ContentCollectionSchema"/> class.
+        /// Initializes a new instance of the <see cref="DocumentCollectionSchema"/> class.
         /// </summary>
-        public ContentCollectionSchema()
+        public DocumentCollectionSchema()
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ContentCollectionSchema"/> class.
+        /// Initializes a new instance of the <see cref="DocumentCollectionSchema"/> class.
         /// </summary>
         /// <param name="name">The name.</param>
-        public ContentCollectionSchema(string name)
+        public DocumentCollectionSchema(string name)
         {
             Name = name;
-            Fields = new List<ContentCollectionSchemaField>();
+            Fields = new List<DocumentCollectionSchemaField>();
         }
 
         /// <summary>
-        /// Determines whether the specified <see cref="ContentCollectionSchema" />, is equal to this instance.
+        /// Determines whether the specified <see cref="DocumentCollectionSchema" />, is equal to this instance.
         /// </summary>
-        /// <param name="other">The ContentCollectionSchema to compare against this instance.</param>
+        /// <param name="other">The DocumentCollectionSchema to compare against this instance.</param>
         /// <returns></returns>
-        public bool Equals(ContentCollectionSchema other)
+        public bool Equals(DocumentCollectionSchema other)
         {
             if (other == null)
                 return false;
@@ -58,7 +58,7 @@ namespace ExpandoDB
             if (obj == null)
                 return false;
 
-            var schema = obj as ContentCollectionSchema;
+            var schema = obj as DocumentCollectionSchema;
             if (schema == null)
                 return false;
             else
@@ -73,7 +73,7 @@ namespace ExpandoDB
         /// <returns>
         /// The result of the operator.
         /// </returns>
-        public static bool operator == (ContentCollectionSchema schema1, ContentCollectionSchema schema2)
+        public static bool operator == (DocumentCollectionSchema schema1, DocumentCollectionSchema schema2)
         {            
             if (((object)schema1) == null || ((object)schema2) == null)
                 return Object.Equals(schema1, schema2);
@@ -89,7 +89,7 @@ namespace ExpandoDB
         /// <returns>
         /// The result of the operator.
         /// </returns>
-        public static bool operator !=(ContentCollectionSchema schema1, ContentCollectionSchema schema2)
+        public static bool operator !=(DocumentCollectionSchema schema1, DocumentCollectionSchema schema2)
         {
             if (((object)schema1) == null || ((object)schema2) == null)
                 return !Object.Equals(schema1, schema2);
@@ -110,31 +110,31 @@ namespace ExpandoDB
 
     }
 
-    public class ContentCollectionSchemaField
+    public class DocumentCollectionSchemaField
     {
         public string Name { get; set; }
         public FieldDataType DataType { get; set; }
         public FieldDataType ArrayElementDataType { get; set; }
-        public ContentCollectionSchema ObjectSchema { get; set; }        
+        public DocumentCollectionSchema ObjectSchema { get; set; }        
     }
 
-    public static class ContentCollectionSchemaUtil
+    public static class DocumentCollectionSchemaUtil
     {
-        public static ContentCollectionSchema ToContentCollectionSchema(this IndexSchema fromSchema)
+        public static DocumentCollectionSchema ToDocumentCollectionSchema(this IndexSchema fromSchema)
         {
             if (fromSchema == null)
                 return null;
 
-            var toSchema = new ContentCollectionSchema(fromSchema.Name);
+            var toSchema = new DocumentCollectionSchema(fromSchema.Name);
             foreach (var fieldName in fromSchema.Fields.Keys)
             {
                 var field = fromSchema.Fields[fieldName];
-                var toSchemaField = new ContentCollectionSchemaField
+                var toSchemaField = new DocumentCollectionSchemaField
                 {
                     Name = field.Name,
                     DataType = field.DataType,
                     ArrayElementDataType = field.ArrayElementDataType,
-                    ObjectSchema = field.ObjectSchema.ToContentCollectionSchema()
+                    ObjectSchema = field.ObjectSchema.ToDocumentCollectionSchema()
                 };
 
                 toSchema.Fields.Add(toSchemaField);
@@ -148,7 +148,7 @@ namespace ExpandoDB
         /// Gets the IndexSchema based on the IndexedFields of this instance.
         /// </summary>
         /// <returns></returns>
-        public static IndexSchema ToIndexSchema(this ContentCollectionSchema fromSchema)
+        public static IndexSchema ToIndexSchema(this DocumentCollectionSchema fromSchema)
         {
             if (fromSchema == null)
                 return null;

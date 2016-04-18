@@ -8,7 +8,7 @@ namespace ExpandoDB.Rest.DTO
     /// <seealso cref="ExpandoDB.Rest.DTO.ResponseDto" />
     public class SchemaResponseDto : ResponseDto
     {          
-        public ContentCollectionSchema schema { get; set; }
+        public DocumentCollectionSchema schema { get; set; }
     }
 
     /// <summary>
@@ -17,6 +17,6 @@ namespace ExpandoDB.Rest.DTO
     /// <seealso cref="ExpandoDB.Rest.DTO.ResponseDto" />
     public class DatabaseSchemaResponseDto : ResponseDto
     {
-        public List<ContentCollectionSchema> schemas { get; set; }
+        public List<DocumentCollectionSchema> schemas { get; set; }
     }
 }

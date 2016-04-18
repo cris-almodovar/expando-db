@@ -17,8 +17,8 @@ using java.util;
 namespace ExpandoDB.Search
 {
     /// <summary>
-    /// Annotates a sequence of <see cref="Content"/> objects by adding a <b>_highlight</b> field;
-    /// the <b>_highlight</b> field will contain the best matching text fragment from the <see cref="Content"/> 
+    /// Annotates a sequence of <see cref="Document"/> objects by adding a <b>_highlight</b> field;
+    /// the <b>_highlight</b> field will contain the best matching text fragment from the <see cref="Document"/> 
     /// object's full-text field.
     /// </summary>
     public static class LuceneHighlighter
@@ -37,16 +37,16 @@ namespace ExpandoDB.Search
         }
 
         /// <summary>
-        /// Annotates the given sequence of <see cref="Content"/> objects by adding a <b>_highlight</b> field;
-        /// the <b>_highlight</b> field will contain the best matching text fragment from the <see cref="Content"/> 
+        /// Annotates the given sequence of <see cref="Document"/> objects by adding a <b>_highlight</b> field;
+        /// the <b>_highlight</b> field will contain the best matching text fragment from the <see cref="Document"/> 
         /// object's full-text field.
         /// </summary>
-        /// <param name="hits">The sequence of <see cref="Content"/> objects.</param>
+        /// <param name="hits">The sequence of <see cref="Document"/> objects.</param>
         /// <param name="criteria">The search criteria that produced the hits.</param>
         /// <returns>
-        /// The original sequence of Content objects, with a <b>_highlight</b> field added to each Content.
+        /// The original sequence of Document objects, with a <b>_highlight</b> field added to each Document.
         /// </returns>
-        public static IEnumerable<Content> GenerateHighlights(this IEnumerable<Content> hits, SearchCriteria criteria)
+        public static IEnumerable<Document> GenerateHighlights(this IEnumerable<Document> hits, SearchCriteria criteria)
         {
             if (hits == null)
                 throw new ArgumentNullException(nameof(hits));
@@ -55,7 +55,7 @@ namespace ExpandoDB.Search
             if (String.IsNullOrWhiteSpace(criteria.Query))
                 throw new ArgumentException("SearchCriteria.Query cannot be empty");
 
-            var contents = hits.ToList();
+            var documents = hits.ToList();
             try
             {
                 var indexDirectory = new RAMDirectory();
@@ -63,8 +63,8 @@ namespace ExpandoDB.Search
                 var config = new IndexWriterConfig(analyzer);
                 var writer = new IndexWriter(indexDirectory, config);
 
-                BuidIndex(contents, writer);
-                GenerateHighlights(contents, writer, criteria);
+                BuidIndex(documents, writer);
+                GenerateHighlights(documents, writer, criteria);
 
                 writer.DeleteAll();
                 writer.Commit();
@@ -76,12 +76,12 @@ namespace ExpandoDB.Search
                 _log.Error(ex);
             }
 
-            return contents;
+            return documents;
         }
 
-        private static void GenerateHighlights(IList<Content> contents, IndexWriter writer, SearchCriteria criteria)
+        private static void GenerateHighlights(IList<Document> documents, IndexWriter writer, SearchCriteria criteria)
         {
-            var contentHightlightMap = contents.ToDictionary(c => c._id.ToString());
+            var documentHightlightMap = documents.ToDictionary(c => c._id.ToString());
 
             var reader = DirectoryReader.Open(writer, true);            
             var queryParser = new HighlighterQueryParser(writer.GetAnalyzer());
@@ -94,33 +94,33 @@ namespace ExpandoDB.Search
             var fieldQuery = highlighter.GetFieldQuery(query);
 
             var searcher = new IndexSearcher(reader);
-            var topFieldDocs = searcher.Search(query, contents.Count, Sort.RELEVANCE);
+            var topFieldDocs = searcher.Search(query, documents.Count, Sort.RELEVANCE);
             var scoreDocs = topFieldDocs.ScoreDocs;
 
             foreach (var sd in scoreDocs)
             {
                 var bestFragment = highlighter.GetBestFragment(fieldQuery, reader, sd.Doc, LuceneExtensions.FULL_TEXT_FIELD_NAME, 150);
                 var document = searcher.Doc(sd.Doc);
-                var docId = document.Get(Content.ID_FIELD_NAME);
+                var docId = document.Get(Document.ID_FIELD_NAME);
 
-                if (contentHightlightMap.ContainsKey(docId))
+                if (documentHightlightMap.ContainsKey(docId))
                 {
-                    var dictionary = contentHightlightMap[docId].AsDictionary();
+                    var dictionary = documentHightlightMap[docId].AsDictionary();
                     dictionary[HIGHLIGHT_FIELD_NAME] = bestFragment;
                 }
             }            
         }        
 
-        private static void BuidIndex(IEnumerable<Content> hits, IndexWriter writer)
+        private static void BuidIndex(IEnumerable<Document> hits, IndexWriter writer)
         {
-            foreach (var content in hits)
+            foreach (var document in hits)
             {
-                var doc = new Document();
+                var doc = new FlexLucene.Document.Document();
 
-                var idField = new StringField(Content.ID_FIELD_NAME, content._id.ToString(), FieldStore.YES);
+                var idField = new StringField(Document.ID_FIELD_NAME, document._id.ToString(), FieldStore.YES);
                 doc.Add(idField);
 
-                var fullTextField = new Field(LuceneExtensions.FULL_TEXT_FIELD_NAME, content.ToLuceneFullTextString(), ExtendedTextFieldType);
+                var fullTextField = new Field(LuceneExtensions.FULL_TEXT_FIELD_NAME, document.ToLuceneFullTextString(), ExtendedTextFieldType);
                 doc.Add(fullTextField);
 
                 writer.AddDocument(doc);
