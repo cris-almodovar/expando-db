@@ -103,10 +103,10 @@ namespace ExpandoDB
         ///// <returns>
         ///// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
         ///// </returns>
-        //public override int GetHashCode()
-        //{
-        //    return Name.GetHashCode() + IndexedFields.GetHashCode();
-        //}        
+        public override int GetHashCode()
+        {
+            return DynamicSerializer.Serialize(this).GetHashCode();
+        }        
 
     }
 
