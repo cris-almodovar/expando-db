@@ -278,8 +278,8 @@ namespace ExpandoDB.Rest
                 throw new ArgumentException("id cannot be Guid.Empty");
 
             var collection = _db[collectionName];
-            var count = collection.Count(new SearchCriteria { Query = $"{Document.ID_FIELD_NAME}: {guid}" });
-            if (count == 0)
+            var existingDoc = await collection.GetAsync(guid);
+            if (existingDoc == null)
                 return HttpStatusCode.NotFound;
 
             var excludedFields = new[] { "collection", "id" };
@@ -289,6 +289,10 @@ namespace ExpandoDB.Rest
 
             var document = new Document(dictionary);
             document._id = guid;
+
+            if (document._modifiedTimestamp != null && document._modifiedTimestamp != existingDoc._modifiedTimestamp)            
+                throw new InvalidOperationException("The document was modified by another user or process.");            
+
             var affected = await collection.UpdateAsync(document).ConfigureAwait(false);
 
             stopwatch.Stop();
