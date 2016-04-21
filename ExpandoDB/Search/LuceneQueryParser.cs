@@ -46,19 +46,19 @@ namespace ExpandoDB.Search
                 case FieldDataType.Number:
                     var number1 = part1.ToLuceneDouble();
                     var number2 = part2.ToLuceneDouble();
-                    query = NumericRangeQuery.NewDoubleRange(fieldName, number1, number2, startInclusive, endInclusive);
+                    query = LegacyNumericRangeQuery.NewDoubleRange(fieldName, number1, number2, startInclusive, endInclusive);
                     break;
 
                 case FieldDataType.DateTime:
                     var ticks1 = part1.ToLuceneDateTimeTicks();
                     var ticks2 = part2.ToLuceneDateTimeTicks();
-                    query = NumericRangeQuery.NewLongRange(fieldName, ticks1, ticks2, startInclusive, endInclusive);
+                    query = LegacyNumericRangeQuery.NewLongRange(fieldName, ticks1, ticks2, startInclusive, endInclusive);
                     break;
 
                 case FieldDataType.Boolean:
                     var numericBool1 = part1.ToLuceneNumericBoolean();
                     var numericBool2 = part2.ToLuceneNumericBoolean();
-                    query = NumericRangeQuery.NewIntRange(fieldName, numericBool1, numericBool2, startInclusive, endInclusive);
+                    query = LegacyNumericRangeQuery.NewIntRange(fieldName, numericBool1, numericBool2, startInclusive, endInclusive);
                     break;
 
                 case FieldDataType.Guid:
@@ -80,7 +80,7 @@ namespace ExpandoDB.Search
             {
                 // Special case: searching for null value
                 var nullFieldName = fieldName.ToNullFieldName();
-                return NumericRangeQuery.NewIntRange(nullFieldName, _indexNullValue, _indexNullValue, true, true);
+                return LegacyNumericRangeQuery.NewIntRange(nullFieldName, _indexNullValue, _indexNullValue, true, true);
             }
             else
             {
@@ -89,17 +89,17 @@ namespace ExpandoDB.Search
                 {
                     case FieldDataType.Number:
                         var number = queryText.ToLuceneDouble();
-                        query = NumericRangeQuery.NewDoubleRange(fieldName, number, number, true, true);
+                        query = LegacyNumericRangeQuery.NewDoubleRange(fieldName, number, number, true, true);
                         break;
 
                     case FieldDataType.DateTime:
                         var ticks = queryText.ToLuceneDateTimeTicks();
-                        query = NumericRangeQuery.NewLongRange(fieldName, ticks, ticks, true, true);
+                        query = LegacyNumericRangeQuery.NewLongRange(fieldName, ticks, ticks, true, true);
                         break;
 
                     case FieldDataType.Boolean:
                         var numericBool = queryText.ToLuceneNumericBoolean();
-                        query = NumericRangeQuery.NewIntRange(fieldName, numericBool, numericBool, true, true);
+                        query = LegacyNumericRangeQuery.NewIntRange(fieldName, numericBool, numericBool, true, true);
                         break;
 
                     case FieldDataType.Guid:
