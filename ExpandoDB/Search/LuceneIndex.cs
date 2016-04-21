@@ -64,13 +64,14 @@ namespace ExpandoDB.Search
             _writerLockTimeoutMilliseconds = Convert.ToInt64(Double.Parse(ConfigurationManager.AppSettings["LuceneWriterLockTimeoutSeconds"] ?? "1") * 1000);            
 
             var config = new IndexWriterConfig(_compositeAnalyzer)
+                            .SetOpenMode(IndexWriterConfigOpenMode.CREATE_OR_APPEND)
                             .SetRAMBufferSizeMB(_ramBufferSizeMB)
-                            .SetWriteLockTimeout(_writerLockTimeoutMilliseconds)
+                            //.SetWriteLockTimeout(_writerLockTimeoutMilliseconds)  // TODO: Remove from config
                             .SetCommitOnClose(true);
             
             _writer = new IndexWriter(_indexDirectory, config);            
 
-            _searcherManager = new SearcherManager(_writer, true, null);            
+            _searcherManager = new SearcherManager(_writer, true, false, null);    // TODO: Add to config - applyAllDeletes        
 
             _refreshIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["LuceneRefreshIntervalSeconds"] ?? "0.5");    
             _commitIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["LuceneCommitIntervalSeconds"] ?? "60");

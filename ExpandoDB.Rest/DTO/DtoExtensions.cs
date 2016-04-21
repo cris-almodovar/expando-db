@@ -31,7 +31,7 @@ namespace ExpandoDB.Rest.DTO
         }
 
         /// <summary>
-        /// Converts the given <see cref="CountRequestDto" to a <see cref="SearchCriteria"/> object./>
+        /// Converts the given <see cref="CountRequestDto"/> to a <see cref="SearchCriteria"/> object./>
         /// </summary>
         /// <param name="dto">The CountRequestDto object.</param>
         /// <returns></returns>
@@ -118,7 +118,7 @@ namespace ExpandoDB.Rest.DTO
         }
 
         /// <summary>
-        /// Converts the given comma-separated string to an IList<string>.
+        /// Converts the given comma-separated string to an IList
         /// </summary>
         /// <param name="csvString">The CSV string.</param>
         /// <returns></returns>

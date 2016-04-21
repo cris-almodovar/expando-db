@@ -353,7 +353,7 @@ namespace ExpandoDB
         }
 
         /// <summary>
-        /// Returns the Document as a Dictionary<string, object>.
+        /// Returns the Document as a Dictionary.
         /// </summary>
         /// <returns></returns>
         internal IDictionary<string, object> AsDictionary()

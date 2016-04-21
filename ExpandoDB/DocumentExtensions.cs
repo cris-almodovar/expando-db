@@ -199,7 +199,7 @@ namespace ExpandoDB
         /// <summary>
         /// Deserializes the JSON results .
         /// </summary>
-        /// <param name="jsonResults">The json results.</param>
+        /// <param name="rows">The rows.</param>
         /// <returns></returns>
         internal static EnumerableDocuments ToEnumerableDocuments(this IEnumerable<StorageRow> rows)
         {

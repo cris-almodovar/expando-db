@@ -71,7 +71,7 @@ namespace ExpandoDB
             }
 
             _schemaPersistenceIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["SchemaPersistenceIntervalSeconds"] ?? "1");
-            _schemaPersistenceTimer = new Timer( async (o) => await PersistSchemas(), null, TimeSpan.FromSeconds(_schemaPersistenceIntervalSeconds), TimeSpan.FromSeconds(_schemaPersistenceIntervalSeconds));
+            _schemaPersistenceTimer = new Timer( o => PersistSchemas().Wait(), null, TimeSpan.FromSeconds(_schemaPersistenceIntervalSeconds), TimeSpan.FromSeconds(_schemaPersistenceIntervalSeconds));
 
         }
 

@@ -393,7 +393,7 @@ namespace ExpandoDB.Search
                 case TypeCode.Object:
                     if (type == typeof(Guid) || type == typeof(Guid?))
                     {
-                        buffer.AppendFormat("{0}\r\n", ((Guid)value).ToString());
+                        buffer.AppendFormat("{0}\r\n", ((Guid)value));
                     }
                     else if (value is IList)
                     {
@@ -460,14 +460,14 @@ namespace ExpandoDB.Search
         /// Adds a Number field to the given list of Lucene fields.
         /// </summary>
         /// <param name="luceneFields">The lucene fields.</param>
-        /// <param name="fieldName">Name of the field.</param>
-        /// <param name="value">The value.</param>           
+        /// <param name="indexedField">The indexed field.</param>
+        /// <param name="value">The value.</param>
         private static void AddNumberField(this List<Field> luceneFields, IndexedField indexedField, object value)
         {
             var doubleValue = Convert.ToDouble(value);
             var fieldName = indexedField.Name.Trim();
 
-            luceneFields.Add(new DoubleField(fieldName, doubleValue, FieldStore.NO));
+            luceneFields.Add(new LegacyDoubleField(fieldName, doubleValue, FieldStore.NO));
 
             // Only top-level and non-array fields are sortable
             if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
@@ -489,7 +489,7 @@ namespace ExpandoDB.Search
             var intValue = (bool)value ? 1 : 0;
             var fieldName = indexedField.Name.Trim();
 
-            luceneFields.Add(new IntField(fieldName, intValue, FieldStore.NO));
+            luceneFields.Add(new LegacyIntField(fieldName, intValue, FieldStore.NO)); 
 
             // Only top-level and non-array fields are sortable
             if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
@@ -533,7 +533,7 @@ namespace ExpandoDB.Search
             var dateTimeTicks = dateTimeValue.Ticks;
             var fieldName = indexedField.Name.Trim();
 
-            luceneFields.Add(new LongField(fieldName, dateTimeTicks, FieldStore.NO));
+            luceneFields.Add(new LegacyLongField(fieldName, dateTimeTicks, FieldStore.NO));
 
             // Only top-level and non-array fields are sortable
             if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
@@ -574,7 +574,7 @@ namespace ExpandoDB.Search
         private static void AddNullField(this List<Field> luceneFields, IndexedField indexedField)
         {
             var fieldName = indexedField.Name.Trim().ToNullFieldName();
-            luceneFields.Add(new IntField(fieldName, INDEX_NULL_VALUE, FieldStore.NO));            
+            luceneFields.Add(new LegacyIntField(fieldName, INDEX_NULL_VALUE, FieldStore.NO));            
         }
     }
 }
