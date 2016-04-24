@@ -217,5 +217,19 @@ namespace ExpandoDB
             var json = DynamicSerializer.Serialize(document);
             return json;
         }
+
+        /// <summary>
+        /// Clones the Document object to a Dictionary object.
+        /// </summary>
+        /// <param name="document">The document.</param>
+        /// <returns></returns>        
+        public static IDictionary<string, object> ToDictionary(this Document document)
+        {
+            if (document == null)
+                throw new ArgumentNullException(nameof(document));
+
+            var dictionary = new Dictionary<string, object>(document.AsDictionary());
+            return dictionary;
+        }
     }
 }
