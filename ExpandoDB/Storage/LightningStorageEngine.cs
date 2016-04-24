@@ -136,8 +136,7 @@ namespace ExpandoDB.Storage
 
             foreach (var operation in _writeOperationsQueue.GetConsumingEnumerable(_cancellationToken))
             {
-                var tcs = operation.TaskCompletionSource;
-                var result = 0;
+                var tcs = operation.TaskCompletionSource;                
                 try
                 {
                     using (var tx = _environment.BeginTransaction())
@@ -148,6 +147,7 @@ namespace ExpandoDB.Storage
                             {
                                 var key = operation.KeyValue.Key;
                                 var value = operation.KeyValue.Value;
+                                var result = 0;
 
                                 switch (operation.Type)
                                 {
