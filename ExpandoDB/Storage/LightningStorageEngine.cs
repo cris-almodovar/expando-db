@@ -142,41 +142,49 @@ namespace ExpandoDB.Storage
                 {
                     using (var tx = _environment.BeginTransaction())
                     {
-                        using (var db = tx.OpenDatabase(operation.Database, dbConfig))
+                        try
                         {
-                            var key = operation.KeyValue.Key;
-                            var value = operation.KeyValue.Value;                       
-
-                            switch (operation.Type)
+                            using (var db = tx.OpenDatabase(operation.Database, dbConfig))
                             {
-                                case WriteOperationType.Put:     // Insert or Update                                
-                                    tx.Put(db, key, value);
-                                    result = 1;                                  
-                                    break;                                
+                                var key = operation.KeyValue.Key;
+                                var value = operation.KeyValue.Value;
 
-                                case WriteOperationType.Delete:
-                                    var deletedCount = 0;
-                                    foreach (var delKey in operation.Keys)
-                                        if (tx.ContainsKey(db, delKey))
-                                        {
-                                            tx.Delete(db, delKey);
-                                            deletedCount += 1;
-                                        };
+                                switch (operation.Type)
+                                {
+                                    case WriteOperationType.Put:     // Insert or Update                                
+                                        tx.Put(db, key, value);
+                                        result = 1;
+                                        break;
 
-                                    result = deletedCount;                                  
-                                    break;
+                                    case WriteOperationType.Delete:
+                                        var deletedCount = 0;
+                                        foreach (var delKey in operation.Keys)
+                                            if (tx.ContainsKey(db, delKey))
+                                            {
+                                                tx.Delete(db, delKey);
+                                                deletedCount += 1;
+                                            };
 
-                                case WriteOperationType.DropDatabase:
-                                    tx.DropDatabase(db);
-                                    result = 1;
-                                    break;
+                                        result = deletedCount;
+                                        break;
 
-                                default:
-                                    throw new InvalidOperationException($"Invalid Lightning DbOperationType: {operation.Type}");
+                                    case WriteOperationType.DropDatabase:
+                                        tx.DropDatabase(db);
+                                        result = 1;
+                                        break;
+
+                                    default:
+                                        throw new InvalidOperationException($"Invalid Lightning DbOperationType: {operation.Type}");
+                                }
+
+                                tx.Commit();
+                                tcs.SetResult(result);
                             }
-
-                            tx.Commit();
-                            tcs.SetResult(result);
+                        }
+                        catch 
+                        {                            
+                            tx.Abort();
+                            throw;
                         }
                     }
                 }
