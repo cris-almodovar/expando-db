@@ -206,6 +206,10 @@ namespace ExpandoDB
             return new EnumerableDocuments(rows);
         }
 
+        internal static EnumerableDocuments ToEnumerableDocuments(this IEnumerable<LightningKeyValue> rows)
+        {
+            return new EnumerableDocuments(rows);
+        }
 
         /// <summary>
         /// Serializes the Document object to a JSON string.

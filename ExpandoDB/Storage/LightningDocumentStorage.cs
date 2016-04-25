@@ -22,46 +22,7 @@ namespace ExpandoDB.Storage
         {
             _collectionName = collectionName;
             _storageEngine = storageEngine;
-        }
-
-        public Task<int> DeleteAsync(IList<Guid> guids)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<int> DeleteAsync(Guid guid)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task DropAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<bool> ExistsAsync(Guid guid)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<IEnumerable<Document>> GetAsync(IList<Guid> guids)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<Document> GetAsync(Guid guid)
-        {
-            if (guid == Guid.Empty)
-                throw new ArgumentException("guid cannot be empty");
-            
-            var key = Encoding.UTF8.GetBytes(guid.ToString()); 
-            var kv = await _storageEngine.GetAsync(_collectionName, key).ConfigureAwait(false);
-            
-            if (kv == null)
-                return null;
-
-            return kv.ToDocument();            
-        }
+        }                    
 
         public async Task<Guid> InsertAsync(Document document)
         {
@@ -75,15 +36,58 @@ namespace ExpandoDB.Storage
             document.ConvertDatesToUtc();
 
             var kv = document.ToKeyValue();
-            await _storageEngine.InsertAsync(_collectionName, kv);
+            await _storageEngine.InsertAsync(_collectionName, kv).ConfigureAwait(false);
             return document._id.Value;            
+        }
+
+        public async Task<Document> GetAsync(Guid guid)
+        {
+            if (guid == Guid.Empty)
+                throw new ArgumentException("guid cannot be empty");
+
+            var key = guid.ToByteArray();
+            var kv = await _storageEngine.GetAsync(_collectionName, key).ConfigureAwait(false);
+
+            if (kv == null)
+                return null;
+
+            return kv.ToDocument();
+        }
+
+        public async Task<IEnumerable<Document>> GetAsync(IList<Guid> guids)
+        {
+            if (guids == null)
+                throw new ArgumentNullException(nameof(guids));
+
+            var keys = guids.Select(g => g.ToByteArray()).ToList();
+            var keyValuePairs = await _storageEngine.GetAsync(_collectionName, keys).ConfigureAwait(false);
+
+            return keyValuePairs.ToEnumerableDocuments();
         }
 
         public Task<int> UpdateAsync(Document document)
         {
             throw new NotImplementedException();
+        }        
+
+        public Task<int> DeleteAsync(Guid guid)
+        {
+            throw new NotImplementedException();
         }
+
+        public Task<int> DeleteAsync(IList<Guid> guids)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> ExistsAsync(Guid guid)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task DropAsync()
+        {
+            throw new NotImplementedException();
+        }        
     }
-
-
 }

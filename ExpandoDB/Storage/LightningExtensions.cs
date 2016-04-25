@@ -80,10 +80,10 @@ namespace ExpandoDB.Storage
         public static LightningKeyValue ToKeyValue(this Document document)
         {
             if (document == null)
-                throw new ArgumentNullException(nameof(document));           
+                throw new ArgumentNullException(nameof(document));
 
-            var key = Encoding.UTF8.GetBytes(document._id.ToString());
-            var value = document.ToCompressedBytes();
+            var key = document._id.Value.ToByteArray();
+            var value = document.ToCompressedByteArray();
 
             return new LightningKeyValue { Key = key, Value = value };
         }  
@@ -96,7 +96,7 @@ namespace ExpandoDB.Storage
             return kv.Value.ToDocument();
         }      
 
-        public static byte[] ToCompressedBytes(this Document document)
+        public static byte[] ToCompressedByteArray(this Document document)
         {
             if (document == null)
                 throw new ArgumentNullException(nameof(document));

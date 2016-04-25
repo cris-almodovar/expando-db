@@ -9,7 +9,8 @@ namespace ExpandoDB.Storage
     /// </summary>
     public class EnumerableDocuments : IEnumerable<Document>
     {
-        private IEnumerable<StorageRow> _rows;
+        private readonly IEnumerable<StorageRow> _rows;
+        private readonly IEnumerable<LightningKeyValue> _keyValuePairs;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EnumerableDocuments"/> class.
@@ -24,6 +25,18 @@ namespace ExpandoDB.Storage
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="EnumerableDocuments"/> class.
+        /// </summary>
+        /// <param name="keyValuePairs">The list of key-value pairs</param>
+        public EnumerableDocuments(IEnumerable<LightningKeyValue> keyValuePairs)
+        {
+            if (keyValuePairs == null)
+                throw new ArgumentNullException(nameof(keyValuePairs));
+
+            _keyValuePairs = keyValuePairs;
+        }
+
+        /// <summary>
         /// Returns an enumerator that iterates through the collection.
         /// </summary>
         /// <returns>
@@ -31,8 +44,12 @@ namespace ExpandoDB.Storage
         /// </returns>
         public IEnumerator<Document> GetEnumerator()
         {
-            foreach (var row in _rows)           
-                yield return row.ToDocument();            
+            if (_keyValuePairs != null)
+                foreach (var kv in _keyValuePairs)
+                    yield return kv.ToDocument();
+            else
+                foreach (var row in _rows)           
+                    yield return row.ToDocument();            
         }
 
         /// <summary>
