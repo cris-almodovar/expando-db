@@ -31,6 +31,9 @@ namespace ExpandoDB.Storage
                 typeof(Guid),
                 typeof(DateTime),
                 typeof(bool),
+                typeof(Dictionary<string, object>),
+                typeof(IDictionary<string, object>),
+
                 typeof(List<object>),                
                 typeof(List<string>),                
                 typeof(List<double>),                
@@ -41,6 +44,9 @@ namespace ExpandoDB.Storage
                 typeof(List<Guid>),
                 typeof(List<DateTime>),
                 typeof(List<bool>),
+                typeof(List<Dictionary<string, object>>),
+                typeof(List<IDictionary<string, object>>),
+
                 typeof(IList<object>),
                 typeof(IList<string>),
                 typeof(IList<double>),
@@ -51,6 +57,9 @@ namespace ExpandoDB.Storage
                 typeof(IList<Guid>),
                 typeof(IList<DateTime>),
                 typeof(IList<bool>),
+                typeof(IList<Dictionary<string, object>>),
+                typeof(IList<IDictionary<string, object>>),
+
                 typeof(object[]),
                 typeof(string[]),
                 typeof(double[]),
@@ -60,27 +69,9 @@ namespace ExpandoDB.Storage
                 typeof(decimal[]),
                 typeof(Guid[]),
                 typeof(DateTime[]),
-                typeof(bool[]),
-                typeof(Dictionary<string, object>),
-                typeof(Dictionary<string, string>),
-                typeof(Dictionary<string, double>),
-                typeof(Dictionary<string, float>),
-                typeof(Dictionary<string, int>),
-                typeof(Dictionary<string, long>),
-                typeof(Dictionary<string, decimal>),
-                typeof(Dictionary<string, Guid>),
-                typeof(Dictionary<string, DateTime>),
-                typeof(Dictionary<string, bool>),
-                typeof(IDictionary<string, object>),
-                typeof(IDictionary<string, string>),
-                typeof(IDictionary<string, double>),
-                typeof(IDictionary<string, float>),
-                typeof(IDictionary<string, int>),
-                typeof(IDictionary<string, long>),
-                typeof(IDictionary<string, decimal>),
-                typeof(IDictionary<string, Guid>),
-                typeof(IDictionary<string, DateTime>),
-                typeof(IDictionary<string, bool>)
+                typeof(bool[]),                
+                typeof(Dictionary<string, object>[]),
+                typeof(IDictionary<string, object>[])
             };
             
             _serializer = new NetSerializer.Serializer(supportedTypes);
