@@ -78,7 +78,7 @@ namespace ExpandoDB.Storage
             else
                 operation.TaskCompletionSource.TrySetCanceled();
 
-            var result = await operation.TaskCompletionSource.Task;
+            var result = await operation.TaskCompletionSource.Task.ConfigureAwait(false);
             return result;
         }
 
@@ -90,7 +90,7 @@ namespace ExpandoDB.Storage
         /// <returns></returns>
         public async Task<int> InsertAsync(string database, LightningKeyValue kv)
         {
-            return await InsertAsync(database, new[] { kv });
+            return await InsertAsync(database, new[] { kv }).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -117,7 +117,7 @@ namespace ExpandoDB.Storage
             else
                 operation.TaskCompletionSource.TrySetCanceled();
 
-            var result = await operation.TaskCompletionSource.Task;
+            var result = await operation.TaskCompletionSource.Task.ConfigureAwait(false);
             return result;
         }
 
@@ -129,7 +129,7 @@ namespace ExpandoDB.Storage
         /// <returns></returns>
         public async Task<int> UpdateAsync(string database, LightningKeyValue kv)
         {
-            return await UpdateAsync(database, new[] { kv });
+            return await UpdateAsync(database, new[] { kv }).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -156,7 +156,7 @@ namespace ExpandoDB.Storage
             else
                 operation.TaskCompletionSource.TrySetCanceled();
 
-            var result = await operation.TaskCompletionSource.Task;
+            var result = await operation.TaskCompletionSource.Task.ConfigureAwait(false);
             return result;
         }
 
@@ -168,7 +168,7 @@ namespace ExpandoDB.Storage
         /// <returns></returns>
         public async Task<int> DeleteAsync(string database, byte[] key)
         {
-            return await DeleteAsync(database, new[] { key });
+            return await DeleteAsync(database, new[] { key }).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -193,7 +193,7 @@ namespace ExpandoDB.Storage
             else
                 operation.TaskCompletionSource.TrySetCanceled();
 
-            var result = await operation.TaskCompletionSource.Task;
+            var result = await operation.TaskCompletionSource.Task.ConfigureAwait(false);
             return result;
         }
 
