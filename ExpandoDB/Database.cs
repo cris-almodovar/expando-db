@@ -25,10 +25,10 @@ namespace ExpandoDB
         internal const string DB_DIRECTORY_NAME = "db";
         internal const string INDEX_DIRECTORY_NAME = "index";
 
-        private readonly string _dbPath;        
-        private readonly string _dbFilePath;
+        private readonly string _dbPath;                
         private readonly string _indexPath;
         private readonly ConcurrentDictionary<string, DocumentCollection> _documentCollections;
+        private readonly LightningStorageEngine _storageEngine;
         private readonly ISchemaStorage _schemaStorage;
         private readonly ConcurrentDictionary<string, DocumentCollectionSchema> _schemaCache;
         private readonly Timer _schemaPersistenceTimer;
@@ -37,7 +37,7 @@ namespace ExpandoDB
         private readonly ILog _log = LogManager.GetLogger(typeof(Database).Name);
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Database"/> class.
+        /// Initializes a new instance of the <see cref="Database" /> class.
         /// </summary>
         /// <param name="dbPath">The database directory path.</param>
         public Database(string dbPath = null)
@@ -49,14 +49,15 @@ namespace ExpandoDB
             }
 
             _dbPath = dbPath;
-            _dbFilePath = Path.Combine(_dbPath, DB_FILENAME);
-            EnsureDatabaseDirectoryExists(_dbPath, _dbFilePath);
+            //_dbFilePath = Path.Combine(_dbPath, DB_FILENAME);
+            //EnsureDatabaseDirectoryExists(_dbPath, _dbFilePath);
 
             _indexPath = Path.Combine(_dbPath, INDEX_DIRECTORY_NAME);
             EnsureIndexDirectoryExists(_indexPath);
 
             _documentCollections = new ConcurrentDictionary<string, DocumentCollection>();
-            _schemaStorage = new SQLiteSchemaStorage(_dbFilePath);
+            _storageEngine = new LightningStorageEngine(_dbPath);
+            _schemaStorage = new LightningSchemaStorage(_storageEngine);
 
             var schemas = _schemaStorage.GetAllAsync().Result.ToDictionary(cs => cs.Name);
             if (schemas != null && schemas.Count > 0)
@@ -66,7 +67,7 @@ namespace ExpandoDB
 
             foreach (var schema in _schemaCache.Values)
             {
-                var collection = new DocumentCollection(schema, _dbPath);
+                var collection = new DocumentCollection(schema, _storageEngine);
                 _documentCollections.TryAdd(schema.Name, collection);
             }
 
@@ -172,7 +173,7 @@ namespace ExpandoDB
                 DocumentCollection collection = null;
                 if (!_documentCollections.TryGetValue(name, out collection))
                 {
-                    collection = new DocumentCollection(name, _dbPath);
+                    collection = new DocumentCollection(name, _storageEngine);
                     _documentCollections.TryAdd(name, collection);
                 }
 

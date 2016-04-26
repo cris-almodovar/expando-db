@@ -14,7 +14,7 @@ namespace ExpandoDB.Tests
     public class CollectionTests
     {
         private string _appPath;
-        private string _dbPath;       
+        private string _dbPath;        
         private DocumentCollection _collection;
 
         [TestInitialize]
@@ -26,7 +26,9 @@ namespace ExpandoDB.Tests
             if (Directory.Exists(_dbPath))
                 Directory.Delete(_dbPath, true); 
 
-            _collection = new DocumentCollection("books", _dbPath);
+
+
+           // _collection = new DocumentCollection("books", _dbPath);
         }
 
         [TestCleanup]

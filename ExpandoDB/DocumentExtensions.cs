@@ -206,9 +206,9 @@ namespace ExpandoDB
             return new EnumerableDocuments(rows);
         }
 
-        internal static EnumerableDocuments ToEnumerableDocuments(this IEnumerable<LightningKeyValue> rows)
+        internal static EnumerableDocuments ToEnumerableDocuments(this IEnumerable<LightningKeyValue> keyValuePairs)
         {
-            return new EnumerableDocuments(rows);
+            return new EnumerableDocuments(keyValuePairs);
         }
 
         /// <summary>

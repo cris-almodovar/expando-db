@@ -6,6 +6,7 @@ using System.Linq;
 namespace ExpandoDB
 {
     // TODO: Merge DocumentCollectionSchema and IndexSchema
+    [Serializable]
     public class DocumentCollectionSchema : IEquatable<DocumentCollectionSchema>
     {
         public string Name { get; set; }
@@ -110,6 +111,7 @@ namespace ExpandoDB
 
     }
 
+    [Serializable]
     public class DocumentCollectionSchemaField
     {
         public string Name { get; set; }

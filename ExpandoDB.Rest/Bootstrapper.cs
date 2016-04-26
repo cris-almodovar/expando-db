@@ -78,7 +78,7 @@ namespace ExpandoDB.Rest
                     {
                         // Handle CORS preflight request
                         ctx.Response.Headers["Access-Control-Allow-Methods"] =
-                            "GET, POST, PUT, DELETE, OPTIONS";
+                            "GET, POST, PUT, PATCH, DELETE, OPTIONS";
 
                         if (ctx.Request.Headers.Keys.Contains("Access-Control-Request-Headers"))
                         {

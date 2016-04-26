@@ -7,7 +7,7 @@ namespace ExpandoDB
 {
     /// <summary>
     /// Represents the set of indexed fields for a DocumentCollection.
-    /// </summary>
+    /// </summary>    
     public class IndexSchema
     {
         public string Name { get; set; }
@@ -75,7 +75,7 @@ namespace ExpandoDB
         }
 
     }   
-
+    
     public class IndexedField
     {
         public string Name { get; set; }
@@ -86,6 +86,7 @@ namespace ExpandoDB
         public bool IsArrayElement { get; set; }
     }
 
+    [Serializable]
     public enum FieldDataType
     {       
         Null,      
