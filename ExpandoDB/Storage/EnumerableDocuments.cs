@@ -10,7 +10,7 @@ namespace ExpandoDB.Storage
     public class EnumerableDocuments : IEnumerable<Document>
     {
         private readonly IEnumerable<StorageRow> _rows;
-        private readonly IEnumerable<LightningKeyValue> _keyValuePairs;
+        private readonly IEnumerable<LightningKeyValuePair> _keyValuePairs;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EnumerableDocuments"/> class.
@@ -28,7 +28,7 @@ namespace ExpandoDB.Storage
         /// Initializes a new instance of the <see cref="EnumerableDocuments"/> class.
         /// </summary>
         /// <param name="keyValuePairs">The list of key-value pairs</param>
-        public EnumerableDocuments(IEnumerable<LightningKeyValue> keyValuePairs)
+        public EnumerableDocuments(IEnumerable<LightningKeyValuePair> keyValuePairs)
         {
             if (keyValuePairs == null)
                 throw new ArgumentNullException(nameof(keyValuePairs));

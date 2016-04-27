@@ -179,7 +179,7 @@ namespace ExpandoDB.Storage
         public async Task<bool> ExistsAsync(Guid guid)
         {
             if (guid == Guid.Empty)
-                throw new ArgumentException("guid cannot be empty");
+                throw new ArgumentException("guid cannot be empty");            
             
             var key = guid.ToByteArray();
             var exists = await _storageEngine.ExistsAsync(_collectionName, key).ConfigureAwait(false);

@@ -20,7 +20,10 @@ namespace ExpandoDB.Storage
     {
         private const long MAX_MAP_SIZE = 1000000000000;  // 1 terabyte
         private const int MAX_DATABASES = 100;  // 100 collections/tables; NOTE: Lightning database = RDBMS table
-        private readonly LightningEnvironment _environment;        
+        private const int MAX_READERS = 512;
+        private readonly LightningEnvironment _environment;
+        private readonly ConcurrentDictionary<string, LightningDatabase> _openDatabases;
+        private readonly LightningDatabase _mainDatabase;
         private readonly BlockingCollection<WriteOperation> _writeOperationsQueue;
         private readonly CancellationTokenSource _cancellationTokenSource;
         private readonly CancellationToken _cancellationToken;
@@ -38,14 +41,21 @@ namespace ExpandoDB.Storage
             var config = new EnvironmentConfiguration
             {
                 MaxDatabases = MAX_DATABASES,               
-                MapSize = MAX_MAP_SIZE,
-                //MaxReaders = Environment.ProcessorCount
+                MapSize = MAX_MAP_SIZE,                
+                MaxReaders = MAX_READERS
             };
 
             // NOTE: LightningEnvironment will auto-create 
             // the dbPath directory if it doesn't exist.
             _environment = new LightningEnvironment(dbPath, config);
-            _environment.Open();            
+            _environment.Open();
+
+            _openDatabases = new ConcurrentDictionary<string, LightningDatabase>(); 
+            using (var tx = _environment.BeginTransaction(TransactionBeginFlags.ReadOnly))
+            {
+               _mainDatabase = tx.OpenDatabase();
+                tx.Commit();
+            }         
 
             _writeOperationsQueue = new BlockingCollection<WriteOperation>();
             _cancellationTokenSource = new CancellationTokenSource();
@@ -54,13 +64,28 @@ namespace ExpandoDB.Storage
             Task.Factory.StartNew(() => BackgroundWriter(), TaskCreationOptions.LongRunning);
         }
 
+        private LightningDatabase OpenDatabase(LightningTransaction tx, string database, DatabaseConfiguration dbConfig = null)
+        {
+            if (!_openDatabases.ContainsKey(database))
+            {
+                var dbKey = database.ToByteArray();
+                if (!tx.ContainsKey(_mainDatabase, dbKey) && dbConfig == null)
+                    throw new InvalidOperationException($"Invalid LightningDB database: '{database}'");
+
+                var db = tx.OpenDatabase(database, dbConfig);
+                _openDatabases.TryAdd(database, db);
+            }
+
+            return _openDatabases[database];
+        }
+
         /// <summary>
         /// Inserts the Lightning key-value pairs into the database.
         /// </summary>
         /// <param name="database">The database.</param>
         /// <param name="kvItems">The key-value pairs.</param>
         /// <returns></returns>
-        public async Task<int> InsertAsync(string database, IEnumerable<LightningKeyValue> kvItems)
+        public async Task<int> InsertAsync(string database, IEnumerable<LightningKeyValuePair> kvItems)
         {
             if (_cancellationToken.IsCancellationRequested)
                 return 0;
@@ -69,7 +94,7 @@ namespace ExpandoDB.Storage
             {
                 Type = WriteOperationType.Insert,
                 Database = database,
-                KeyValueItems = kvItems,
+                KeyValuePairs = kvItems,
                 TaskCompletionSource = new TaskCompletionSource<int>()
             };
 
@@ -88,7 +113,7 @@ namespace ExpandoDB.Storage
         /// <param name="database">The database.</param>
         /// <param name="kv">The key-value pairs.</param>
         /// <returns></returns>
-        public async Task<int> InsertAsync(string database, LightningKeyValue kv)
+        public async Task<int> InsertAsync(string database, LightningKeyValuePair kv)
         {
             return await InsertAsync(database, new[] { kv }).ConfigureAwait(false);
         }
@@ -99,7 +124,7 @@ namespace ExpandoDB.Storage
         /// <param name="database">The database.</param>
         /// <param name="kvItems">The key-value pairs.</param>
         /// <returns></returns>
-        public async Task<int> UpdateAsync(string database, IEnumerable<LightningKeyValue> kvItems)
+        public async Task<int> UpdateAsync(string database, IEnumerable<LightningKeyValuePair> kvItems)
         {
             if (_cancellationToken.IsCancellationRequested)
                 return 0;
@@ -108,7 +133,7 @@ namespace ExpandoDB.Storage
             {
                 Type = WriteOperationType.Update,
                 Database = database,
-                KeyValueItems = kvItems,
+                KeyValuePairs = kvItems,
                 TaskCompletionSource = new TaskCompletionSource<int>()
             };
 
@@ -127,7 +152,7 @@ namespace ExpandoDB.Storage
         /// <param name="database">The database.</param>
         /// <param name="kv">The key-value pair.</param>
         /// <returns></returns>
-        public async Task<int> UpdateAsync(string database, LightningKeyValue kv)
+        public async Task<int> UpdateAsync(string database, LightningKeyValuePair kv)
         {
             return await UpdateAsync(database, new[] { kv }).ConfigureAwait(false);
         }
@@ -147,7 +172,7 @@ namespace ExpandoDB.Storage
             {
                 Type = WriteOperationType.Delete,
                 Database = database,
-                KeyValueItems = keys.Select(k => new LightningKeyValue { Key = k }).ToList() ,
+                KeyValuePairs = keys.Select(k => new LightningKeyValuePair { Key = k }).ToList() ,
                 TaskCompletionSource = new TaskCompletionSource<int>()
             };
 
@@ -167,7 +192,7 @@ namespace ExpandoDB.Storage
         /// <param name="key">The key that uniquely identify the key-value pair to be deleted.</param>
         /// <returns></returns>
         public async Task<int> DeleteAsync(string database, byte[] key)
-        {
+        {            
             return await DeleteAsync(database, new[] { key }).ConfigureAwait(false);
         }
 
@@ -200,8 +225,6 @@ namespace ExpandoDB.Storage
 
         private void BackgroundWriter()
         {
-            var dbConfig = new DatabaseConfiguration { Flags = DatabaseOpenFlags.Create };
-
             foreach (var operation in _writeOperationsQueue.GetConsumingEnumerable(_cancellationToken))
             {
                 var tcs = operation.TaskCompletionSource;                
@@ -211,67 +234,68 @@ namespace ExpandoDB.Storage
                     {
                         try
                         {
-                            using (var db = tx.OpenDatabase(operation.Database, dbConfig))
-                            {                                
-                                var result = 0;
-                                switch (operation.Type)
-                                {
-                                    case WriteOperationType.Insert:
-                                        var insertedCount = 0;
-                                        foreach (var item in operation.KeyValueItems)
+                            var db = OpenDatabase(tx, operation.Database, new DatabaseConfiguration { Flags = DatabaseOpenFlags.Create });                                                            
+                            var result = 0;
+
+                            switch (operation.Type)
+                            {
+                                case WriteOperationType.Insert:
+                                    var insertedCount = 0;
+                                    foreach (var item in operation.KeyValuePairs)
+                                    {
+                                        if (tx.ContainsKey(db, item.Key))
+                                            throw new InvalidOperationException("Duplicate key");
+
+                                        tx.Put(db, item.Key, item.Value);
+                                        insertedCount += 1;                                            
+                                    }
+                                    result = insertedCount;
+                                    break;
+
+                                case WriteOperationType.Update:
+                                    var updatedCount = 0;
+                                    foreach (var item in operation.KeyValuePairs)
+                                    {
+                                        if (!tx.ContainsKey(db, item.Key))
+                                            throw new InvalidOperationException("Key does not exist in database.");
+
+                                        tx.Put(db, item.Key, item.Value);
+                                        updatedCount += 1;                                            
+                                    }
+                                    result = updatedCount;
+                                    break;
+
+                                case WriteOperationType.Delete:
+                                    var deletedCount = 0;
+                                    foreach (var item in operation.KeyValuePairs)
+                                        if (tx.ContainsKey(db, item.Key))
                                         {
-                                            if (tx.ContainsKey(db, item.Key))
-                                                throw new InvalidOperationException("Duplicate key");
-                                            
-                                            tx.Put(db, item.Key, item.Value);
-                                            insertedCount += 1;                                            
-                                        }
-                                        result = insertedCount;
-                                        break;
+                                            tx.Delete(db, item.Key);
+                                            deletedCount += 1;
+                                        };
 
-                                    case WriteOperationType.Update:
-                                        var updatedCount = 0;
-                                        foreach (var item in operation.KeyValueItems)
-                                        {
-                                            if (!tx.ContainsKey(db, item.Key))
-                                                throw new InvalidOperationException("Key does not exist in database.");
+                                    result = deletedCount;
+                                    break;
 
-                                            tx.Put(db, item.Key, item.Value);
-                                            updatedCount += 1;                                            
-                                        }
-                                        result = updatedCount;
-                                        break;
+                                case WriteOperationType.DropDatabase:
+                                    tx.DropDatabase(db);
+                                    result = 1;
+                                    break;
 
-                                    case WriteOperationType.Delete:
-                                        var deletedCount = 0;
-                                        foreach (var item in operation.KeyValueItems)
-                                            if (tx.ContainsKey(db, item.Key))
-                                            {
-                                                tx.Delete(db, item.Key);
-                                                deletedCount += 1;
-                                            };
-
-                                        result = deletedCount;
-                                        break;
-
-                                    case WriteOperationType.DropDatabase:
-                                        tx.DropDatabase(db);
-                                        result = 1;
-                                        break;
-
-                                    default:
-                                        throw new InvalidOperationException($"Invalid Lightning DbOperationType: {operation.Type}");
-                                }
-
-                                tx.Commit();
-                                tcs.SetResult(result);
+                                default:
+                                    throw new InvalidOperationException($"Invalid Lightning DbOperationType: {operation.Type}");
                             }
+
+                            tx.Commit();
+                            tcs.SetResult(result);
+                            
                         }
                         catch 
                         {                            
                             tx.Abort();
                             throw;
                         }
+                        Thread.Sleep(10);
                     }
                 }
                 catch (Exception ex)
@@ -283,57 +307,51 @@ namespace ExpandoDB.Storage
         }
 
         private ThreadLocal<LightningTransaction> _readonlyTransaction = new ThreadLocal<LightningTransaction>(true);
-        public async Task<LightningKeyValue> GetAsync(string database, byte[] key)
-        {
-            var result = await Task.Run(() =>
-            { 
-                var tx = GetReadonlyTransaction();
-                var kv = new LightningKeyValue { Key = key };
-
-                using (var db = tx.OpenDatabase(database))
-                {                    
-                    kv.Value = tx.Get(db, key);
-
-                    if (tx.State == LightningTransactionState.Active)
-                        tx.Reset();
-                }                   
-
-                return kv;
-            }
-            );
-            
-            return result;        
-        }
-
-        public async Task<IEnumerable<LightningKeyValue>> GetAsync(string database, IEnumerable<byte[]> keys)
+        public async Task<LightningKeyValuePair> GetAsync(string database, byte[] key)
         {
             var result = await Task.Run(() =>
             {
                 var tx = GetReadonlyTransaction();
-                var dbExists = false;
-                var list = new List<LightningKeyValue>();
+                var db = OpenDatabase(tx, database);
 
-                using (var db = tx.OpenDatabase())
+                var kv = new LightningKeyValuePair
                 {
-                    var dbKey = database.ToByteArray();
-                    dbExists = tx.ContainsKey(db, dbKey);
-                }
+                    Key = key,
+                    Value = tx.Get(db, key)
+                };                
 
-                if (dbExists)
+                if (tx.State == LightningTransactionState.Active)
+                    tx.Reset();
+
+                return kv;
+            }
+            ).ConfigureAwait(false);
+
+            return result;        
+        }
+
+        public async Task<IEnumerable<LightningKeyValuePair>> GetAsync(string database, IEnumerable<byte[]> keys)
+        {
+            var result = await Task.Run(() =>
+            {   
+                var list = new List<LightningKeyValuePair>();
+                var tx = GetReadonlyTransaction();
+
+                if (DbExists(tx, database))
                 {
-                    using (var db = tx.OpenDatabase(database))
+                    var db = OpenDatabase(tx, database);
+
+                    foreach (var key in keys)
                     {
-                        foreach (var key in keys)
+                        var kv = new LightningKeyValuePair
                         {
-                            var kv = new LightningKeyValue
-                            {
-                                Key = key,
-                                Value = tx.Get(db, key)
-                            };
+                            Key = key,
+                            Value = tx.Get(db, key)
+                        };
 
-                            list.Add(kv);
-                        }                        
+                        list.Add(kv);
                     }
+
                 }
 
                 if (tx.State == LightningTransactionState.Active)
@@ -341,37 +359,28 @@ namespace ExpandoDB.Storage
 
                 return list;
             }
-            );
+            ).ConfigureAwait(false);
 
             return result;
         }
 
-        public async Task<IEnumerable<LightningKeyValue>> GetAllAsync(string database)
+        public async Task<IEnumerable<LightningKeyValuePair>> GetAllAsync(string database)
         {
             var result = await Task.Run(() =>
-            {
+            {    
+                var list = new List<LightningKeyValuePair>();
                 var tx = GetReadonlyTransaction();
-                var dbExists = false;
-                var list = new List<LightningKeyValue>();
 
-                using (var db = tx.OpenDatabase())
+                if (DbExists(tx, database))
                 {
-                    var dbKey = database.ToByteArray();
-                    dbExists = tx.ContainsKey(db, dbKey);
-                }
-
-                if (dbExists)
-                {
-                    using (var db = tx.OpenDatabase(database))
+                    var db = OpenDatabase(tx, database);
+                    using (var cursor = tx.CreateCursor(db))
                     {
-                        using (var cursor = tx.CreateCursor(db))
+                        foreach (var item in cursor)
                         {
-                            foreach (var item in cursor)
-                            {
-                                var kv = new LightningKeyValue { Key = item.Key, Value = item.Value };
-                                list.Add(kv);
-                            }
-                        }                        
+                            var kv = new LightningKeyValuePair { Key = item.Key, Value = item.Value };
+                            list.Add(kv);
+                        }
                     }
                 }
 
@@ -380,7 +389,7 @@ namespace ExpandoDB.Storage
 
                 return list;
             }
-            );
+            ).ConfigureAwait(false);
 
             return result;
         }
@@ -388,23 +397,14 @@ namespace ExpandoDB.Storage
         public async Task<bool> ExistsAsync(string database, byte[] key)
         {
             var result = await Task.Run(() =>
-            {
-                var tx = GetReadonlyTransaction();
-                var dbExists = false;
+            { 
                 var exists = false;
 
-                using (var db = tx.OpenDatabase())
+                var tx = GetReadonlyTransaction();
+                if (DbExists(tx, database))
                 {
-                    var dbKey = database.ToByteArray();
-                    dbExists = tx.ContainsKey(db, dbKey);
-                }
-
-                if (dbExists)
-                {
-                    using (var db = tx.OpenDatabase(database))
-                    {
-                        exists = tx.ContainsKey(db, key);                        
-                    }
+                    var db = OpenDatabase(tx, database);
+                    exists = tx.ContainsKey(db, key);
                 }
 
                 if (tx.State == LightningTransactionState.Active)
@@ -412,9 +412,21 @@ namespace ExpandoDB.Storage
 
                 return exists;
             }
-            );
+            ).ConfigureAwait(false);
 
             return result;
+        }
+
+        private bool DbExists(LightningTransaction tx, string database)
+        {
+            bool dbExists = _openDatabases.ContainsKey(database);
+            if (!dbExists)
+            {
+                var dbKey = database.ToByteArray();
+                dbExists = tx.ContainsKey(_mainDatabase, dbKey);
+            }  
+
+            return dbExists;
         }
 
         private LightningTransaction GetReadonlyTransaction()
@@ -448,13 +460,16 @@ namespace ExpandoDB.Storage
             foreach (var tx in _readonlyTransaction.Values)
                 tx.Dispose();
 
+            foreach (var db in _openDatabases.Values.Union(new[] { _mainDatabase }))
+                db.Dispose();
+
             _readonlyTransaction.Dispose();            
             _environment.Dispose();
             _cancellationTokenSource.Dispose();            
         }
     }
 
-    public class LightningKeyValue
+    public class LightningKeyValuePair
     {
         public byte[] Key { get; set; }
         public byte[] Value { get; set; }
@@ -464,7 +479,7 @@ namespace ExpandoDB.Storage
     {
         public string Database { get; set; }
         public WriteOperationType Type { get; set; }
-        public IEnumerable<LightningKeyValue> KeyValueItems { get; set; }        
+        public IEnumerable<LightningKeyValuePair> KeyValuePairs { get; set; }        
         public TaskCompletionSource<int> TaskCompletionSource { get; set; }
     }
 

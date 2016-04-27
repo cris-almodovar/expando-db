@@ -32,21 +32,14 @@ namespace ExpandoDB.Storage
 
         public async Task<IList<DocumentCollectionSchema>> GetAllAsync()
         {
-            var allCollectionSchemas = new List<DocumentCollectionSchema>();
-            try
-            {
-                var allKv = await _storageEngine.GetAllAsync(_collectionName).ConfigureAwait(false);
+            var allCollectionSchemas = new List<DocumentCollectionSchema>();            
+            var allKv = await _storageEngine.GetAllAsync(_collectionName).ConfigureAwait(false);
 
-                foreach (var kv in allKv)
-                {
-                    var collectionSchema = kv.ToDocumentCollectionSchema();
-                    allCollectionSchemas.Add(collectionSchema);
-                }
-            }
-            catch (Exception ex)
+            foreach (var kv in allKv)
             {
-                
-            }
+                var collectionSchema = kv.ToDocumentCollectionSchema();
+                allCollectionSchemas.Add(collectionSchema);
+            }            
 
             return allCollectionSchemas;
         }

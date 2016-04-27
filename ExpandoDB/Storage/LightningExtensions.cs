@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 
 namespace ExpandoDB.Storage
 {
+
+    // Move serialization logic to DeflateSerializer
     public static class LightningExtensions
     {
         private static readonly NetSerializer.Serializer _serializer;
@@ -82,7 +84,7 @@ namespace ExpandoDB.Storage
             _serializer = new NetSerializer.Serializer(supportedTypes);
         }
 
-        public static LightningKeyValue ToKeyValuePair(this Document document)
+        public static LightningKeyValuePair ToKeyValuePair(this Document document)
         {
             if (document == null)
                 throw new ArgumentNullException(nameof(document));
@@ -90,10 +92,10 @@ namespace ExpandoDB.Storage
             var key = document._id.Value.ToByteArray();
             var value = document.ToCompressedByteArray();
 
-            return new LightningKeyValue { Key = key, Value = value };
+            return new LightningKeyValuePair { Key = key, Value = value };
         }
 
-        public static LightningKeyValue ToKeyValuePair(this DocumentCollectionSchema collectionSchema)
+        public static LightningKeyValuePair ToKeyValuePair(this DocumentCollectionSchema collectionSchema)
         {
             if (collectionSchema == null)
                 throw new ArgumentNullException(nameof(collectionSchema));
@@ -101,10 +103,10 @@ namespace ExpandoDB.Storage
             var key = collectionSchema.Name.ToByteArray();
             var value = collectionSchema.ToCompressedByteArray();
 
-            return new LightningKeyValue { Key = key, Value = value };
+            return new LightningKeyValuePair { Key = key, Value = value };
         }
 
-        public static Document ToDocument(this LightningKeyValue kv)
+        public static Document ToDocument(this LightningKeyValuePair kv)
         {
             if (kv == null)
                 throw new ArgumentNullException(nameof(kv));
@@ -112,7 +114,7 @@ namespace ExpandoDB.Storage
             return kv.Value.ToDocument();
         }
 
-        public static DocumentCollectionSchema ToDocumentCollectionSchema(this LightningKeyValue kv)
+        public static DocumentCollectionSchema ToDocumentCollectionSchema(this LightningKeyValuePair kv)
         {
             if (kv == null)
                 throw new ArgumentNullException(nameof(kv));
@@ -141,6 +143,9 @@ namespace ExpandoDB.Storage
                     var dictionary = document.ToDictionary();
                     _serializer.Serialize(compressionStream, dictionary);
                 }
+
+                //var dictionary = document.ToDictionary();
+                //_serializer.Serialize(memoryStream, dictionary);
                 value = memoryStream.ToArray();
             }
             return value;
@@ -155,9 +160,10 @@ namespace ExpandoDB.Storage
             using (var memoryStream = new MemoryStream())
             {
                 using (var compressionStream = new DeflateStream(memoryStream, CompressionMode.Compress))
-                {                    
+                {
                     _serializer.Serialize(compressionStream, collectionSchema);
                 }
+                //_serializer.Serialize(memoryStream, collectionSchema);
                 value = memoryStream.ToArray();
             }
             return value;
@@ -176,6 +182,9 @@ namespace ExpandoDB.Storage
                     var dictionary = _serializer.Deserialize(decompressionStream) as IDictionary<string, object>;
                     document = new Document(dictionary);
                 }
+
+                //var dictionary = _serializer.Deserialize(memoryStream) as IDictionary<string, object>;
+                //document = new Document(dictionary);
             }
 
             return document;
@@ -193,6 +202,8 @@ namespace ExpandoDB.Storage
                 {
                     documentCollectionSchema = _serializer.Deserialize(decompressionStream) as DocumentCollectionSchema;
                 }
+
+                //documentCollectionSchema = _serializer.Deserialize(memoryStream) as DocumentCollectionSchema;
             }
 
             return documentCollectionSchema;

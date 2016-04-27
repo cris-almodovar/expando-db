@@ -32,7 +32,7 @@ namespace Loader
             var stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            var batchSize = Environment.ProcessorCount;
+            var batchSize = 4;//  Environment.ProcessorCount;
 
             foreach (var batch in sgmlFiles.InSetsOf(batchSize))
             {
