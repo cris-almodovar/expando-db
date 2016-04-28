@@ -31,6 +31,7 @@ namespace ExpandoDB.Storage
         {
             _collectionName = collectionName;
             _storageEngine = storageEngine;
+            _storageEngine.InitializeDatabase(_collectionName);
         }
 
         /// <summary>

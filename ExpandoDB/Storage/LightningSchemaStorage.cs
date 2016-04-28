@@ -12,12 +12,13 @@ namespace ExpandoDB.Storage
     /// <seealso cref="ExpandoDB.Storage.ISchemaStorage" />
     public class LightningSchemaStorage : ISchemaStorage
     {
-        private const string _collectionName = "__schema";
+        private const string _collectionName = "__schema__";
         private readonly LightningStorageEngine _storageEngine;
 
         public LightningSchemaStorage(LightningStorageEngine storageEngine)
         {            
             _storageEngine = storageEngine;
+            _storageEngine.InitializeDatabase(_collectionName);
         }
 
         public async Task<int> DeleteAsync(string schemaName)
