@@ -93,16 +93,7 @@ namespace ExpandoDB.Search
             var fieldName = indexedField.Name.Trim();            
             var fieldDataType = GetFieldDataType(value);
 
-            indexedField.ValidateDataType(fieldDataType);
-
-            //// Special validation for Array fields.
-            //if (indexedField.DataType == FieldDataType.Array && 
-            //    fieldDataType != FieldDataType.Null && 
-            //    fieldDataType != FieldDataType.Array)
-            //{
-            //    var message = $"Cannot change the data type of the field '{indexedField.Name}' from Array to {fieldDataType}.";
-            //    throw new IndexSchemaException(message);
-            //}
+            indexedField.ValidateDataType(fieldDataType);           
 
             switch (fieldDataType)
             {

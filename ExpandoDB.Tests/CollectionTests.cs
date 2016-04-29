@@ -1,8 +1,8 @@
 ﻿
 using ExpandoDB.Search;
+using ExpandoDB.Storage;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Data.SQLite;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -14,30 +14,32 @@ namespace ExpandoDB.Tests
     public class CollectionTests
     {
         private string _appPath;
-        private string _dbPath;        
+        private string _dataPath;        
         private DocumentCollection _collection;
+        private LightningStorageEngine _storageEngine;
 
         [TestInitialize]
         public void Initialize()
         {
             _appPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
-            _dbPath = Path.Combine(_appPath, $"db-{Guid.NewGuid()}");
-            if (Directory.Exists(_dbPath))
-                Directory.Delete(_dbPath, true); 
+            _dataPath = Path.Combine(_appPath, $"{Guid.NewGuid()}");
+            if (Directory.Exists(_dataPath))
+                Directory.Delete(_dataPath, true);
 
+            _storageEngine = new LightningStorageEngine(_dataPath);
 
-
-           //_collection = new DocumentCollection("books", _dbPath);
+           _collection = new DocumentCollection("books", _storageEngine);
         }
 
         [TestCleanup]
         public void Cleanup()
         {
             _collection.DropAsync().Wait();
-            SQLiteConnection.ClearAllPools();
+            _storageEngine.Dispose();
+            
             Thread.Sleep(TimeSpan.FromSeconds(2));
-            Directory.Delete(_dbPath, true);            
+            Directory.Delete(_dataPath, true);            
         }
 
         

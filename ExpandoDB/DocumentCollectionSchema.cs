@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using ExpandoDB.Storage;
 
 namespace ExpandoDB
 {
@@ -42,9 +43,10 @@ namespace ExpandoDB
             if (Name != other.Name)
                 return false;
 
-            var thisJson = DynamicSerializer.Serialize(this);
-            var otherJson = DynamicSerializer.Serialize(other);
-            return string.Compare(thisJson, otherJson, StringComparison.Ordinal) == 0;
+            var thisHash = this.ComputeMd5Hash();
+            var otherHash = other.ComputeMd5Hash();
+            
+            return string.Compare(thisHash, otherHash, StringComparison.Ordinal) == 0;
         }
 
         /// <summary>
@@ -106,7 +108,7 @@ namespace ExpandoDB
         ///// </returns>
         public override int GetHashCode()
         {
-            return DynamicSerializer.Serialize(this).GetHashCode();
+            return this.ComputeMd5Hash().GetHashCode();
         }        
 
     }
@@ -171,6 +173,25 @@ namespace ExpandoDB
 
             return toSchema;
         }
-        
+
+        public static string ComputeMd5Hash(this DocumentCollectionSchema schema)
+        {
+            if (schema == null)
+                return String.Empty;
+
+            using (var md5 = System.Security.Cryptography.MD5.Create())
+            {
+                var data = schema.ToCompressedByteArray();
+                byte[] hash = md5.ComputeHash(data);
+
+                var buffer = new System.Text.StringBuilder();
+                for (int i = 0; i < data.Length; i++)
+                    buffer.Append(data[i].ToString("x2"));
+
+                // Return the hexadecimal string.
+                return buffer.ToString();
+            }
+        }
+
     }
 }

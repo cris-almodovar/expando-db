@@ -26,12 +26,7 @@ namespace ExpandoDB
         private readonly string _dataPath;                
         private readonly string _indexPath;
         private readonly ConcurrentDictionary<string, DocumentCollection> _documentCollections;
-        private readonly LightningStorageEngine _storageEngine;
-        private readonly ISchemaStorage _schemaStorage;
-        private readonly ConcurrentDictionary<string, DocumentCollectionSchema> _schemaCache;
-        private readonly Timer _schemaPersistenceTimer;
-        private readonly double _schemaPersistenceIntervalSeconds;
-        private readonly object _schemaPersistenceLock = new object();
+        private readonly LightningStorageEngine _storageEngine;        
         private readonly ILog _log = LogManager.GetLogger(typeof(Database).Name);
 
         /// <summary>
@@ -52,85 +47,16 @@ namespace ExpandoDB
             _indexPath = Path.Combine(_dataPath, INDEX_DIRECTORY_NAME);
             EnsureIndexDirectoryExists(_indexPath);
 
-            _storageEngine = new LightningStorageEngine(_dataPath);
-            _schemaStorage = new LightningSchemaStorage(_storageEngine);
-            _documentCollections = new ConcurrentDictionary<string, DocumentCollection>();            
-
-            var schemas = _schemaStorage.GetAllAsync().Result.ToDictionary(cs => cs.Name);
-            if (schemas != null && schemas.Count > 0)
-                _schemaCache = new ConcurrentDictionary<string, DocumentCollectionSchema>(schemas);
-            else
-                _schemaCache = new ConcurrentDictionary<string, DocumentCollectionSchema>();
-
-            foreach (var schema in _schemaCache.Values)
+            _storageEngine = new LightningStorageEngine(_dataPath); 
+            _documentCollections = new ConcurrentDictionary<string, DocumentCollection>(); 
+                       
+            var persistedSchemas = new LightningSchemaStorage(_storageEngine).GetAllAsync().Result;             
+            foreach (var schema in persistedSchemas)
             {
                 var collection = new DocumentCollection(schema, _storageEngine);
                 _documentCollections.TryAdd(schema.Name, collection);
-            }
-
-            _schemaPersistenceIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["SchemaPersistenceIntervalSeconds"] ?? "1");
-            _schemaPersistenceTimer = new Timer( o => PersistSchemas(), null, TimeSpan.FromSeconds(_schemaPersistenceIntervalSeconds*2), TimeSpan.FromSeconds(_schemaPersistenceIntervalSeconds));            
-        }
-
-        private void PersistSchemas()
-        {
-            // TODO: Don't use a Timer - use an async WaitHandle instead. Move schema persistence logic to DocumentCollection.
-
-            Task.Run(
-                async () =>
-                {
-                    if (Monitor.TryEnter(_schemaPersistenceLock, TimeSpan.FromMilliseconds(10)) == false)
-                        return;
-                    try
-                    {
-                        var newSchemasToInsert = _documentCollections.Keys.Except(_schemaCache.Keys);
-                        foreach (var schemaName in newSchemasToInsert)
-                        {
-                            if (_documentCollections[schemaName] == null)
-                                continue;
-
-                            var newSchema = _documentCollections[schemaName].GetSchema();
-                            _schemaCache.TryAdd(newSchema.Name, newSchema);
-                            await _schemaStorage.InsertAsync(newSchema).ConfigureAwait(false);
-                        }
-
-                        var schemasToUpdate = from schemaName in _documentCollections.Keys.Intersect(_schemaCache.Keys)
-                                              let persistedSchema = _schemaCache[schemaName]
-                                              let liveSchema = _documentCollections[schemaName].GetSchema()
-                                              where persistedSchema != liveSchema
-                                              select schemaName;
-
-                        foreach (var schemaName in schemasToUpdate)
-                        {
-                            if (_documentCollections[schemaName] == null)
-                                continue;
-
-                            var updatedSchema = _documentCollections[schemaName].GetSchema();
-                            _schemaCache[schemaName] = updatedSchema;
-                            await _schemaStorage.UpdateAsync(updatedSchema).ConfigureAwait(false);
-                        }
-
-                        var schemasToRemove = from schemaName in _schemaCache.Keys.Except(_documentCollections.Keys)
-                                              select schemaName;
-
-                        foreach (var schemaName in schemasToRemove)
-                        {
-                            DocumentCollectionSchema removedSchema = null;
-                            _schemaCache.TryRemove(schemaName, out removedSchema);
-                            await _schemaStorage.DeleteAsync(schemaName).ConfigureAwait(false);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _log.Error(ex);
-                    }
-                    finally
-                    {
-                        Monitor.Exit(_schemaPersistenceLock);
-                    }
-                }               
-           ).ConfigureAwait(false);            
-        }
+            }           
+        }       
 
         /// <summary>
         /// Ensures the data directory exists.
@@ -199,13 +125,10 @@ namespace ExpandoDB
                 return false;            
 
             var isSuccessful = false;
+
             DocumentCollection collection = null;
-
             if (_documentCollections.TryRemove(collectionName, out collection))            
-                isSuccessful = await collection.DropAsync().ConfigureAwait(false);
-
-            if (isSuccessful)
-                PersistSchemas();
+                isSuccessful = await collection.DropAsync().ConfigureAwait(false);            
 
             return isSuccessful;
         }

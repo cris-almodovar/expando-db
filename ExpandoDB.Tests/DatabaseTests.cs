@@ -76,7 +76,7 @@ namespace ExpandoDB.Tests
         public void Can_dispose_and_reload()
         {
             _db.Dispose();
-            _db = new Database(_dataPath);
+            _db = new Database(_dataPath);            
 
             var criteria = new SearchCriteria { Query = "Author:Douglas", SortByField = "-Title", TopN = 1 };
             var result = _db["books"].SearchAsync(criteria).Result;

@@ -186,9 +186,9 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <None Include="CollectionTests.cs" />
+    <Compile Include="CollectionTests.cs" />
     <Compile Include="LuceneIndexTests.cs" />
-    <None Include="SQLiteContentStorageTests.cs" />
+    <Compile Include="ContentStorageTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="DatabaseTests.cs" />
     <Compile Include="TestUtils.cs" />

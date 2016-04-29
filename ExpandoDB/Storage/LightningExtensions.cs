@@ -14,7 +14,7 @@ namespace ExpandoDB.Storage
     // Move serialization logic to DeflateSerializer
     public static class LightningExtensions
     {
-        private static readonly NetSerializer.Serializer _serializer;
+        private static readonly NetSerializer.Serializer _serializer;        
 
         /// <summary>
         /// Initializes the <see cref="LightningExtensions"/> class.
@@ -81,7 +81,7 @@ namespace ExpandoDB.Storage
                 typeof(FieldDataType)
             };
             
-            _serializer = new NetSerializer.Serializer(supportedTypes);
+            _serializer = new NetSerializer.Serializer(supportedTypes);             
         }
 
         public static LightningKeyValuePair ToKeyValuePair(this Document document)
@@ -172,7 +172,7 @@ namespace ExpandoDB.Storage
         public static Document ToDocument(this byte[] value)
         {
             if (value == null)
-                throw new ArgumentNullException(nameof(value));
+                return null;
 
             Document document = null;
             using (var memoryStream = new MemoryStream(value))
@@ -193,7 +193,7 @@ namespace ExpandoDB.Storage
         public static DocumentCollectionSchema ToDocumentCollectionSchema(this byte[] value)
         {
             if (value == null)
-                throw new ArgumentNullException(nameof(value));
+                return null;
 
             DocumentCollectionSchema documentCollectionSchema = null;
             using (var memoryStream = new MemoryStream(value))
@@ -207,6 +207,6 @@ namespace ExpandoDB.Storage
             }
 
             return documentCollectionSchema;
-        }
+        }        
     }
 }
