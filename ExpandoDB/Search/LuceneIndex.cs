@@ -10,9 +10,9 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Threading;
 using System.Threading.Tasks;
-using LuceneDouble = java.lang.Double;
-using LuceneLong = java.lang.Long;
-using LuceneInteger = java.lang.Integer;
+using JavaDouble = java.lang.Double;
+using JavaLong = java.lang.Long;
+using JavaInteger = java.lang.Integer;
 
 namespace ExpandoDB.Search
 {
@@ -33,8 +33,7 @@ namespace ExpandoDB.Search
         private readonly IndexSchema _indexSchema;
         private readonly ILog _log = LogManager.GetLogger(typeof(LuceneIndex).Name);    
         private readonly double _refreshIntervalSeconds;
-        private readonly double _commitIntervalSeconds;
-        private readonly long _writerLockTimeoutMilliseconds;
+        private readonly double _commitIntervalSeconds;        
         private readonly double _ramBufferSizeMB;
 
         public IndexSchema Schema { get { return _indexSchema; } }       
@@ -60,13 +59,11 @@ namespace ExpandoDB.Search
             _indexSchema = indexSchema ?? IndexSchema.CreateDefault();
             _compositeAnalyzer = new CompositeAnalyzer(_indexSchema);            
 
-            _ramBufferSizeMB = Double.Parse(ConfigurationManager.AppSettings["LuceneRAMBufferSizeMB"] ?? "64");
-            _writerLockTimeoutMilliseconds = Convert.ToInt64(Double.Parse(ConfigurationManager.AppSettings["LuceneWriterLockTimeoutSeconds"] ?? "1") * 1000);            
+            _ramBufferSizeMB = Double.Parse(ConfigurationManager.AppSettings["LuceneRAMBufferSizeMB"] ?? "64");            
 
             var config = new IndexWriterConfig(_compositeAnalyzer)
                             .SetOpenMode(IndexWriterConfigOpenMode.CREATE_OR_APPEND)
-                            .SetRAMBufferSizeMB(_ramBufferSizeMB)
-                            //.SetWriteLockTimeout(_writerLockTimeoutMilliseconds)  // TODO: Remove from config
+                            .SetRAMBufferSizeMB(_ramBufferSizeMB)                            
                             .SetCommitOnClose(true);
             
             _writer = new IndexWriter(_indexDirectory, config);            
@@ -133,8 +130,8 @@ namespace ExpandoDB.Search
             if (document._id == null || document._id.Value == Guid.Empty)
                 document._id = Guid.NewGuid();
 
-            var luceneDocument = document.ToLuceneDocument(_indexSchema);
-            _writer.AddDocument(luceneDocument);
+            var luceneDocument = document.ToLuceneDocument(_indexSchema);            
+            _writer.AddDocument(luceneDocument);            
         }
 
         /// <summary>

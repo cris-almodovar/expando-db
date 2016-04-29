@@ -74,7 +74,7 @@ namespace ExpandoDB
 
         private void PersistSchemas()
         {
-            // TODO: Don't use a Timer - use an async WaitHandle instead.
+            // TODO: Don't use a Timer - use an async WaitHandle instead. Move schema persistence logic to DocumentCollection.
 
             Task.Run(
                 async () =>

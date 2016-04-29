@@ -6,9 +6,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using LuceneDocument = FlexLucene.Document.Document;
-using LuceneDouble = java.lang.Double;
-using LuceneLong = java.lang.Long;
-using LuceneInteger = java.lang.Integer;
+using JavaDouble = java.lang.Double;
+using JavaLong = java.lang.Long;
+using JavaInteger = java.lang.Integer;
 
 namespace ExpandoDB.Search
 {
@@ -21,10 +21,10 @@ namespace ExpandoDB.Search
         public const string DEFAULT_NULL_TOKEN = "_null_";
         public const int INDEX_NULL_VALUE = 1; // This is a marker value for NULL in the Lucene index.
         public const int SORT_FIELD_MAX_TEXT_LENGTH = 20;
-        public static readonly LuceneDouble DOUBLE_MIN_VALUE = new LuceneDouble(Double.MinValue);
-        public static readonly LuceneDouble DOUBLE_MAX_VALUE = new LuceneDouble(Double.MaxValue);
-        public static readonly LuceneLong LONG_MIN_VALUE = new LuceneLong(Int64.MinValue);
-        public static readonly LuceneLong LONG_MAX_VALUE = new LuceneLong(Int64.MaxValue);
+        public static readonly JavaDouble DOUBLE_MIN_VALUE = new JavaDouble(Double.MinValue);
+        public static readonly JavaDouble DOUBLE_MAX_VALUE = new JavaDouble(Double.MaxValue);
+        public static readonly JavaLong LONG_MIN_VALUE = new JavaLong(Int64.MinValue);
+        public static readonly JavaLong LONG_MAX_VALUE = new JavaLong(Int64.MaxValue);
 
         /// <summary>
         /// Converts a <see cref="Document"/> object to a <see cref="LuceneDocument"/> object.
