@@ -7,7 +7,7 @@ namespace ExpandoDB.Rest
     /// </summary>
     class EntryPoint
     {        
-        static void Main(string[] args)
+        static void Main()
         {
             HostFactory.Run(
                 hc =>

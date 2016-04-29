@@ -150,16 +150,7 @@ namespace ExpandoDB
         {
             return new Document(json.ToDictionary().ToExpando());
         }
-
-        /// <summary>
-        /// Deserializes the StorageRow.json string into a Document object.
-        /// </summary>
-        /// <param name="row">The StorageRow.</param>
-        /// <returns></returns>
-        public static Document ToDocument(this StorageRow row)
-        {
-            return new Document(row.ToDictionary().ToExpando());
-        }        
+        
 
         /// <summary>
         /// Deserializes the JSON string into an IDictionary object.
@@ -169,43 +160,17 @@ namespace ExpandoDB
         public static IDictionary<string, object> ToDictionary(this string json)
         {
             return DynamicSerializer.Deserialize<IDictionary<string, object>>(json);
-        }
+        }                
 
         /// <summary>
-        /// Deserializes the StorageRow.json string into an ExpandoObject.
+        /// Deserializes the key-value pairs to Document objects.
         /// </summary>
-        /// <param name="row">The StorageRow.</param>
+        /// <param name="keyValuePairs">The key value pairs.</param>
         /// <returns></returns>
-        public static IDictionary<string, object> ToDictionary(this StorageRow row)
+        internal static EnumerableDocuments ToEnumerableDocuments(this IEnumerable<LightningKeyValuePair> keyValuePairs)
         {
-            var dictionary = new Dictionary<string, object>() as IDictionary<string, object>;
-            try
-            {
-                dictionary = row.json.ToDictionary();
-            }
-            catch (Exception ex)
-            {
-                var guid = Guid.Empty;
-                Guid.TryParse(row.id, out guid);
-
-                dictionary[Document.ID_FIELD_NAME] = guid;
-                dictionary[Document.PARSE_ERROR_MESSAGE_FIELD_NAME] = ex.Message;
-                dictionary[Document.PARSE_ERROR_JSON_FIELD_NAME] = row.json;
-            }
-
-            return dictionary;
+            return new EnumerableDocuments(keyValuePairs);
         }
-
-        /// <summary>
-        /// Deserializes the JSON results .
-        /// </summary>
-        /// <param name="jsonResults">The json results.</param>
-        /// <returns></returns>
-        internal static EnumerableDocuments ToEnumerableDocuments(this IEnumerable<StorageRow> rows)
-        {
-            return new EnumerableDocuments(rows);
-        }
-
 
         /// <summary>
         /// Serializes the Document object to a JSON string.
@@ -216,6 +181,20 @@ namespace ExpandoDB
         {
             var json = DynamicSerializer.Serialize(document);
             return json;
+        }
+
+        /// <summary>
+        /// Clones the Document object to a Dictionary object.
+        /// </summary>
+        /// <param name="document">The document.</param>
+        /// <returns></returns>        
+        public static IDictionary<string, object> ToDictionary(this Document document)
+        {
+            if (document == null)
+                throw new ArgumentNullException(nameof(document));
+
+            var dictionary = new Dictionary<string, object>(document.AsDictionary());
+            return dictionary;
         }
     }
 }

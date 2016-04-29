@@ -2,7 +2,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
-using System.Data.SQLite;
 using System.IO;
 using System.Reflection;
 using System.Threading;
@@ -11,52 +10,43 @@ using System.Threading;
 namespace ExpandoDB.Tests
 {
     [TestClass]    
-    public class SQLiteDynamicStorageTests
+    public class ContentStorageTests
     {
         private string _appPath;
-        private string _dbPath;
-        private string _dbFilePath;        
-        private SQLiteDocumentStorage _storage;
+        private string _dataPath;
+        private string _dbFilePath;
+        private LightningStorageEngine _storageEngine;     
+        private IDocumentStorage _documentStorage;
 
         [TestInitialize]
         public void Initialize()
         {            
             _appPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             
-            _dbPath = Path.Combine(_appPath, "db");
-            if (!Directory.Exists(_dbPath))
-                Directory.CreateDirectory(_dbPath);
+            _dataPath = Path.Combine(_appPath, "data");
+            if (!Directory.Exists(_dataPath))
+                Directory.CreateDirectory(_dataPath);
 
-            _dbFilePath = Path.Combine(_dbPath, $"{Guid.NewGuid()}.sdb3");
-            if (File.Exists(_dbFilePath))
-                File.Delete(_dbFilePath);
 
-            _storage = new SQLiteDocumentStorage(_dbFilePath, "books");
+            _storageEngine = new LightningStorageEngine(_dataPath);
+            _documentStorage = new LightningDocumentStorage("books", _storageEngine);
         }
 
         [TestCleanup]
         public void Cleanup()
         {
-            SQLiteConnection.ClearAllPools();
-            Thread.Sleep(TimeSpan.FromSeconds(2));
-            File.Delete(_dbFilePath);
-            Directory.Delete(_dbPath, true);
+            _storageEngine.Dispose();
+
+            Thread.Sleep(TimeSpan.FromSeconds(2));            
+            Directory.Delete(_dataPath, true);
         }
 
         [TestMethod]
         [TestCategory("Document Storage tests")]
         public void Database_file_is_auto_created()        
         {            
-            var dbFilePath = Path.Combine(_dbPath, $"{Guid.NewGuid()}.sdb3");
-            if (File.Exists(dbFilePath))
-                File.Delete(dbFilePath);
-
-            var storage = new SQLiteDocumentStorage(dbFilePath, "test");
-
+            var dbFilePath = Path.Combine(_dataPath, "db", "data.mdb");  
             Assert.IsTrue(File.Exists(dbFilePath));
-
-            SQLiteConnection.ClearAllPools();
-            File.Delete(dbFilePath);
         }
 
         [TestMethod]
@@ -73,10 +63,10 @@ namespace ExpandoDB.Tests
             inserted.Characters = new Dictionary<string, object> { { "Simon Jones", "Arthur Dent" }, { "Geoffrey McGivern", "Ford Prefect" } };
             inserted.X = null;
 
-            var guid = _storage.InsertAsync(inserted).Result;
+            var guid = _documentStorage.InsertAsync(inserted).Result;
             Assert.AreNotEqual<Guid>(guid, Guid.Empty);
             
-            dynamic retrieved = _storage.GetAsync(guid).Result;
+            dynamic retrieved = _documentStorage.GetAsync(guid).Result;
 
             Assert.AreEqual<Guid>(inserted._id, retrieved._id);
             Assert.AreEqual<string>(inserted.Title, retrieved.Title);
@@ -108,12 +98,12 @@ namespace ExpandoDB.Tests
             inserted.RelatedTitles = new List<string> { "The Restaurant at the End of the Universe", "Life, the Universe and Everything" };
             inserted.Characters = new Dictionary<string, object> { { "Simon Jones", "Arthur Dent" }, { "Geoffrey McGivern", "Ford Prefect" } };
                        
-            var guid = _storage.InsertAsync(inserted).Result;
+            var guid = _documentStorage.InsertAsync(inserted).Result;
             Assert.AreNotEqual<Guid>(guid, Guid.Empty);
 
-            _storage.DeleteAsync(guid).Wait();
+            _documentStorage.DeleteAsync(guid).Wait();
 
-            dynamic retrieved = _storage.GetAsync(guid).Result;
+            dynamic retrieved = _documentStorage.GetAsync(guid).Result;
             Assert.IsNull(retrieved);            
         }
 
@@ -128,14 +118,14 @@ namespace ExpandoDB.Tests
             inserted.Rating = 10;
             inserted.Description = "The Hitchhiker's Guide to the Galaxy is a comedy science fiction series created by Douglas Adams. Originally a radio comedy broadcast on BBC Radio 4 in 1978, it was later adapted to other formats, and over several years it gradually became an international multi-media phenomenon.";
             
-            var guid = _storage.InsertAsync(inserted).Result;
+            var guid = _documentStorage.InsertAsync(inserted).Result;
             Assert.AreNotEqual<Guid>(guid, Guid.Empty);       
 
-            dynamic retrieved = _storage.GetAsync(guid).Result;
+            dynamic retrieved = _documentStorage.GetAsync(guid).Result;
             retrieved.Rating = 12;
-            _storage.UpdateAsync(retrieved).Wait();
+            _documentStorage.UpdateAsync(retrieved).Wait();
 
-            retrieved = _storage.GetAsync(retrieved._id).Result;
+            retrieved = _documentStorage.GetAsync(retrieved._id).Result;
 
             Assert.AreEqual<int>(retrieved.Rating, 12);            
         }

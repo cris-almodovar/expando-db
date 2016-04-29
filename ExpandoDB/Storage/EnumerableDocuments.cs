@@ -8,19 +8,19 @@ namespace ExpandoDB.Storage
     /// Represents an enumerable list of Document objects, created from a list of JSON strings.
     /// </summary>
     public class EnumerableDocuments : IEnumerable<Document>
-    {
-        private IEnumerable<StorageRow> _rows;
+    {        
+        private readonly IEnumerable<LightningKeyValuePair> _keyValuePairs;        
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EnumerableDocuments"/> class.
         /// </summary>
-        /// <param name="rows">The list of JSON strings</param>
-        public EnumerableDocuments(IEnumerable<StorageRow> rows)
+        /// <param name="keyValuePairs">The list of key-value pairs</param>
+        public EnumerableDocuments(IEnumerable<LightningKeyValuePair> keyValuePairs)
         {
-            if (rows == null)
-                throw new ArgumentNullException(nameof(rows));
+            if (keyValuePairs == null)
+                throw new ArgumentNullException(nameof(keyValuePairs));
 
-            _rows = rows;
+            _keyValuePairs = keyValuePairs;
         }
 
         /// <summary>
@@ -31,8 +31,8 @@ namespace ExpandoDB.Storage
         /// </returns>
         public IEnumerator<Document> GetEnumerator()
         {
-            foreach (var row in _rows)           
-                yield return row.ToDocument();            
+            foreach (var kv in _keyValuePairs)
+                yield return kv.ToDocument();            
         }
 
         /// <summary>

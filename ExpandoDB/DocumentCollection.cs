@@ -1,8 +1,11 @@
-﻿using ExpandoDB.Search;
+﻿using Common.Logging;
+using ExpandoDB.Search;
 using ExpandoDB.Storage;
 using System;
+using System.Configuration;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ExpandoDB
@@ -15,12 +18,16 @@ namespace ExpandoDB
     /// </remarks>
     public class DocumentCollection : IDisposable
     {
-        private readonly string _dbFilePath;
+        private readonly LightningStorageEngine _storageEngine;
         private readonly string _indexPath;
         private readonly IDocumentStorage _documentStorage;
+        private readonly ISchemaStorage _schemaStorage;
         private readonly LuceneIndex _luceneIndex;
         private readonly IndexSchema _indexSchema;
         private readonly string _name;
+        private readonly Timer _schemaPersistenceTimer;
+        private readonly double _schemaPersistenceIntervalSeconds;        
+        private readonly ILog _log = LogManager.GetLogger(typeof(DocumentCollection).Name);
 
         /// <summary>
         /// Gets the IndexSchema associated with the DocumentCollection.
@@ -50,9 +57,9 @@ namespace ExpandoDB
         /// Initializes a new instance of the <see cref="DocumentCollection" /> class based on a DocumentCollectionSchema.
         /// </summary>
         /// <param name="schema">The DocumentCollectionSchema.</param>
-        /// <param name="dbPath">The path to the db folder.</param>
-        public DocumentCollection(DocumentCollectionSchema schema, string dbPath)
-            : this(schema.Name, dbPath, schema.ToIndexSchema())
+        /// <param name="storageEngine">The storage engine.</param>
+        public DocumentCollection(DocumentCollectionSchema schema, LightningStorageEngine storageEngine)
+            : this(schema.Name, storageEngine, schema.ToIndexSchema())
         {
         }
 
@@ -60,30 +67,51 @@ namespace ExpandoDB
         /// Initializes a new instance of the <see cref="DocumentCollection" /> class.
         /// </summary>
         /// <param name="name">The name of the DocumentCollection.</param>
-        /// <param name="dbPath">The path to the db folder.</param>
-        /// <param name="indexSchema">The index schema.</param>
-        public DocumentCollection(string name, string dbPath, IndexSchema indexSchema = null)
+        /// <param name="storageEngine">The storage engine.</param>
+        /// <param name="indexSchema">The index schema.</param>        
+        public DocumentCollection(string name, LightningStorageEngine storageEngine, IndexSchema indexSchema = null)
         {
             if (String.IsNullOrWhiteSpace(name))
-                throw new ArgumentException("name cannot be null or blank");
-            if (String.IsNullOrWhiteSpace(dbPath))
-                throw new ArgumentException("dbPath cannot be null or blank");
+                throw new ArgumentException($"{nameof(name)} cannot be null or blank");
+            if (storageEngine == null)
+                throw new ArgumentNullException(nameof(storageEngine));
 
             _name = name;
+            _storageEngine = storageEngine;
 
-            if (!Directory.Exists(dbPath))
-                Directory.CreateDirectory(dbPath);
-
-            _dbFilePath = Path.Combine(dbPath, Database.DB_FILENAME);
-
-            _indexPath = Path.Combine(dbPath, Database.INDEX_DIRECTORY_NAME, name);
+            _indexPath = Path.Combine(_storageEngine.DataPath, Database.INDEX_DIRECTORY_NAME, name);
             if (!Directory.Exists(_indexPath))
                 Directory.CreateDirectory(_indexPath);
 
-            _documentStorage = new SQLiteDocumentStorage(_dbFilePath, _name);
+            _documentStorage = new LightningDocumentStorage(_name, _storageEngine);
+            _schemaStorage = new LightningSchemaStorage(_storageEngine);
 
             _indexSchema = indexSchema ?? IndexSchema.CreateDefault(name);
             _luceneIndex = new LuceneIndex(_indexPath, _indexSchema);
+
+            _schemaPersistenceIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["SchemaPersistenceIntervalSeconds"] ?? "1");
+            _schemaPersistenceTimer = new Timer( _ => Task.Run(async() => await PersistSchema().ConfigureAwait(false)), null, TimeSpan.FromSeconds(_schemaPersistenceIntervalSeconds), TimeSpan.FromSeconds(_schemaPersistenceIntervalSeconds));
+        }
+
+        private async Task PersistSchema()
+        {
+            if (IsDropped)
+                return;            
+            try
+            {
+                var liveSchema = _indexSchema.ToDocumentCollectionSchema();
+                var savedSchema = await _schemaStorage.GetAsync(_name).ConfigureAwait(false);
+
+                if (savedSchema == null)
+                    await _schemaStorage.InsertAsync(liveSchema).ConfigureAwait(false);
+                else
+                    if (liveSchema != savedSchema)
+                        await _schemaStorage.UpdateAsync(liveSchema).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _log.Error(ex);
+            }            
         }
 
         /// <summary>
@@ -133,8 +161,8 @@ namespace ExpandoDB
             if (searchResult.ItemCount > 0)
                 searchResult.Items = await _documentStorage.GetAsync(luceneResult.Items.ToList()).ConfigureAwait(false); 
 
-            // NOTE: At this point the Items collection only contains the JSON string representation of the Document objects.
-            // It will be deserialized to Document objects only when enumerated.
+            // NOTE: At this point the Items collection only contains the compressed binary form of the Document objects.
+            // The Items collection will be deserialized to Document objects only when enumerated.
 
             if (criteria.IncludeHighlight)                            
                 searchResult.Items = searchResult.Items.GenerateHighlights(criteria);            
@@ -225,8 +253,12 @@ namespace ExpandoDB
         {
             EnsureCollectionIsNotDropped();
 
+            IsDropped = true;
+
             await _documentStorage.DropAsync().ConfigureAwait(false);
-            // Note: The schema entry will be auto-deleted by a background thread in the enclosing Database object.
+
+            _schemaPersistenceTimer.Dispose();
+            await _schemaStorage.DeleteAsync(_name).ConfigureAwait(false);
 
             _luceneIndex.Dispose();
             
@@ -243,9 +275,8 @@ namespace ExpandoDB
             }
 
             if (Directory.Exists(_indexPath))
-                throw new Exception($"Unable to delete Lucene index directory: {_indexPath}");         
-
-            IsDropped = true;
+                throw new Exception($"Unable to delete Lucene index directory: {_indexPath}");
+            
             return IsDropped;
         }
 
@@ -255,8 +286,10 @@ namespace ExpandoDB
         public void Dispose()
         {
             EnsureCollectionIsNotDropped();
+            PersistSchema().Wait();
 
-            _luceneIndex.Dispose();
+            _schemaPersistenceTimer.Dispose();
+            _luceneIndex.Dispose();            
         }
 
         /// <summary>

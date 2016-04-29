@@ -8,6 +8,7 @@ namespace ExpandoDB.Storage
     /// </summary>
     public interface ISchemaStorage
     {
+        Task<DocumentCollectionSchema> GetAsync(string schemaName);
         Task<IList<DocumentCollectionSchema>> GetAllAsync();
         Task<string> InsertAsync(DocumentCollectionSchema collectionSchema);
         Task<int> UpdateAsync(DocumentCollectionSchema collectionSchema);

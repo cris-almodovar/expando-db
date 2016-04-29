@@ -83,9 +83,9 @@ namespace ExpandoDB.Search
         {
             var documentHightlightMap = documents.ToDictionary(c => c._id.ToString());
 
-            var reader = DirectoryReader.Open(writer, true);            
+            var reader = DirectoryReader.Open(writer, true, true);            
             var queryParser = new HighlighterQueryParser(writer.GetAnalyzer());
-            queryParser.SetMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+            queryParser.SetMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
 
             var query = queryParser.Parse(criteria.Query)
                                    .Rewrite(reader);            
@@ -200,26 +200,14 @@ namespace ExpandoDB.Search
 
             protected override Query GetBooleanQuery(List list)
             {
-                if (list.size() == 1)                
-                {
-                    var clause = list.get(0) as BooleanClause;
-                    if (clause != null)
-                        return clause.GetQuery(); 
-                }
-                return base.GetBooleanQuery(list);
-            }
-
-            protected override Query GetBooleanQuery(List list, bool disableCoord)
-            {
                 if (list.size() == 1)
                 {
                     var clause = list.get(0) as BooleanClause;
                     if (clause != null)
                         return clause.GetQuery();
                 }
-                return base.GetBooleanQuery(list, disableCoord);
+                return base.GetBooleanQuery(list);
             }
-
         }
     }
 

@@ -9,6 +9,7 @@ namespace ExpandoDB
     /// <summary>
     /// Represents a dynamic JSON Document.
     /// </summary>
+    [Serializable]
     public class Document : DynamicObject
     {
         public const string ID_FIELD_NAME = "_id";
@@ -305,14 +306,15 @@ namespace ExpandoDB
                 return true;
 
             var objectType = value.GetType();
-            var objectTypeCode = Type.GetTypeCode(objectType);
+            return IsAllowedType(objectType);
+        }
 
-            switch (objectTypeCode)
+        private bool IsAllowedType(Type type)
+        {
+            var typeCode = Type.GetTypeCode(type);
+
+            switch (typeCode)
             {
-                case TypeCode.UInt16:
-                case TypeCode.UInt32:
-                case TypeCode.UInt64:
-                case TypeCode.Int16:
                 case TypeCode.Int32:
                 case TypeCode.Int64:
                 case TypeCode.Decimal:
@@ -324,14 +326,22 @@ namespace ExpandoDB
                     return true;
 
                 case TypeCode.Object:
-                    if (objectType == typeof(Guid))
+                    if (type == typeof(Guid))
+                        return true;                                        
+                    if (typeof(IDictionary<string, object>).IsAssignableFrom(type))
                         return true;
-                    if (value is IList || value is IDictionary<string, object>)
-                        return true;
+                    if (typeof(IList).IsAssignableFrom(type))
+                    {
+                        if (type.IsArray)
+                            return IsAllowedType(type.GetElementType());
+                        if (type.IsGenericType)
+                            return IsAllowedType(type.GetGenericArguments()[0]);                        
+                    }
                     break;
             }
 
             return false;
+
         }
 
         /// <summary>
@@ -353,7 +363,7 @@ namespace ExpandoDB
         }
 
         /// <summary>
-        /// Returns the Document as a Dictionary<string, object>.
+        /// Returns the Document as a Dictionary.
         /// </summary>
         /// <returns></returns>
         internal IDictionary<string, object> AsDictionary()

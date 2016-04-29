@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using ExpandoDB.Storage;
 
 namespace ExpandoDB.Tests
 {
@@ -59,6 +60,10 @@ namespace ExpandoDB.Tests
             Assert.IsInstanceOfType(document.List, typeof(IList));
             Assert.IsInstanceOfType(document.Lookup, typeof(IDictionary));
 
+            
+
         }
+
+
     }
 }

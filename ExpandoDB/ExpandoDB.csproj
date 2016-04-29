@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>ExpandoDB</RootNamespace>
     <AssemblyName>ExpandoDB</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <TargetFrameworkProfile />
@@ -47,12 +47,8 @@
       <HintPath>..\packages\Common.Logging.Core.3.3.1\lib\net40\Common.Logging.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Dapper, Version=1.40.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Dapper.1.42\lib\net45\Dapper.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="FlexLucene, Version=5.5.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\FlexLucene.5.5.0.0\lib\net40\FlexLucene.dll</HintPath>
+    <Reference Include="FlexLucene, Version=6.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\FlexLucene.6.0.0.0\lib\net40\FlexLucene.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="IKVM.AWT.WinForms, Version=8.1.5717.0, Culture=neutral, PublicKeyToken=13235d27fcbfff58, processorArchitecture=MSIL">
@@ -167,8 +163,16 @@
       <HintPath>..\packages\IKVM.8.1.5717.0\lib\IKVM.Runtime.JNI.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Jil, Version=2.13.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Jil.2.13.0\lib\net45\Jil.dll</HintPath>
+    <Reference Include="Jil, Version=2.14.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Jil.2.14.1\lib\net45\Jil.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="LightningDB, Version=0.9.3.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\LightningDB.0.9.3-rc1-45\lib\net451\LightningDB.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="NetSerializer, Version=4.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NetSerializer.4.1.0\lib\net45\NetSerializer.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Sigil, Version=4.5.1.0, Culture=neutral, PublicKeyToken=2d06c3494341c8ab, processorArchitecture=MSIL">
@@ -178,10 +182,6 @@
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Data.SQLite, Version=1.0.99.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Data.SQLite.Core.1.0.99.0\lib\net45\System.Data.SQLite.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -200,6 +200,7 @@
     <Compile Include="Document.cs" />
     <Compile Include="DocumentExtensions.cs" />
     <Compile Include="Database.cs" />
+    <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Search\CompositeAnalyzer.cs" />
     <Compile Include="Search\IndexSchemaException.cs" />
     <Compile Include="Search\LuceneExtensions.cs" />
@@ -218,22 +219,24 @@
     <Compile Include="Storage\ISchemaStorage.cs" />
     <Compile Include="Storage\EnumerableDocuments.cs" />
     <Compile Include="Storage\IDocumentStorage.cs" />
-    <Compile Include="Storage\SQLiteSchemaStorage.cs" />
-    <Compile Include="Storage\SQLiteDocumentStorage.cs" />
-    <Compile Include="Storage\StorageRow.cs" />
+    <Compile Include="Storage\LightningExtensions.cs" />
+    <Compile Include="Storage\LightningDocumentStorage.cs" />
+    <Compile Include="Storage\LightningSchemaStorage.cs" />
+    <Compile Include="Storage\LightningStorageEngine.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
-    <None Include="packages.config" />
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <Content Include="lmdb.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Import Project="..\packages\System.Data.SQLite.Core.1.0.99.0\build\net45\System.Data.SQLite.Core.targets" Condition="Exists('..\packages\System.Data.SQLite.Core.1.0.99.0\build\net45\System.Data.SQLite.Core.targets')" />
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('..\packages\System.Data.SQLite.Core.1.0.99.0\build\net45\System.Data.SQLite.Core.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\System.Data.SQLite.Core.1.0.99.0\build\net45\System.Data.SQLite.Core.targets'))" />
-  </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

@@ -14,7 +14,7 @@ namespace Loader
 {
     class Program
     {
-        static void Main(string[] args)
+        static void Main()
         {
             var expandoDbUrl = ConfigurationManager.AppSettings["ExpandoDbUrl"] ?? "http://localhost:9000/db";
             var restClient = new RestClient(expandoDbUrl);
@@ -117,7 +117,7 @@ namespace Loader
             }
 
             stopwatch.Stop();
-            Console.WriteLine("Finished importing files. Elapsed = " + stopwatch.Elapsed.ToString());
+            Console.WriteLine("Finished importing files. Elapsed = " + stopwatch.Elapsed);
         }        
     }
 
