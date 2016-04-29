@@ -72,7 +72,7 @@ namespace ExpandoDB
             _name = name;
             _storageEngine = storageEngine;
 
-            _indexPath = Path.Combine(_storageEngine.Path, Database.INDEX_DIRECTORY_NAME, name);
+            _indexPath = Path.Combine(_storageEngine.DataPath, Database.INDEX_DIRECTORY_NAME, name);
             if (!Directory.Exists(_indexPath))
                 Directory.CreateDirectory(_indexPath);
 

@@ -27,15 +27,17 @@ namespace ExpandoDB.Storage
         private readonly CancellationTokenSource _cancellationTokenSource;
         private readonly CancellationToken _cancellationToken;
         private readonly ILog _log = LogManager.GetLogger(typeof(LightningStorageEngine).Name);
-        public readonly string Path;
+        public string DataPath { get; private set; }
+        public string DbPath { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LightningStorageEngine"/> class.
         /// </summary>
-        /// <param name="dbPath">The database path.</param>
-        public LightningStorageEngine(string dbPath)
+        /// <param name="dataPath">The database path.</param>
+        public LightningStorageEngine(string dataPath)
         {
-            Path = dbPath;
+            DataPath = dataPath;
+            DbPath = Path.Combine(dataPath, Database.DB_DIRECTORY_NAME);
 
             var config = new EnvironmentConfiguration
             {
@@ -46,9 +48,8 @@ namespace ExpandoDB.Storage
 
             // NOTE: LightningEnvironment will auto-create 
             // the dbPath directory if it doesn't exist.
-            _environment = new LightningEnvironment(dbPath, config);
-            _environment.Open(EnvironmentOpenFlags.NoThreadLocalStorage);
-
+            _environment = new LightningEnvironment(DbPath, config);
+            _environment.Open(EnvironmentOpenFlags.NoThreadLocalStorage);  // We will handle TLS ourselves.
             _openDatabases = new ConcurrentDictionary<string, LightningDatabase>();                  
 
             _writeOperationsQueue = new BlockingCollection<WriteOperation>();
@@ -58,6 +59,10 @@ namespace ExpandoDB.Storage
             Task.Factory.StartNew(() => BackgroundWriter(), TaskCreationOptions.LongRunning);
         }
 
+        /// <summary>
+        /// Initializes the specified database.
+        /// </summary>
+        /// <param name="database">The database.</param>
         public void InitializeDatabase(string database)
         {
             if (_openDatabases.ContainsKey(database))
@@ -227,87 +232,94 @@ namespace ExpandoDB.Storage
 
         private void BackgroundWriter()
         {
-            foreach (var operation in _writeOperationsQueue.GetConsumingEnumerable(_cancellationToken))
+            try
             {
-                var tcs = operation.TaskCompletionSource;                
-                try
+                foreach (var operation in _writeOperationsQueue.GetConsumingEnumerable(_cancellationToken))
                 {
-                    using (var tx = _environment.BeginTransaction())
+                    var tcs = operation.TaskCompletionSource;
+                    try
                     {
-                        try
+                        using (var tx = _environment.BeginTransaction())
                         {
-                            var db = OpenDatabase(operation.Database);                                                            
-                            var result = 0;
-
-                            switch (operation.Type)
+                            try
                             {
-                                case WriteOperationType.Insert:
-                                    var insertedCount = 0;
-                                    using (var cur = tx.CreateCursor(db))
-                                    {
-                                        foreach (var kv in operation.KeyValuePairs)
-                                        { 
-                                            cur.Put(kv.Key, kv.Value, CursorPutOptions.NoOverwrite);                                            
-                                            insertedCount += 1;
-                                        }
-                                    }
-                                    result = insertedCount;
-                                    break;
+                                var db = OpenDatabase(operation.Database);
+                                var result = 0;
 
-                                case WriteOperationType.Update:
-                                    var updatedCount = 0;
-                                    using (var cur = tx.CreateCursor(db))
-                                    {
-                                        foreach (var kv in operation.KeyValuePairs)
-                                            if (cur.MoveTo(kv.Key))
+                                switch (operation.Type)
+                                {
+                                    case WriteOperationType.Insert:
+                                        var insertedCount = 0;
+                                        using (var cur = tx.CreateCursor(db))
+                                        {
+                                            foreach (var kv in operation.KeyValuePairs)
                                             {
-                                                cur.Put(kv.Key, kv.Value, CursorPutOptions.Current);                                                
-                                                updatedCount += 1;
-                                            }                                        
-                                    }
-                                    result = updatedCount;
-                                    break;
-
-                                case WriteOperationType.Delete:
-                                    var deletedCount = 0;
-                                    using (var cur = tx.CreateCursor(db))
-                                    {
-                                        foreach (var kv in operation.KeyValuePairs)
-                                            if (cur.MoveTo(kv.Key))
-                                            {
-                                                cur.Delete();                                                
-                                                deletedCount += 1;
+                                                cur.Put(kv.Key, kv.Value, CursorPutOptions.NoOverwrite);
+                                                insertedCount += 1;
                                             }
-                                    }
-                                    result = deletedCount;
-                                    break;
+                                        }
+                                        result = insertedCount;
+                                        break;
 
-                                case WriteOperationType.DropDatabase:
-                                    tx.DropDatabase(db);
-                                    result = 1;
-                                    break;
+                                    case WriteOperationType.Update:
+                                        var updatedCount = 0;
+                                        using (var cur = tx.CreateCursor(db))
+                                        {
+                                            foreach (var kv in operation.KeyValuePairs)
+                                                if (cur.MoveTo(kv.Key))
+                                                {
+                                                    cur.Put(kv.Key, kv.Value, CursorPutOptions.Current);
+                                                    updatedCount += 1;
+                                                }
+                                        }
+                                        result = updatedCount;
+                                        break;
 
-                                default:
-                                    throw new InvalidOperationException($"Invalid Lightning DbOperationType: {operation.Type}");
+                                    case WriteOperationType.Delete:
+                                        var deletedCount = 0;
+                                        using (var cur = tx.CreateCursor(db))
+                                        {
+                                            foreach (var kv in operation.KeyValuePairs)
+                                                if (cur.MoveTo(kv.Key))
+                                                {
+                                                    cur.Delete();
+                                                    deletedCount += 1;
+                                                }
+                                        }
+                                        result = deletedCount;
+                                        break;
+
+                                    case WriteOperationType.DropDatabase:
+                                        tx.DropDatabase(db);
+                                        result = 1;
+                                        break;
+
+                                    default:
+                                        throw new InvalidOperationException($"Invalid Lightning DbOperationType: {operation.Type}");
+                                }
+
+                                tx.Commit();
+                                tcs.SetResult(result);
+
                             }
-
-                            tx.Commit();
-                            tcs.SetResult(result);
-                            
+                            catch
+                            {
+                                tx.Abort();
+                                throw;
+                            }
+                            Thread.Sleep(10);
                         }
-                        catch 
-                        {                            
-                            tx.Abort();
-                            throw;
-                        }
-                        Thread.Sleep(10);
+                    }
+                    catch (Exception ex)
+                    {
+                        _log.Error(ex);
+                        tcs.SetException(ex);
                     }
                 }
-                catch (Exception ex)
-                {
-                    _log.Error(ex);
-                    tcs.SetException(ex);
-                }
+            }
+            catch (OperationCanceledException)
+            {
+                _log.Warn("The BackgroundWriter thread was canceled.");
             }
         }
 

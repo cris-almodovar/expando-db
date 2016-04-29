@@ -11,7 +11,7 @@ namespace ExpandoDB.Tests
     [TestClass]
     public class DatabaseTests
     {
-        private string _dbPath;
+        private string _dataPath;
         private Database _db;
 
         [TestInitialize]
@@ -19,11 +19,11 @@ namespace ExpandoDB.Tests
         {
             var appPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
-            _dbPath = Path.Combine(appPath, $"db-{Guid.NewGuid()}");
-            if (Directory.Exists(_dbPath))
-                Directory.Delete(_dbPath, true);
+            _dataPath = Path.Combine(appPath, Guid.NewGuid().ToString());
+            if (Directory.Exists(_dataPath))
+                Directory.Delete(_dataPath, true);
 
-            _db = new Database(_dbPath);
+            _db = new Database(_dataPath);
 
             var book1 = TestUtils.CreateBook("The Hitchhiker's Guide to the Galaxy", "Douglas Adams", new DateTime(1979, 10, 12, 12, 0, 0, DateTimeKind.Utc), 10, "The Hitchhiker's Guide to the Galaxy is a comedy science fiction series created by Douglas Adams. Originally a radio comedy broadcast on BBC Radio 4 in 1978, it was later adapted to other formats, and over several years it gradually became an international multi-media phenomenon.");
             var book2 = TestUtils.CreateBook("The Restaurant at the End of the Universe", "Douglas Adams", new DateTime(1980, 10, 12, 12, 0, 0, DateTimeKind.Utc), 9, "The Restaurant at the End of the Universe (1980, ISBN 0-345-39181-0) is the second book in the Hitchhiker's Guide to the Galaxy comedy science fiction 'trilogy' by Douglas Adams, and is a sequel.");
@@ -43,8 +43,8 @@ namespace ExpandoDB.Tests
         public void Cleanup()
         {
             _db.Dispose();
-            Thread.Sleep(TimeSpan.FromSeconds(15));
-            Directory.Delete(_dbPath, true);
+            Thread.Sleep(TimeSpan.FromSeconds(5));
+            Directory.Delete(_dataPath, true);
         }
 
         [TestMethod]
@@ -76,7 +76,7 @@ namespace ExpandoDB.Tests
         public void Can_dispose_and_reload()
         {
             _db.Dispose();
-            _db = new Database(_dbPath);
+            _db = new Database(_dataPath);
 
             var criteria = new SearchCriteria { Query = "Author:Douglas", SortByField = "-Title", TopN = 1 };
             var result = _db["books"].SearchAsync(criteria).Result;

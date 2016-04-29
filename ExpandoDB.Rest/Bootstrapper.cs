@@ -31,6 +31,7 @@ namespace ExpandoDB.Rest
             // Configure JSON handling.
             JsonSettings.RetainCasing = true;
             JsonSettings.ISO8601DateFormat = true;
+            JsonSettings.MaxJsonLength = Int32.MaxValue;
         }
 
         private void ConfigureExceptionHandling(IPipelines pipelines)
@@ -100,7 +101,7 @@ namespace ExpandoDB.Rest
             // There is only one instance of the Database object in the application.
             // It is created here, and registered with the IOC container so that 
             // it can be auto-injected into DbService instances.            
-            var db = new Database(Config.DbPath);
+            var db = new Database(Config.DataPath);
             container.Register<Database>(db);                       
         }
 

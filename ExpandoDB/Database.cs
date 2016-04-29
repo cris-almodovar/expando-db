@@ -4,7 +4,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Configuration;
-using System.Data.SQLite;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -21,11 +20,10 @@ namespace ExpandoDB
     /// </remarks>
     public class Database : IDisposable
     {
-        internal const string DB_FILENAME = "ExpandoDB.s3db";
+        internal const string DATA_DIRECTORY_NAME = "data";
         internal const string DB_DIRECTORY_NAME = "db";
         internal const string INDEX_DIRECTORY_NAME = "index";
-
-        private readonly string _dbPath;                
+        private readonly string _dataPath;                
         private readonly string _indexPath;
         private readonly ConcurrentDictionary<string, DocumentCollection> _documentCollections;
         private readonly LightningStorageEngine _storageEngine;
@@ -39,25 +37,24 @@ namespace ExpandoDB
         /// <summary>
         /// Initializes a new instance of the <see cref="Database" /> class.
         /// </summary>
-        /// <param name="dbPath">The database directory path.</param>
-        public Database(string dbPath = null)
+        /// <param name="dataPath">The database directory path.</param>
+        public Database(string dataPath = null)
         {
-            if (String.IsNullOrWhiteSpace(dbPath))
+            if (String.IsNullOrWhiteSpace(dataPath))
             {
                 var appPath = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
-                dbPath = Path.Combine(appPath, DB_DIRECTORY_NAME);
+                dataPath = Path.Combine(appPath, DATA_DIRECTORY_NAME);
             }
 
-            _dbPath = dbPath;
-            //_dbFilePath = Path.Combine(_dbPath, DB_FILENAME);
-            //EnsureDatabaseDirectoryExists(_dbPath, _dbFilePath);
+            _dataPath = dataPath;            
+            EnsureDataDirectoryExists(_dataPath);
 
-            _indexPath = Path.Combine(_dbPath, INDEX_DIRECTORY_NAME);
+            _indexPath = Path.Combine(_dataPath, INDEX_DIRECTORY_NAME);
             EnsureIndexDirectoryExists(_indexPath);
 
-            _documentCollections = new ConcurrentDictionary<string, DocumentCollection>();
-            _storageEngine = new LightningStorageEngine(_dbPath);
+            _storageEngine = new LightningStorageEngine(_dataPath);
             _schemaStorage = new LightningSchemaStorage(_storageEngine);
+            _documentCollections = new ConcurrentDictionary<string, DocumentCollection>();            
 
             var schemas = _schemaStorage.GetAllAsync().Result.ToDictionary(cs => cs.Name);
             if (schemas != null && schemas.Count > 0)
@@ -72,78 +69,77 @@ namespace ExpandoDB
             }
 
             _schemaPersistenceIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["SchemaPersistenceIntervalSeconds"] ?? "1");
-            //_schemaPersistenceTimer = new Timer( o => PersistSchemas().Wait(), null, TimeSpan.FromSeconds(_schemaPersistenceIntervalSeconds), TimeSpan.FromSeconds(_schemaPersistenceIntervalSeconds));
-
+            _schemaPersistenceTimer = new Timer( o => PersistSchemas(), null, TimeSpan.FromSeconds(_schemaPersistenceIntervalSeconds*2), TimeSpan.FromSeconds(_schemaPersistenceIntervalSeconds));            
         }
 
-        private async Task PersistSchemas()
+        private void PersistSchemas()
         {
             // TODO: Don't use a Timer - use an async WaitHandle instead.
 
-            if (Monitor.TryEnter(_schemaPersistenceLock, TimeSpan.FromMilliseconds(10)) == false)
-                return;
-
-            try
-            {
-                var newSchemasToInsert = _documentCollections.Keys.Except(_schemaCache.Keys);
-                foreach (var schemaName in newSchemasToInsert)
+            Task.Run(
+                async () =>
                 {
-                    if (_documentCollections[schemaName] == null)
-                        continue;
+                    if (Monitor.TryEnter(_schemaPersistenceLock, TimeSpan.FromMilliseconds(10)) == false)
+                        return;
+                    try
+                    {
+                        var newSchemasToInsert = _documentCollections.Keys.Except(_schemaCache.Keys);
+                        foreach (var schemaName in newSchemasToInsert)
+                        {
+                            if (_documentCollections[schemaName] == null)
+                                continue;
 
-                    var newSchema = _documentCollections[schemaName].GetSchema();
-                    _schemaCache.TryAdd(newSchema.Name, newSchema);
-                    await _schemaStorage.InsertAsync(newSchema).ConfigureAwait(false);
-                }
+                            var newSchema = _documentCollections[schemaName].GetSchema();
+                            _schemaCache.TryAdd(newSchema.Name, newSchema);
+                            await _schemaStorage.InsertAsync(newSchema).ConfigureAwait(false);
+                        }
 
-                var schemasToUpdate = from schemaName in _documentCollections.Keys.Intersect(_schemaCache.Keys)
-                                      let persistedSchema = _schemaCache[schemaName]
-                                      let liveSchema = _documentCollections[schemaName].GetSchema()
-                                      where persistedSchema != liveSchema                                      
-                                      select schemaName;
+                        var schemasToUpdate = from schemaName in _documentCollections.Keys.Intersect(_schemaCache.Keys)
+                                              let persistedSchema = _schemaCache[schemaName]
+                                              let liveSchema = _documentCollections[schemaName].GetSchema()
+                                              where persistedSchema != liveSchema
+                                              select schemaName;
 
-                foreach (var schemaName in schemasToUpdate)
-                {
-                    if (_documentCollections[schemaName] == null)
-                        continue;
+                        foreach (var schemaName in schemasToUpdate)
+                        {
+                            if (_documentCollections[schemaName] == null)
+                                continue;
 
-                    var updatedSchema = _documentCollections[schemaName].GetSchema();
-                    _schemaCache[schemaName] = updatedSchema;
-                    await _schemaStorage.UpdateAsync(updatedSchema).ConfigureAwait(false);
-                }
+                            var updatedSchema = _documentCollections[schemaName].GetSchema();
+                            _schemaCache[schemaName] = updatedSchema;
+                            await _schemaStorage.UpdateAsync(updatedSchema).ConfigureAwait(false);
+                        }
 
-                var schemasToRemove = from schemaName in _schemaCache.Keys.Except(_documentCollections.Keys)                                      
-                                      select schemaName;
+                        var schemasToRemove = from schemaName in _schemaCache.Keys.Except(_documentCollections.Keys)
+                                              select schemaName;
 
-                foreach (var schemaName in schemasToRemove)
-                {
-                    DocumentCollectionSchema removedSchema = null;
-                    _schemaCache.TryRemove(schemaName, out removedSchema);
-                    await _schemaStorage.DeleteAsync(schemaName).ConfigureAwait(false);
-                }
-            }
-            catch (Exception ex)
-            {
-                _log.Error(ex);
-            }     
-            finally
-            {
-                Monitor.Exit(_schemaPersistenceLock);                
-            }       
+                        foreach (var schemaName in schemasToRemove)
+                        {
+                            DocumentCollectionSchema removedSchema = null;
+                            _schemaCache.TryRemove(schemaName, out removedSchema);
+                            await _schemaStorage.DeleteAsync(schemaName).ConfigureAwait(false);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _log.Error(ex);
+                    }
+                    finally
+                    {
+                        Monitor.Exit(_schemaPersistenceLock);
+                    }
+                }               
+           ).ConfigureAwait(false);            
         }
 
         /// <summary>
-        /// Ensures the SQLite database file exists.
+        /// Ensures the data directory exists.
         /// </summary>
-        /// <param name="dbPath">The database path.</param>
-        /// <param name="dbFilePath">The database file path.</param>
-        private static void EnsureDatabaseDirectoryExists(string dbPath, string dbFilePath)
+        /// <param name="dataPath">The database path.</param>
+        private static void EnsureDataDirectoryExists(string dataPath)
         {
-            if (!Directory.Exists(dbPath))
-                Directory.CreateDirectory(dbPath);
-
-            if (!File.Exists(dbFilePath))
-                SQLiteConnection.CreateFile(dbFilePath);
+            if (!Directory.Exists(dataPath))
+                Directory.CreateDirectory(dataPath);            
         }
 
         /// <summary>
@@ -209,7 +205,7 @@ namespace ExpandoDB
                 isSuccessful = await collection.DropAsync().ConfigureAwait(false);
 
             if (isSuccessful)
-                await PersistSchemas().ConfigureAwait(false);
+                PersistSchemas();
 
             return isSuccessful;
         }
@@ -232,7 +228,7 @@ namespace ExpandoDB
             foreach (var collection in _documentCollections.Values)            
                 collection.Dispose();
 
-            SQLiteConnection.ClearAllPools();
+            _storageEngine.Dispose();       
         }
     }
 }

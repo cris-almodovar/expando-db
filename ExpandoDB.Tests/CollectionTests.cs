@@ -28,7 +28,7 @@ namespace ExpandoDB.Tests
 
 
 
-           // _collection = new DocumentCollection("books", _dbPath);
+           //_collection = new DocumentCollection("books", _dbPath);
         }
 
         [TestCleanup]

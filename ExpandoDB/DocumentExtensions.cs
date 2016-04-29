@@ -150,16 +150,7 @@ namespace ExpandoDB
         {
             return new Document(json.ToDictionary().ToExpando());
         }
-
-        /// <summary>
-        /// Deserializes the StorageRow.json string into a Document object.
-        /// </summary>
-        /// <param name="row">The StorageRow.</param>
-        /// <returns></returns>
-        public static Document ToDocument(this StorageRow row)
-        {
-            return new Document(row.ToDictionary().ToExpando());
-        }        
+        
 
         /// <summary>
         /// Deserializes the JSON string into an IDictionary object.
@@ -169,43 +160,13 @@ namespace ExpandoDB
         public static IDictionary<string, object> ToDictionary(this string json)
         {
             return DynamicSerializer.Deserialize<IDictionary<string, object>>(json);
-        }
+        }                
 
         /// <summary>
-        /// Deserializes the StorageRow.json string into an ExpandoObject.
+        /// Deserializes the key-value pairs to Document objects.
         /// </summary>
-        /// <param name="row">The StorageRow.</param>
+        /// <param name="keyValuePairs">The key value pairs.</param>
         /// <returns></returns>
-        public static IDictionary<string, object> ToDictionary(this StorageRow row)
-        {
-            var dictionary = new Dictionary<string, object>() as IDictionary<string, object>;
-            try
-            {
-                dictionary = row.json.ToDictionary();
-            }
-            catch (Exception ex)
-            {
-                var guid = Guid.Empty;
-                Guid.TryParse(row.id, out guid);
-
-                dictionary[Document.ID_FIELD_NAME] = guid;
-                dictionary[Document.PARSE_ERROR_MESSAGE_FIELD_NAME] = ex.Message;
-                dictionary[Document.PARSE_ERROR_JSON_FIELD_NAME] = row.json;
-            }
-
-            return dictionary;
-        }
-
-        /// <summary>
-        /// Deserializes the JSON results .
-        /// </summary>
-        /// <param name="rows">The rows.</param>
-        /// <returns></returns>
-        internal static EnumerableDocuments ToEnumerableDocuments(this IEnumerable<StorageRow> rows)
-        {
-            return new EnumerableDocuments(rows);
-        }
-
         internal static EnumerableDocuments ToEnumerableDocuments(this IEnumerable<LightningKeyValuePair> keyValuePairs)
         {
             return new EnumerableDocuments(keyValuePairs);
