@@ -4,7 +4,7 @@ namespace ExpandoDB.Tests
 {
     public static class TestUtils
     {
-        public static Document CreateBook(string title, string author, DateTime publishDate, int rating, string description)
+        public static Document CreateBook(string title, string author, DateTime? publishDate, int? rating, string description)
         {
             var document = new Document();
             document._id = Guid.NewGuid();

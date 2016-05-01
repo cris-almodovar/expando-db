@@ -94,7 +94,7 @@ namespace ExpandoDB.Search
             // check if it's the correct one.
             if (_perFieldAnalyzers.ContainsKey(fieldName))
             {
-                // This is only true when the initial DataType for the field is Unknown, 
+                // This is only true when the initial DataType for the field is Null, 
                 // and then the DataType becomes known (i.e. Text, Number, Guid, Boolean, DateTime)
                 if (_knownDataTypes[fieldName] != indexedField.DataType)
                     RefreshAnalyzer(indexedField);

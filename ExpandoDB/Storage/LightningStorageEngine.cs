@@ -325,7 +325,7 @@ namespace ExpandoDB.Storage
             }
             catch (OperationCanceledException)
             {
-                _log.Warn("The BackgroundWriter thread was canceled.");
+                _log.Debug("The BackgroundWriter thread was canceled.");
             }
         }
 
