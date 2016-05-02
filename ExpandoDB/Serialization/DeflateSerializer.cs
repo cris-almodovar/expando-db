@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.IO;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
@@ -11,6 +12,7 @@ namespace ExpandoDB.Serialization
     public class DeflateSerializer
     {
         private static readonly NetSerializer.Serializer _serializer;
+        private static readonly RecyclableMemoryStreamManager _memoryManager;
 
         /// <summary>
         /// Initializes the <see cref="DeflateSerializer"/> class.
@@ -78,6 +80,7 @@ namespace ExpandoDB.Serialization
             };
 
             _serializer = new NetSerializer.Serializer(supportedTypes);
+            _memoryManager = new RecyclableMemoryStreamManager();
         }
 
         public byte[] ToCompressedByteArray(Document document)
@@ -86,7 +89,7 @@ namespace ExpandoDB.Serialization
                 throw new ArgumentNullException(nameof(document));
 
             byte[] value = null;
-            using (var memoryStream = new MemoryStream())
+            using (var memoryStream = _memoryManager.GetStream())
             {
                 using (var compressionStream = new DeflateStream(memoryStream, CompressionMode.Compress))
                 {
@@ -105,7 +108,7 @@ namespace ExpandoDB.Serialization
                 throw new ArgumentNullException(nameof(collectionSchema));
 
             byte[] value = null;
-            using (var memoryStream = new MemoryStream())
+            using (var memoryStream = _memoryManager.GetStream())
             {
                 using (var compressionStream = new DeflateStream(memoryStream, CompressionMode.Compress))
                 {
@@ -122,8 +125,8 @@ namespace ExpandoDB.Serialization
                 return null;
 
             Document document = null;
-            using (var memoryStream = new MemoryStream(value))
-            {
+            using (var memoryStream = _memoryManager.GetStream(null, value, 0, value.Length))
+            {                
                 using (var decompressionStream = new DeflateStream(memoryStream, CompressionMode.Decompress))
                 {
                     var dictionary = _serializer.Deserialize(decompressionStream) as IDictionary<string, object>;
@@ -140,7 +143,7 @@ namespace ExpandoDB.Serialization
                 return null;
 
             DocumentCollectionSchema documentCollectionSchema = null;
-            using (var memoryStream = new MemoryStream(value))
+            using (var memoryStream = _memoryManager.GetStream(null, value, 0, value.Length))
             {
                 using (var decompressionStream = new DeflateStream(memoryStream, CompressionMode.Decompress))
                 {
