@@ -13,8 +13,7 @@ namespace ExpandoDB.Tests
     public class ContentStorageTests
     {
         private string _appPath;
-        private string _dataPath;
-        private string _dbFilePath;
+        private string _dataPath;        
         private LightningStorageEngine _storageEngine;     
         private IDocumentStorage _documentStorage;
 
