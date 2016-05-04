@@ -330,121 +330,9 @@ namespace ExpandoDB.Storage
         }
 
         private ThreadLocal<LightningTransaction> _readonlyTransaction = new ThreadLocal<LightningTransaction>(true);
-        public async Task<LightningKeyValuePair> GetAsync(string database, byte[] key)
-        {
-            var result = await Task.Run(() =>
-            {
-                var txn = GetReadonlyTransaction();
-                var db = OpenDatabase(database);
-                var kv = new LightningKeyValuePair { Key = key };
-
-                lock (txn)
-                {
-                    kv.Value = txn.Get(db, key);
-                    if (txn.State == LightningTransactionState.Active)
-                        txn.Reset();
-
-                    return kv;
-                }
-            }
-            ).ConfigureAwait(false);
-
-            return result;        
-        }
-
-        public async Task<IEnumerable<LightningKeyValuePair>> GetAsync(string database, IEnumerable<byte[]> keys)
-        {
-            var result = await Task.Run(() =>
-            {   
-                var list = new List<LightningKeyValuePair>();
-                var txn = GetReadonlyTransaction();
-
-                lock (txn)
-                {
-                    var db = OpenDatabase(database);
-                    using (var cur = txn.CreateCursor(db))
-                    {
-                        foreach (var key in keys)
-                        {
-                            if (cur.MoveTo(key))
-                            {
-                                var kv = new LightningKeyValuePair
-                                {
-                                    Key = key,
-                                    Value = cur.GetCurrent().Value
-                                };
-
-                                list.Add(kv);
-                            }
-                        }
-                    }
-
-                    if (txn.State == LightningTransactionState.Active)
-                        txn.Reset();
-                }
-
-                return list;
-            }
-            ).ConfigureAwait(false);
-
-            return result;
-        }
-
-        public async Task<IEnumerable<LightningKeyValuePair>> GetAllAsync(string database)
-        {
-            var result = await Task.Run(() =>
-            {    
-                var list = new List<LightningKeyValuePair>();
-                var txn = GetReadonlyTransaction();
-
-                lock (txn)
-                {                    
-                    var db = OpenDatabase(database);
-                    using (var cursor = txn.CreateCursor(db))
-                    {
-                        foreach (var item in cursor)
-                        {
-                            var kv = new LightningKeyValuePair { Key = item.Key, Value = item.Value };
-                            list.Add(kv);
-                        }
-                    }                   
-
-                    if (txn.State == LightningTransactionState.Active)
-                        txn.Reset();
-                }
-
-                return list;
-            }
-            ).ConfigureAwait(false);
-
-            return result;
-        }
-
-        public async Task<bool> ExistsAsync(string database, byte[] key)
-        {
-            var result = await Task.Run(() =>
-            {                
-                var exists = false;
-                var txn = GetReadonlyTransaction();
-
-                lock (txn)
-                {
-                    var db = OpenDatabase(database);
-                    exists = txn.ContainsKey(db, key);
-
-                    if (txn.State == LightningTransactionState.Active)
-                        txn.Reset();
-                }
-
-                return exists;
-            }
-            ).ConfigureAwait(false);
-
-            return result;
-        }       
 
         private LightningTransaction GetReadonlyTransaction()
-        {            
+        {
             if (_readonlyTransaction.IsValueCreated)
             {
                 if (_readonlyTransaction.Value.State == LightningTransactionState.Reseted)
@@ -455,17 +343,117 @@ namespace ExpandoDB.Storage
                     {
                         _readonlyTransaction.Value.Dispose();
                         _readonlyTransaction.Value = _environment.BeginTransaction(TransactionBeginFlags.ReadOnly);
-                    }          
+                    }
                 }
             }
             else
             {
-                _readonlyTransaction.Value = _environment.BeginTransaction(TransactionBeginFlags.ReadOnly);                
+                _readonlyTransaction.Value = _environment.BeginTransaction(TransactionBeginFlags.ReadOnly);
             }
 
             return _readonlyTransaction.Value;
         }
 
+        public async Task<LightningKeyValuePair> GetAsync(string database, byte[] key)
+        {
+            var result = await Task.FromResult(Get(database, key));
+            return result;        
+        }
+
+        private LightningKeyValuePair Get(string database, byte[] key)
+        {
+            var txn = GetReadonlyTransaction();
+            var db = OpenDatabase(database);
+            var kv = new LightningKeyValuePair { Key = key };
+
+            kv.Value = txn.Get(db, key);
+            if (txn.State == LightningTransactionState.Active)
+                txn.Reset();
+
+            return kv;
+        }
+
+        public async Task<IEnumerable<LightningKeyValuePair>> GetAsync(string database, IEnumerable<byte[]> keys)
+        {
+            var result = await Task.FromResult(Get(database, keys));
+            return result;
+        }
+
+        private IEnumerable<LightningKeyValuePair> Get(string database, IEnumerable<byte[]> keys)
+        {
+            var list = new List<LightningKeyValuePair>();
+            var txn = GetReadonlyTransaction();
+
+            var db = OpenDatabase(database);
+            using (var cur = txn.CreateCursor(db))
+            {
+                foreach (var key in keys)
+                {
+                    if (cur.MoveTo(key))
+                    {
+                        var kv = new LightningKeyValuePair
+                        {
+                            Key = key,
+                            Value = cur.GetCurrent().Value
+                        };
+
+                        list.Add(kv);
+                    }
+                }
+            }
+
+            if (txn.State == LightningTransactionState.Active)
+                txn.Reset();
+
+            return list;
+        }
+
+        public async Task<IEnumerable<LightningKeyValuePair>> GetAllAsync(string database)
+        {
+            var result = await Task.FromResult(GetAll(database));
+            return result;
+        }
+
+        private IEnumerable<LightningKeyValuePair> GetAll(string database)
+        {
+            var list = new List<LightningKeyValuePair>();
+            var txn = GetReadonlyTransaction();
+
+            var db = OpenDatabase(database);
+            using (var cursor = txn.CreateCursor(db))
+            {
+                foreach (var item in cursor)
+                {
+                    var kv = new LightningKeyValuePair { Key = item.Key, Value = item.Value };
+                    list.Add(kv);
+                }
+            }
+
+            if (txn.State == LightningTransactionState.Active)
+                txn.Reset();
+
+            return list;
+        }
+
+        public async Task<bool> ExistsAsync(string database, byte[] key)
+        {
+            var result = await Task.FromResult(Exists(database, key));
+            return result;
+        }
+
+        private bool Exists(string database, byte[] key)
+        {
+            var exists = false;
+            var txn = GetReadonlyTransaction();
+
+            var db = OpenDatabase(database);
+            exists = txn.ContainsKey(db, key);
+
+            if (txn.State == LightningTransactionState.Active)
+                txn.Reset();
+
+            return exists;
+        }
 
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
