@@ -242,90 +242,86 @@ namespace ExpandoDB.Storage
             {
                 foreach (var operation in _writeOperationsQueue.GetConsumingEnumerable(_cancellationToken))
                 {
-                    var tcs = operation.TaskCompletionSource;
-                    try
+                    using (var txn = _environment.BeginTransaction())
                     {
-                        using (var txn = _environment.BeginTransaction())
+                        try
                         {
-                            try
-                            {
-                                var db = OpenDatabase(operation.Database);
-                                var result = 0;
+                            var db = OpenDatabase(operation.Database);
+                            var result = 0;
 
-                                switch (operation.Type)
-                                {
-                                    case WriteOperationType.Insert:
-                                        var insertedCount = 0;
-                                        using (var cur = txn.CreateCursor(db))
+                            switch (operation.Type)
+                            {
+                                case WriteOperationType.Insert:
+                                    var insertedCount = 0;
+                                    using (var cur = txn.CreateCursor(db))
+                                    {
+                                        foreach (var kv in operation.KeyValuePairs)
                                         {
-                                            foreach (var kv in operation.KeyValuePairs)
+                                            cur.Put(kv.Key, kv.Value, CursorPutOptions.NoOverwrite);
+                                            insertedCount += 1;
+                                        }
+                                    }
+                                    result = insertedCount;
+                                    break;
+
+                                case WriteOperationType.Update:
+                                    var updatedCount = 0;
+                                    using (var cur = txn.CreateCursor(db))
+                                    {
+                                        foreach (var kv in operation.KeyValuePairs)
+                                            if (cur.MoveTo(kv.Key))
                                             {
-                                                cur.Put(kv.Key, kv.Value, CursorPutOptions.NoOverwrite);
-                                                insertedCount += 1;
+                                                cur.Put(kv.Key, kv.Value, CursorPutOptions.Current);
+                                                updatedCount += 1;
                                             }
-                                        }
-                                        result = insertedCount;
-                                        break;
+                                    }
+                                    result = updatedCount;
+                                    break;
 
-                                    case WriteOperationType.Update:
-                                        var updatedCount = 0;
-                                        using (var cur = txn.CreateCursor(db))
-                                        {
-                                            foreach (var kv in operation.KeyValuePairs)
-                                                if (cur.MoveTo(kv.Key))
-                                                {
-                                                    cur.Put(kv.Key, kv.Value, CursorPutOptions.Current);
-                                                    updatedCount += 1;
-                                                }
-                                        }
-                                        result = updatedCount;
-                                        break;
+                                case WriteOperationType.Delete:
+                                    var deletedCount = 0;
+                                    using (var cur = txn.CreateCursor(db))
+                                    {
+                                        foreach (var kv in operation.KeyValuePairs)
+                                            if (cur.MoveTo(kv.Key))
+                                            {
+                                                cur.Delete();
+                                                deletedCount += 1;
+                                            }
+                                    }
+                                    result = deletedCount;
+                                    break;
 
-                                    case WriteOperationType.Delete:
-                                        var deletedCount = 0;
-                                        using (var cur = txn.CreateCursor(db))
-                                        {
-                                            foreach (var kv in operation.KeyValuePairs)
-                                                if (cur.MoveTo(kv.Key))
-                                                {
-                                                    cur.Delete();
-                                                    deletedCount += 1;
-                                                }
-                                        }
-                                        result = deletedCount;
-                                        break;
+                                case WriteOperationType.DropDatabase:
+                                    txn.DropDatabase(db);
+                                    result = 1;
+                                    break;
 
-                                    case WriteOperationType.DropDatabase:
-                                        txn.DropDatabase(db);
-                                        result = 1;
-                                        break;
-
-                                    default:
-                                        throw new InvalidOperationException($"Invalid Lightning DbOperationType: {operation.Type}");
-                                }
-
-                                txn.Commit();
-                                tcs.SetResult(result);
-
+                                default:
+                                    throw new InvalidOperationException($"Invalid Lightning DbOperationType: {operation.Type}");
                             }
-                            catch
-                            {
-                                txn.Abort();
-                                throw;
-                            }
-                            Thread.Sleep(10);
+
+                            txn.Commit();
+                            operation.TaskCompletionSource.SetResult(result);
+
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        _log.Error(ex);
-                        tcs.SetException(ex);
+                        catch (Exception ex)
+                        {
+                            _log.Error(ex);
+                            txn.Abort();
+                            operation.TaskCompletionSource.SetException(ex);
+                        }
+
                     }
                 }
             }
             catch (OperationCanceledException)
             {
                 _log.Debug("The BackgroundWriter thread was canceled.");
+            }
+            catch (Exception ex)
+            {
+                _log.Error(ex);
             }
         }
 
