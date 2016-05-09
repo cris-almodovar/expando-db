@@ -25,7 +25,7 @@ namespace ExpandoDB
         internal const string INDEX_DIRECTORY_NAME = "index";
         private readonly string _dataPath;                
         private readonly string _indexPath;
-        private readonly ConcurrentDictionary<string, DocumentCollection> _documentCollections;
+        private readonly IDictionary<string, DocumentCollection> _documentCollections;
         private readonly LightningStorageEngine _storageEngine;        
         private readonly ILog _log = LogManager.GetLogger(typeof(Database).Name);
 
@@ -48,13 +48,13 @@ namespace ExpandoDB
             EnsureIndexDirectoryExists(_indexPath);
 
             _storageEngine = new LightningStorageEngine(_dataPath); 
-            _documentCollections = new ConcurrentDictionary<string, DocumentCollection>(); 
+            _documentCollections = new Dictionary<string, DocumentCollection>(); 
                        
             var persistedSchemas = new LightningSchemaStorage(_storageEngine).GetAllAsync().Result;             
             foreach (var schema in persistedSchemas)
             {
                 var collection = new DocumentCollection(schema, _storageEngine);
-                _documentCollections.TryAdd(schema.Name, collection);
+                _documentCollections.Add(schema.Name, collection);
             }           
         }       
 
@@ -93,11 +93,21 @@ namespace ExpandoDB
                     throw new ArgumentException("name cannot be null or blank");
 
                 DocumentCollection collection = null;
-                if (!_documentCollections.TryGetValue(name, out collection))
+                if (!_documentCollections.ContainsKey(name))
                 {
-                    collection = new DocumentCollection(name, _storageEngine);
-                    _documentCollections.TryAdd(name, collection);
+                    lock (_documentCollections)
+                    {
+                        if (!_documentCollections.ContainsKey(name))
+                        {
+                            collection = new DocumentCollection(name, _storageEngine);
+                            _documentCollections.Add(name, collection);
+                        }
+                    }
                 }
+
+                collection = _documentCollections[name];
+                if (collection == null || collection.IsDropped)
+                    throw new InvalidOperationException($"The Document Collection '{name}' does not exist.");
 
                 return collection;
             }
@@ -122,13 +132,24 @@ namespace ExpandoDB
         public async Task<bool> DropCollectionAsync(string collectionName)
         {
             if (!_documentCollections.ContainsKey(collectionName))
-                return false;            
+                return false;
 
             var isSuccessful = false;
-
             DocumentCollection collection = null;
-            if (_documentCollections.TryRemove(collectionName, out collection))            
-                isSuccessful = await collection.DropAsync().ConfigureAwait(false);            
+            
+            lock (_documentCollections)
+            {
+                if (_documentCollections.ContainsKey(collectionName))
+                {
+                    collection = _documentCollections[collectionName];
+                    _documentCollections.Remove(collectionName);
+                }                    
+            }
+
+            if (collection == null)
+                return false;
+
+            isSuccessful = await collection.DropAsync().ConfigureAwait(false);
 
             return isSuccessful;
         }

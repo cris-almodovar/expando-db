@@ -19,8 +19,15 @@ namespace ExpandoDB.Rest
     /// <seealso cref="Nancy.DefaultNancyBootstrapper" />
     public class Bootstrapper : DefaultNancyBootstrapper
     {
-        private readonly ILog _log = LogManager.GetLogger(typeof(Bootstrapper).Name);              
+        private readonly ILog _log = LogManager.GetLogger(typeof(Bootstrapper).Name);
 
+        /// <summary>
+        /// Initialise the bootstrapper - can be used for adding pre/post hooks and
+        /// any other initialisation tasks that aren't specifically container setup
+        /// related
+        /// </summary>
+        /// <param name="container">Container instance for resolving types if required.</param>
+        /// <param name="pipelines"></param>
         protected override void ApplicationStartup(TinyIoCContainer container, IPipelines pipelines)
         {
             base.ApplicationStartup(container, pipelines);
@@ -34,6 +41,10 @@ namespace ExpandoDB.Rest
             JsonSettings.MaxJsonLength = Int32.MaxValue;
         }
 
+        /// <summary>
+        /// Configures exception handling.
+        /// </summary>
+        /// <param name="pipelines">The pipelines.</param>
         private void ConfigureExceptionHandling(IPipelines pipelines)
         {
             StaticConfiguration.DisableErrorTraces = Boolean.Parse(ConfigurationManager.AppSettings["NancyDisableErrorTraces"] ?? "false");
@@ -66,32 +77,45 @@ namespace ExpandoDB.Rest
             };
         }
 
+        /// <summary>
+        /// Enables Cross-Origin requests.
+        /// </summary>
+        /// <param name="pipelines">The pipelines.</param>
         private static void EnableCORS(IPipelines pipelines)
         {
             pipelines.AfterRequest.AddItemToEndOfPipeline(ctx =>
             {
-                if (ctx.Request.Headers.Keys.Contains("Origin"))
-                {
-                    var origins = "" + string.Join(" ", ctx.Request.Headers["Origin"]);
-                    ctx.Response.Headers["Access-Control-Allow-Origin"] = origins;
+                var request = ctx.Request;
+                var response = ctx.Response;
 
-                    if (ctx.Request.Method == "OPTIONS")
+                if (request.Headers.Keys.Contains("Origin"))
+                {
+                    var origins = "" + string.Join(" ", request.Headers["Origin"]);
+                    response.Headers["Access-Control-Allow-Origin"] = origins;
+
+                    if (request.Method == "OPTIONS")
                     {
                         // Handle CORS preflight request
-                        ctx.Response.Headers["Access-Control-Allow-Methods"] =
+                        response.Headers["Access-Control-Allow-Methods"] =
                             "GET, POST, PUT, PATCH, DELETE, OPTIONS";
 
-                        if (ctx.Request.Headers.Keys.Contains("Access-Control-Request-Headers"))
+                        if (request.Headers.Keys.Contains("Access-Control-Request-Headers"))
                         {
                             var allowedHeaders = "" + string.Join(
-                                ", ", ctx.Request.Headers["Access-Control-Request-Headers"]);
-                            ctx.Response.Headers["Access-Control-Allow-Headers"] = allowedHeaders;
+                                ", ", request.Headers["Access-Control-Request-Headers"]);
+
+                            response.Headers["Access-Control-Allow-Headers"] = allowedHeaders;
                         }
                     }
                 }
             });
-        }        
+        }
 
+        /// <summary>
+        /// Configures the container using AutoRegister followed by registration
+        /// of default INancyModuleCatalog and IRouteResolver.
+        /// </summary>
+        /// <param name="container">Container instance</param>
         protected override void ConfigureApplicationContainer(TinyIoCContainer container)
         {
             base.ConfigureApplicationContainer(container);
@@ -101,15 +125,21 @@ namespace ExpandoDB.Rest
 
             // There is only one instance of the Database object in the application.
             // It is created here, and registered with the IOC container so that 
-            // it can be auto-injected into DbService instances.            
-            var db = new Database(Config.DataPath);
-            container.Register<Database>(db);                       
+            // it can be auto-injected into DbService instances.
+                        
+            var database = new Database(Config.DataPath);
+            container.Register<Database>(database);                       
         }
 
+        /// <summary>
+        /// Overrides Nancy's internal configuration.
+        /// </summary>
         protected override NancyInternalConfiguration InternalConfiguration
         {
             get
             {
+                // ExpandoDB only returns one Content-Type => application/json.
+                // Here we only enable the JsonProcessor, and disable all others (HTML, XML, etc.)
                 return NancyInternalConfiguration.WithOverrides(
                     c =>
                     {
@@ -120,9 +150,15 @@ namespace ExpandoDB.Rest
             }
         }
 
+        /// <summary>
+        /// Overrides/configures Nancy's conventions
+        /// </summary>
+        /// <param name="nancyConventions">Convention object instance</param>
         protected override void ConfigureConventions(NancyConventions nancyConventions)
         {
             base.ConfigureConventions(nancyConventions);
+
+            // Here we configure the Swagger API directory as a static web directory.
             nancyConventions.StaticContentsConventions.AddDirectory(@"/api-spec");
         }
     }

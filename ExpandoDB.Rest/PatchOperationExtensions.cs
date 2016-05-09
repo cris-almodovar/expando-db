@@ -10,7 +10,12 @@ using System.Threading.Tasks;
 namespace ExpandoDB.Rest
 {
     internal static class PatchOperationExtensions
-    {  
+    {
+        /// <summary>
+        /// Validates the specified list of PATCH operations.
+        /// </summary>
+        /// <param name="operations">The operations.</param>
+        /// <exception cref="System.InvalidOperationException">The PATCH request is empty</exception>
         public static void Validate(this IList<PatchOperationDto> operations)
         {
             if (operations == null || operations.Count == 0)
@@ -20,6 +25,15 @@ namespace ExpandoDB.Rest
                 op.Validate();
         }
 
+        /// <summary>
+        /// Validates the specified PATCH operation.
+        /// </summary>
+        /// <param name="operation">The operation.</param>
+        /// <exception cref="System.ArgumentNullException"></exception>
+        /// <exception cref="System.InvalidOperationException">
+        /// </exception>
+        /// <exception cref="System.ArgumentException">
+        /// </exception>
         public static void Validate(this PatchOperationDto operation)
         {
             if (operation == null)
@@ -54,6 +68,12 @@ namespace ExpandoDB.Rest
             }
         }
 
+        /// <summary>
+        /// Applies the PATH operation to the given Document.
+        /// </summary>
+        /// <param name="operation">The PATCH operation.</param>
+        /// <param name="document">The Document.</param>
+        /// <exception cref="System.ArgumentNullException"></exception>
         public static void Apply(this PatchOperationDto operation, Document document)
         {
             operation.Validate();

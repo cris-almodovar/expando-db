@@ -20,16 +20,16 @@ namespace ExpandoDB.Rest
     /// <seealso cref="Nancy.NancyModule" />
     public class DbService : NancyModule
     {
-        private readonly Database _db;
+        private readonly Database _database;
         private readonly ILog _log = LogManager.GetLogger(typeof(DbService).Name);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DbService"/> class.
         /// </summary>
-        /// <param name="db">The Database instance; this is auto-injected by NancyFX's IOC container.</param>
-        public DbService(Database db) : base("/db")
+        /// <param name="database">The Database instance; this is auto-injected by NancyFX's IOC container.</param>
+        public DbService(Database database) : base("/db")
         {
-            _db = db;
+            _database = database;
 
             // Here we define the routes and their corresponding handlers.
             // Note that all handlers except OnGetCount() and OnGetCollectionSchema() are async.
@@ -70,7 +70,7 @@ namespace ExpandoDB.Rest
             var document = new Document(dictionary);
 
             // Get the target DocumentCollection; it will be auto-created if it doesn't exist.
-            var collection = _db[collectionName];
+            var collection = _database[collectionName];
 
             // Insert the Document object into the target DocumentCollection.
             var guid = await collection.InsertAsync(document).ConfigureAwait(false);
@@ -103,10 +103,10 @@ namespace ExpandoDB.Rest
             if (String.IsNullOrWhiteSpace(collectionName))
                 throw new ArgumentException("collection cannot be null or blank");
 
-            if (!_db.ContainsCollection(collectionName))
+            if (!_database.ContainsCollection(collectionName))
                 return HttpStatusCode.NotFound;
 
-            var collection = _db[collectionName];
+            var collection = _database[collectionName];
             var schema = collection.GetSchema();
 
             stopwatch.Stop();
@@ -131,8 +131,8 @@ namespace ExpandoDB.Rest
             var stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            var schemas = (from collectionName in _db.GetCollectionNames().OrderBy(n=> n)
-                          let schema = _db[collectionName]?.GetSchema()
+            var schemas = (from collectionName in _database.GetCollectionNames().OrderBy(n=> n)
+                          let schema = _database[collectionName]?.GetSchema()
                           where schema != null
                           select schema).ToList();                        
 
@@ -160,10 +160,10 @@ namespace ExpandoDB.Rest
             stopwatch.Start();
 
             var collectionName = (string)req["collection"];
-            if (!_db.ContainsCollection(collectionName))
+            if (!_database.ContainsCollection(collectionName))
                 return HttpStatusCode.NotFound;
 
-            var collection = _db[collectionName];
+            var collection = _database[collectionName];
             var requestDto = this.Bind<SearchRequestDto>();
             var searchCriteria = requestDto.ToSearchCriteria();            
             var result = await collection.SearchAsync(searchCriteria);
@@ -192,10 +192,10 @@ namespace ExpandoDB.Rest
             if (String.IsNullOrWhiteSpace(collectionName))
                 throw new ArgumentException("collection cannot be null or blank");
 
-            if (!_db.ContainsCollection(collectionName))
+            if (!_database.ContainsCollection(collectionName))
                 return HttpStatusCode.NotFound;
 
-            var collection = _db[collectionName];
+            var collection = _database[collectionName];
             var countRequestDto = this.Bind<CountRequestDto>();
             var searchCriteria = countRequestDto.ToSearchCriteria();
             var count = collection.Count(searchCriteria);
@@ -233,10 +233,10 @@ namespace ExpandoDB.Rest
             if (guid == Guid.Empty)
                 throw new ArgumentException("id cannot be Guid.Empty");
 
-            if (!_db.ContainsCollection(collectionName))
+            if (!_database.ContainsCollection(collectionName))
                 return HttpStatusCode.NotFound;
 
-            var collection = _db[collectionName];
+            var collection = _database[collectionName];
             var document = await collection.GetAsync(guid).ConfigureAwait(false);
             if (document == null)
                 return HttpStatusCode.NotFound;
@@ -270,14 +270,14 @@ namespace ExpandoDB.Rest
             if (String.IsNullOrWhiteSpace(collectionName))
                 throw new ArgumentException("collection cannot be null or blank");
 
-            if (!_db.ContainsCollection(collectionName))
+            if (!_database.ContainsCollection(collectionName))
                 return HttpStatusCode.NotFound;
 
             var guid = (Guid)req["id"];
             if (guid == Guid.Empty)
                 throw new ArgumentException("id cannot be Guid.Empty");
 
-            var collection = _db[collectionName];
+            var collection = _database[collectionName];
             var existingDoc = await collection.GetAsync(guid);
             if (existingDoc == null)
                 return HttpStatusCode.NotFound;
@@ -324,7 +324,7 @@ namespace ExpandoDB.Rest
             if (String.IsNullOrWhiteSpace(collectionName))
                 throw new ArgumentException("collection cannot be null or blank");
 
-            if (!_db.ContainsCollection(collectionName))
+            if (!_database.ContainsCollection(collectionName))
                 return HttpStatusCode.NotFound;
 
             var guid = (Guid)req["id"];
@@ -337,7 +337,7 @@ namespace ExpandoDB.Rest
                 throw new InvalidOperationException("PATCH operations must be specified.");
             
             // Retrieve the Document to be PATCHed.
-            var collection = _db[collectionName];
+            var collection = _database[collectionName];
 
             var count = collection.Count(new SearchCriteria { Query = $"{Document.ID_FIELD_NAME}: {guid}" });
             if (count == 0)
@@ -382,14 +382,14 @@ namespace ExpandoDB.Rest
             if (String.IsNullOrWhiteSpace(collectionName))
                 throw new ArgumentException("collection cannot be null or blank");
 
-            if (!_db.ContainsCollection(collectionName))
+            if (!_database.ContainsCollection(collectionName))
                 return HttpStatusCode.NotFound;
 
             var guid = (Guid)req["id"];
             if (guid == Guid.Empty)
                 throw new ArgumentException("id cannot be Guid.Empty");
 
-            var collection = _db[collectionName];
+            var collection = _database[collectionName];
 
             var count = collection.Count(new SearchCriteria { Query = $"{Document.ID_FIELD_NAME}: {guid}" });
             if (count == 0)
@@ -426,10 +426,10 @@ namespace ExpandoDB.Rest
             if (String.IsNullOrWhiteSpace(collectionName))
                 throw new ArgumentException("collection cannot be null or blank");
 
-            if (!_db.ContainsCollection(collectionName))
+            if (!_database.ContainsCollection(collectionName))
                 return HttpStatusCode.NotFound;
 
-            var isDropped = await _db.DropCollectionAsync(collectionName).ConfigureAwait(false);            
+            var isDropped = await _database.DropCollectionAsync(collectionName).ConfigureAwait(false);            
 
             stopwatch.Stop();
 

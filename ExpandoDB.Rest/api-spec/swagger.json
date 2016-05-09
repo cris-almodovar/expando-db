@@ -3,7 +3,7 @@
     "info": {
         "title": "ExpandoDB",
         "description": "A JSON document database with super-fast search",
-        "version": "0.9.8"
+        "version": "0.9.9"
     },
     "host": "localhost:9000",
     "schemes": [

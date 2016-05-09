@@ -19,12 +19,14 @@ namespace ExpandoDB.Search
     {
         public const string FULL_TEXT_FIELD_NAME = "_full_text_";     
         public const string DEFAULT_NULL_TOKEN = "_null_";
+        public const string ILLEGAL_FIELDNAME_CHARS = @"[\+&|!\(\)\{\}\[\]^""~\*\?:\\ ]";
         public const int INDEX_NULL_VALUE = 1; // This is a marker value for NULL in the Lucene index.
         public const int SORT_FIELD_MAX_TEXT_LENGTH = 20;
         public static readonly JavaDouble DOUBLE_MIN_VALUE = new JavaDouble(Double.MinValue);
         public static readonly JavaDouble DOUBLE_MAX_VALUE = new JavaDouble(Double.MaxValue);
         public static readonly JavaLong LONG_MIN_VALUE = new JavaLong(Int64.MinValue);
         public static readonly JavaLong LONG_MAX_VALUE = new JavaLong(Int64.MaxValue);
+        private static readonly System.Text.RegularExpressions.Regex _illegalFieldNameCharsRegex = new System.Text.RegularExpressions.Regex(ILLEGAL_FIELDNAME_CHARS);
 
         /// <summary>
         /// Converts a <see cref="Document"/> object to a <see cref="LuceneDocument"/> object.
@@ -54,6 +56,10 @@ namespace ExpandoDB.Search
 
             foreach (var fieldName in keys)
             {
+                // Validate fieldName - must not contain space or Lucene QueryParser special characters.
+                if (_illegalFieldNameCharsRegex.IsMatch(fieldName))
+                    throw new IndexSchemaException($"The fieldName '{fieldName}' contains illegal characters.");
+
                 IndexedField indexedField = null;
                 if (!indexSchema.Fields.TryGetValue(fieldName, out indexedField))
                 {

@@ -18,12 +18,14 @@ namespace ExpandoDB.Search
 {
     /// <summary>
     /// Annotates a sequence of <see cref="Document"/> objects by adding a <b>_highlight</b> field;
-    /// the <b>_highlight</b> field will contain the best matching text fragment from the <see cref="Document"/> 
+    /// the <b>_highlight</b> field will contain the best matching text fragments from the <see cref="Document"/> 
     /// object's full-text field.
     /// </summary>
     public static class LuceneHighlighter
-    {
-        public const string HIGHLIGHT_FIELD_NAME = "_highlight";
+    {        
+        public const string HIGHLIGHT_FIELD_NAME = "_highlight";  // This field is added to each document.
+        private const int FRAGMENT_SIZE = 150; // This is the length of each fragment.
+        private const int FRAGMENT_COUNT = 3;  // This is the number of best-matching fragments to be retrieved. The fragments are concatenated and set as the value of the highlight field.
         private static readonly ILog _log = LogManager.GetLogger(typeof(LuceneHighlighter).Name);
         private static readonly FieldType ExtendedTextFieldType;
 
@@ -99,14 +101,15 @@ namespace ExpandoDB.Search
 
             foreach (var sd in scoreDocs)
             {
-                var bestFragment = highlighter.GetBestFragment(fieldQuery, reader, sd.Doc, LuceneExtensions.FULL_TEXT_FIELD_NAME, 150);
+                var bestFragments = highlighter.GetBestFragments(fieldQuery, reader, sd.Doc, LuceneExtensions.FULL_TEXT_FIELD_NAME, FRAGMENT_SIZE, FRAGMENT_COUNT);
                 var document = searcher.Doc(sd.Doc);
                 var docId = document.Get(Document.ID_FIELD_NAME);
 
-                if (documentHightlightMap.ContainsKey(docId))
+                if (documentHightlightMap.ContainsKey(docId) && bestFragments.Length > 0)
                 {
                     var dictionary = documentHightlightMap[docId].AsDictionary();
-                    dictionary[HIGHLIGHT_FIELD_NAME] = bestFragment;
+                    var highlight = String.Join($"{Environment.NewLine} ... {Environment.NewLine}", bestFragments);
+                    dictionary[HIGHLIGHT_FIELD_NAME] = highlight;
                 }
             }            
         }        

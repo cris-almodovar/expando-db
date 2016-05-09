@@ -10,6 +10,10 @@ using Nancy.Responses;
 
 namespace ExpandoDB.Rest
 {
+    /// <summary>
+    /// Provides custom handling of specific HTTP status codes
+    /// </summary>
+    /// <seealso cref="Nancy.ErrorHandling.IStatusCodeHandler" />
     public class StatusCodeHandler : IStatusCodeHandler
     {
         public void Handle(HttpStatusCode statusCode, NancyContext context)
@@ -26,8 +30,17 @@ namespace ExpandoDB.Rest
             }
         }
 
+        /// <summary>
+        /// Check if the error handler can handle errors of the provided status code.
+        /// </summary>
+        /// <param name="statusCode">Status code</param>
+        /// <param name="context">The <see cref="T:Nancy.NancyContext" /> instance of the current request.</param>
+        /// <returns>
+        /// True if handled, false otherwise
+        /// </returns>
         public bool HandlesStatusCode(HttpStatusCode statusCode, NancyContext context)
         {
+            // We only override the 404 (Not Found) status code.
             return statusCode == HttpStatusCode.NotFound;
         }
     }
