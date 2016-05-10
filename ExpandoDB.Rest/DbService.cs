@@ -85,7 +85,7 @@ namespace ExpandoDB.Rest
                 _id = guid
             };
 
-            return responseDto;
+            return Response.AsJson(responseDto);
         }
 
         /// <summary>
@@ -118,7 +118,7 @@ namespace ExpandoDB.Rest
                 schema = schema
             };
 
-            return responseDto;
+            return Response.AsJson(responseDto);
         }
 
         /// <summary>
@@ -145,7 +145,7 @@ namespace ExpandoDB.Rest
                 schemas = schemas
             };
 
-            return responseDto;
+            return Response.AsJson(responseDto);
         }
 
         /// <summary>
@@ -174,7 +174,7 @@ namespace ExpandoDB.Rest
             responseDto.timestamp = DateTime.UtcNow;
             responseDto.elapsed = stopwatch.Elapsed.ToString();
 
-            return responseDto;
+            return Response.AsJson(responseDto);
         }
 
         /// <summary>
@@ -211,7 +211,7 @@ namespace ExpandoDB.Rest
                 count = count
             };
 
-            return responseDto;
+            return Response.AsJson(responseDto);
         }
 
         /// <summary>
@@ -251,7 +251,7 @@ namespace ExpandoDB.Rest
                 document = document.AsExpando()
             };
 
-            return responseDto;
+            return Response.AsJson(responseDto);
         }
 
         /// <summary>
@@ -305,7 +305,7 @@ namespace ExpandoDB.Rest
                 affectedCount = affected
             };
 
-            return responseDto;
+            return Response.AsJson(responseDto);
         }
 
         /// <summary>
@@ -364,7 +364,7 @@ namespace ExpandoDB.Rest
                 affectedCount = affected
             };
 
-            return responseDto;
+            return Response.AsJson(responseDto);
         }
 
         /// <summary>
@@ -407,7 +407,7 @@ namespace ExpandoDB.Rest
                 affectedCount = affected
             };
 
-            return responseDto;
+            return Response.AsJson(responseDto);
         }
 
         /// <summary>
@@ -440,7 +440,7 @@ namespace ExpandoDB.Rest
                 isDropped = isDropped
             };
 
-            return responseDto;
+            return Response.AsJson(responseDto);
         }
         
     }    
