@@ -10,6 +10,7 @@ using System.Linq;
 using Nancy.Responses.Negotiation;
 using System.Configuration;
 using Nancy.Conventions;
+using Metrics;
 
 namespace ExpandoDB.Rest
 {
@@ -32,13 +33,19 @@ namespace ExpandoDB.Rest
         {
             base.ApplicationStartup(container, pipelines);
 
-            EnableCORS(pipelines);
-            ConfigureExceptionHandling(pipelines);
+            EnableCORS(pipelines);            
 
             // Configure JSON handling.
             JsonSettings.RetainCasing = true;
             JsonSettings.ISO8601DateFormat = true;
-            JsonSettings.MaxJsonLength = Int32.MaxValue;
+            JsonSettings.MaxJsonLength = Int32.MaxValue;            
+
+            // Configure Metrics.NET             
+            Metric.Config                                 
+                  .WithAppCounters()                  
+                  .WithNancy(pipelines);            
+
+            ConfigureExceptionHandling(pipelines);
         }
 
         /// <summary>
@@ -49,10 +56,10 @@ namespace ExpandoDB.Rest
         {
             StaticConfiguration.DisableErrorTraces = Boolean.Parse(ConfigurationManager.AppSettings["NancyDisableErrorTraces"] ?? "false");
 
-            // Configure exception handling for Web Service endpoints.
-            pipelines.OnError.AddItemToEndOfPipeline((ctx, ex) =>
+            // Configure exception handling for Web Service endpoints.                        
+            pipelines.OnError.AddItemToStartOfPipeline((ctx, ex) =>
             {
-                _log.Error(ex);
+                _log.Error(ex);                
 
                 var dto = new ErrorResponseDto
                 {
