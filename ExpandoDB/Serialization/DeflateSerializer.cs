@@ -12,6 +12,7 @@ namespace ExpandoDB.Serialization
 {
     public class DeflateSerializer
     {
+        private const int LZ4_DEFAULT_BLOCK_SIZE = 4096;
         private static readonly NetSerializer.Serializer _serializer;
         private static readonly RecyclableMemoryStreamManager _memoryManager;
 
@@ -92,7 +93,7 @@ namespace ExpandoDB.Serialization
             byte[] value = null;
             using (var memoryStream = _memoryManager.GetStream())
             {
-                using (var compressionStream = new LZ4Stream(memoryStream, CompressionMode.Compress, LZ4StreamFlags.HighCompression | LZ4StreamFlags.IsolateInnerStream))
+                using (var compressionStream = new LZ4Stream(memoryStream, CompressionMode.Compress, LZ4StreamFlags.HighCompression | LZ4StreamFlags.IsolateInnerStream, LZ4_DEFAULT_BLOCK_SIZE))
                 {
                     var dictionary = document.ToDictionary();
                     _serializer.Serialize(compressionStream, dictionary);
@@ -111,7 +112,7 @@ namespace ExpandoDB.Serialization
             byte[] value = null;
             using (var memoryStream = _memoryManager.GetStream())
             {
-                using (var compressionStream = new LZ4Stream(memoryStream, CompressionMode.Compress, LZ4StreamFlags.HighCompression | LZ4StreamFlags.IsolateInnerStream))
+                using (var compressionStream = new LZ4Stream(memoryStream, CompressionMode.Compress, LZ4StreamFlags.HighCompression | LZ4StreamFlags.IsolateInnerStream, LZ4_DEFAULT_BLOCK_SIZE))
                 {                    
                     _serializer.Serialize(compressionStream, collectionSchema);                    
                 }
@@ -128,7 +129,7 @@ namespace ExpandoDB.Serialization
             Document document = null;
             using (var memoryStream = _memoryManager.GetStream(null, value, 0, value.Length))
             {
-                using (var decompressionStream = new LZ4Stream(memoryStream, CompressionMode.Decompress, LZ4StreamFlags.IsolateInnerStream))
+                using (var decompressionStream = new LZ4Stream(memoryStream, CompressionMode.Decompress, LZ4StreamFlags.IsolateInnerStream, LZ4_DEFAULT_BLOCK_SIZE))
                 {                    
                     var dictionary = _serializer.Deserialize(decompressionStream) as IDictionary<string, object>;
                     document = new Document(dictionary);
@@ -146,7 +147,7 @@ namespace ExpandoDB.Serialization
             DocumentCollectionSchema documentCollectionSchema = null;
             using (var memoryStream = _memoryManager.GetStream(null, value, 0, value.Length))
             {
-                using (var decompressionStream = new LZ4Stream(memoryStream, CompressionMode.Decompress, LZ4StreamFlags.IsolateInnerStream))
+                using (var decompressionStream = new LZ4Stream(memoryStream, CompressionMode.Decompress, LZ4StreamFlags.IsolateInnerStream, LZ4_DEFAULT_BLOCK_SIZE))
                 {                    
                     documentCollectionSchema = _serializer.Deserialize(decompressionStream) as DocumentCollectionSchema;           
                 }             

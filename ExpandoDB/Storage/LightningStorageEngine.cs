@@ -37,7 +37,7 @@ namespace ExpandoDB.Storage
         public LightningStorageEngine(string dataPath)
         {
             DataPath = dataPath;
-            DbPath = Path.Combine(dataPath, Database.DB_DIRECTORY_NAME);
+            DbPath = Path.Combine(dataPath, Database.DB_DIRECTORY_NAME);            
 
             if (!Directory.Exists(DbPath))
                 Directory.CreateDirectory(DbPath);
@@ -46,7 +46,7 @@ namespace ExpandoDB.Storage
             {
                 MaxDatabases = MAX_DATABASES,               
                 MapSize = MAX_MAP_SIZE,                
-                MaxReaders = MAX_READERS
+                MaxReaders = MAX_READERS                
             };            
 
             _environment = new LightningEnvironment(DbPath, config);
@@ -56,7 +56,7 @@ namespace ExpandoDB.Storage
                             EnvironmentOpenFlags.MapAsync | 
                             EnvironmentOpenFlags.NoThreadLocalStorage;
 
-            _environment.Open(openFlags);  
+            _environment.Open(openFlags); 
 
             _openDatabases = new ConcurrentDictionary<string, LightningDatabase>();                  
             _writeOperationsQueue = new BlockingCollection<WriteOperation>();
