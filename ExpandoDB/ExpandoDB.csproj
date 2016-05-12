@@ -202,6 +202,9 @@
     <Compile Include="..\VersionInfo.cs">
       <Link>Properties\VersionInfo.cs</Link>
     </Compile>
+    <Compile Include="Compression\DeflateCompressor.cs" />
+    <Compile Include="Compression\IStreamCompressor.cs" />
+    <Compile Include="Compression\Lz4Compressor.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="DocumentCollectionSchema.cs" />
     <Compile Include="DocumentCollection.cs" />
@@ -222,8 +225,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Search\SearchCriteria.cs" />
     <Compile Include="Search\SearchResult.cs" />
-    <Compile Include="Serialization\DeflateSerializer.cs" />
-    <Compile Include="Serialization\DynamicSerializer.cs" />
+    <Compile Include="Serialization\ByteArraySerializer.cs" />
+    <Compile Include="Serialization\DynamicJsonSerializer.cs" />
     <Compile Include="Serialization\SerializationException.cs" />
     <Compile Include="Storage\ISchemaStorage.cs" />
     <Compile Include="Storage\EnumerableDocuments.cs" />

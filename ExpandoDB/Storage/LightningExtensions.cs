@@ -1,4 +1,5 @@
-﻿using ExpandoDB.Serialization;
+﻿using ExpandoDB.Compression;
+using ExpandoDB.Serialization;
 using Jil;
 using System;
 using System.Collections.Generic;
@@ -13,7 +14,7 @@ namespace ExpandoDB.Storage
 {    
     public static class LightningExtensions
     {
-        private static readonly DeflateSerializer _serializer = new DeflateSerializer();       
+        private static readonly ByteArraySerializer _serializer = new ByteArraySerializer(new Lz4Compressor());       
 
         public static LightningKeyValuePair ToKeyValuePair(this Document document)
         {

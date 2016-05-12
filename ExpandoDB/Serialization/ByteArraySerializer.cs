@@ -1,4 +1,5 @@
-﻿using LZ4;
+﻿using ExpandoDB.Compression;
+using LZ4;
 using Microsoft.IO;
 using System;
 using System.Collections.Generic;
@@ -10,16 +11,16 @@ using System.Threading.Tasks;
 
 namespace ExpandoDB.Serialization
 {
-    public class DeflateSerializer
-    {
-        private const int LZ4_DEFAULT_BLOCK_SIZE = 4096;
+    public class ByteArraySerializer
+    {        
         private static readonly NetSerializer.Serializer _serializer;
         private static readonly RecyclableMemoryStreamManager _memoryManager;
+        private readonly IStreamCompressor _streamCompressor;
 
         /// <summary>
-        /// Initializes the <see cref="DeflateSerializer"/> class.
+        /// Initializes the <see cref="ByteArraySerializer"/> class.
         /// </summary>
-        static DeflateSerializer()
+        static ByteArraySerializer()
         {
             var supportedTypes = new[]
             {
@@ -85,6 +86,11 @@ namespace ExpandoDB.Serialization
             _memoryManager = new RecyclableMemoryStreamManager();
         }
 
+        public ByteArraySerializer(IStreamCompressor streamCompressor = null)
+        {
+            _streamCompressor = streamCompressor;
+        }
+
         public byte[] ToCompressedByteArray(Document document)
         {
             if (document == null)
@@ -93,10 +99,10 @@ namespace ExpandoDB.Serialization
             byte[] value = null;
             using (var memoryStream = _memoryManager.GetStream())
             {
-                using (var compressionStream = new LZ4Stream(memoryStream, CompressionMode.Compress, LZ4StreamFlags.HighCompression | LZ4StreamFlags.IsolateInnerStream, LZ4_DEFAULT_BLOCK_SIZE))
+                using (var outputStream = _streamCompressor?.GetCompressionStream(memoryStream) ?? memoryStream )
                 {
                     var dictionary = document.ToDictionary();
-                    _serializer.Serialize(compressionStream, dictionary);
+                    _serializer.Serialize(outputStream, dictionary);
                 }
                 value = memoryStream.ToArray();
             }
@@ -112,9 +118,9 @@ namespace ExpandoDB.Serialization
             byte[] value = null;
             using (var memoryStream = _memoryManager.GetStream())
             {
-                using (var compressionStream = new LZ4Stream(memoryStream, CompressionMode.Compress, LZ4StreamFlags.HighCompression | LZ4StreamFlags.IsolateInnerStream, LZ4_DEFAULT_BLOCK_SIZE))
+                using (var outputStream = _streamCompressor?.GetCompressionStream(memoryStream) ?? memoryStream)
                 {                    
-                    _serializer.Serialize(compressionStream, collectionSchema);                    
+                    _serializer.Serialize(outputStream, collectionSchema);                    
                 }
                 value = memoryStream.ToArray();
             }
@@ -129,9 +135,9 @@ namespace ExpandoDB.Serialization
             Document document = null;
             using (var memoryStream = _memoryManager.GetStream(null, value, 0, value.Length))
             {
-                using (var decompressionStream = new LZ4Stream(memoryStream, CompressionMode.Decompress, LZ4StreamFlags.IsolateInnerStream, LZ4_DEFAULT_BLOCK_SIZE))
+                using (var inputStream = _streamCompressor?.GetDecompressionStream(memoryStream) ?? memoryStream)
                 {                    
-                    var dictionary = _serializer.Deserialize(decompressionStream) as IDictionary<string, object>;
+                    var dictionary = _serializer.Deserialize(inputStream) as IDictionary<string, object>;
                     document = new Document(dictionary);
                 }              
             }
@@ -147,9 +153,9 @@ namespace ExpandoDB.Serialization
             DocumentCollectionSchema documentCollectionSchema = null;
             using (var memoryStream = _memoryManager.GetStream(null, value, 0, value.Length))
             {
-                using (var decompressionStream = new LZ4Stream(memoryStream, CompressionMode.Decompress, LZ4StreamFlags.IsolateInnerStream, LZ4_DEFAULT_BLOCK_SIZE))
+                using (var inputStream = _streamCompressor?.GetDecompressionStream(memoryStream) ?? memoryStream)
                 {                    
-                    documentCollectionSchema = _serializer.Deserialize(decompressionStream) as DocumentCollectionSchema;           
+                    documentCollectionSchema = _serializer.Deserialize(inputStream) as DocumentCollectionSchema;           
                 }             
             }
 

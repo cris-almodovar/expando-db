@@ -89,7 +89,7 @@ namespace ExpandoDB.Rest
             if (String.IsNullOrWhiteSpace(json))
                 throw new ArgumentException("The JSON string is empty");
 
-            var model = DynamicSerializer.Deserialize<IDictionary<string, object>>(json);
+            var model = DynamicJsonSerializer.Deserialize<IDictionary<string, object>>(json);
             if (model == null)
                 return new Dictionary<string, object>();
             
@@ -102,7 +102,7 @@ namespace ExpandoDB.Rest
             if (String.IsNullOrWhiteSpace(json))
                 throw new ArgumentException("The JSON string is empty");
 
-            var operations = DynamicSerializer.Deserialize<IList<PatchOperationDto>>(json) ?? new List<PatchOperationDto>();
+            var operations = DynamicJsonSerializer.Deserialize<IList<PatchOperationDto>>(json) ?? new List<PatchOperationDto>();
             foreach (var op in operations)
                 op.value = op.value.Unwrap();
             
