@@ -182,7 +182,7 @@ namespace ExpandoDB.Search
         public static LuceneLong ToLuceneDateTimeTicks(this string value)
         {
             var dateTimeValue = DateTime.MinValue;
-            if (!DynamicSerializer.TryParseDateTime(value, ref dateTimeValue))
+            if (!DynamicJsonSerializer.TryParseDateTime(value, ref dateTimeValue))
                 throw new QueryParserException($"Invalid DateTime in query: '{value}'");
 
             var utcDateTime = dateTimeValue.ToUniversalTime();

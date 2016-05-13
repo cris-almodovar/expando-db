@@ -159,7 +159,7 @@ namespace ExpandoDB
         /// <returns></returns>
         public static IDictionary<string, object> ToDictionary(this string json)
         {
-            return DynamicSerializer.Deserialize<IDictionary<string, object>>(json);
+            return DynamicJsonSerializer.Deserialize<IDictionary<string, object>>(json);
         }                
 
         /// <summary>
@@ -179,7 +179,7 @@ namespace ExpandoDB
         /// <returns></returns>
         public static string ToJson(this Document document)
         {
-            var json = DynamicSerializer.Serialize(document);
+            var json = DynamicJsonSerializer.Serialize(document);
             return json;
         }
 

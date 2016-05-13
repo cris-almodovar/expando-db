@@ -1,4 +1,6 @@
-﻿using Microsoft.IO;
+﻿using ExpandoDB.Compression;
+using LZ4;
+using Microsoft.IO;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,15 +11,16 @@ using System.Threading.Tasks;
 
 namespace ExpandoDB.Serialization
 {
-    public class DeflateSerializer
-    {
+    public class ByteArraySerializer
+    {        
         private static readonly NetSerializer.Serializer _serializer;
         private static readonly RecyclableMemoryStreamManager _memoryManager;
+        private readonly IStreamCompressor _streamCompressor;
 
         /// <summary>
-        /// Initializes the <see cref="DeflateSerializer"/> class.
+        /// Initializes the <see cref="ByteArraySerializer"/> class.
         /// </summary>
-        static DeflateSerializer()
+        static ByteArraySerializer()
         {
             var supportedTypes = new[]
             {
@@ -83,6 +86,11 @@ namespace ExpandoDB.Serialization
             _memoryManager = new RecyclableMemoryStreamManager();
         }
 
+        public ByteArraySerializer(IStreamCompressor streamCompressor = null)
+        {
+            _streamCompressor = streamCompressor;
+        }
+
         public byte[] ToCompressedByteArray(Document document)
         {
             if (document == null)
@@ -90,16 +98,17 @@ namespace ExpandoDB.Serialization
 
             byte[] value = null;
             using (var memoryStream = _memoryManager.GetStream())
-            {             
-                using (var compressionStream = new DeflateStream(memoryStream, CompressionMode.Compress, true))
+            {
+                using (var outputStream = _streamCompressor?.GetCompressionStream(memoryStream) ?? memoryStream )
                 {
                     var dictionary = document.ToDictionary();
-                    _serializer.Serialize(compressionStream, dictionary);                    
+                    _serializer.Serialize(outputStream, dictionary);
                 }
                 value = memoryStream.ToArray();
             }
             return value;
         }
+        
 
         public byte[] ToCompressedByteArray(DocumentCollectionSchema collectionSchema)
         {
@@ -109,10 +118,10 @@ namespace ExpandoDB.Serialization
             byte[] value = null;
             using (var memoryStream = _memoryManager.GetStream())
             {
-                using (var compressionStream = new DeflateStream(memoryStream, CompressionMode.Compress, true))
-                {
-                    _serializer.Serialize(compressionStream, collectionSchema);
-                }                
+                using (var outputStream = _streamCompressor?.GetCompressionStream(memoryStream) ?? memoryStream)
+                {                    
+                    _serializer.Serialize(outputStream, collectionSchema);                    
+                }
                 value = memoryStream.ToArray();
             }
             return value;
@@ -125,12 +134,12 @@ namespace ExpandoDB.Serialization
 
             Document document = null;
             using (var memoryStream = _memoryManager.GetStream(null, value, 0, value.Length))
-            {                
-                using (var decompressionStream = new DeflateStream(memoryStream, CompressionMode.Decompress, true))
-                {
-                    var dictionary = _serializer.Deserialize(decompressionStream) as IDictionary<string, object>;
+            {
+                using (var inputStream = _streamCompressor?.GetDecompressionStream(memoryStream) ?? memoryStream)
+                {                    
+                    var dictionary = _serializer.Deserialize(inputStream) as IDictionary<string, object>;
                     document = new Document(dictionary);
-                }               
+                }              
             }
 
             return document;
@@ -144,10 +153,10 @@ namespace ExpandoDB.Serialization
             DocumentCollectionSchema documentCollectionSchema = null;
             using (var memoryStream = _memoryManager.GetStream(null, value, 0, value.Length))
             {
-                using (var decompressionStream = new DeflateStream(memoryStream, CompressionMode.Decompress, true))
-                {
-                    documentCollectionSchema = _serializer.Deserialize(decompressionStream) as DocumentCollectionSchema;
-                }                
+                using (var inputStream = _streamCompressor?.GetDecompressionStream(memoryStream) ?? memoryStream)
+                {                    
+                    documentCollectionSchema = _serializer.Deserialize(inputStream) as DocumentCollectionSchema;           
+                }             
             }
 
             return documentCollectionSchema;

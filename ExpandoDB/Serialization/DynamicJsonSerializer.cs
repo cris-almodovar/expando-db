@@ -12,9 +12,8 @@ namespace ExpandoDB.Serialization
     /// <summary>
     /// Provides methods for serializing/deserializing dynamic Document object to/from JSON.
     /// </summary>
-    public static class DynamicSerializer
+    public static class DynamicJsonSerializer
     {
-
         #region Date Format constants
                 
         const string DATE_TIME_FORMAT_DATE_ONLY = "yyyy-MM-dd";
