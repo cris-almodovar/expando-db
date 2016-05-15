@@ -7,7 +7,7 @@ namespace ExpandoDB.Search
     /// Encapsulates information about an ExpandoDB serch query and its result.
     /// </summary>
     /// <typeparam name="TResult">The type of the result.</typeparam>
-    public class SearchResult<TResult>
+    public struct SearchResult<TResult>
     {           
         public string Query { get; set; }
         public string SortByField { get; set; }
@@ -22,10 +22,7 @@ namespace ExpandoDB.Search
 
         
         public SearchResult(SearchCriteria criteria, int itemCount = 0, int totalHits = 0, int pageCount = 0)
-        {
-            if (criteria == null)
-                throw new ArgumentNullException(nameof(criteria));
-                   
+        {          
             Query = criteria.Query;
             SortByField = criteria.SortByField;
             TopN = criteria.TopN;

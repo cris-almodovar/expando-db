@@ -173,10 +173,7 @@ namespace ExpandoDB.Search
         /// <param name="criteria">The search criteria.</param>
         /// <returns></returns>
         public SearchResult<Guid> Search(SearchCriteria criteria)
-        {
-            if (criteria == null)
-                throw new ArgumentNullException(nameof(criteria));
-
+        { 
             criteria.Query = String.IsNullOrWhiteSpace(criteria.Query) ? ALL_DOCS_QUERY : criteria.Query;
             criteria.TopN = criteria.TopN > 0 ? criteria.TopN : DEFAULT_SEARCH_TOP_N;
             criteria.ItemsPerPage = criteria.ItemsPerPage > 0 ? criteria.ItemsPerPage : DEFAULT_SEARCH_ITEMS_PER_PAGE;

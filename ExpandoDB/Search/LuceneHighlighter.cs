@@ -51,9 +51,7 @@ namespace ExpandoDB.Search
         public static IEnumerable<Document> GenerateHighlights(this IEnumerable<Document> hits, SearchCriteria criteria)
         {
             if (hits == null)
-                throw new ArgumentNullException(nameof(hits));
-            if (criteria == null)
-                throw new ArgumentNullException(nameof(criteria));
+                throw new ArgumentNullException(nameof(hits));            
             if (String.IsNullOrWhiteSpace(criteria.Query))
                 throw new ArgumentException("SearchCriteria.Query cannot be empty");
 

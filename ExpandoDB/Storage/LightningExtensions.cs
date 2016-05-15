@@ -14,7 +14,7 @@ namespace ExpandoDB.Storage
 {    
     public static class LightningExtensions
     {
-        private static readonly ByteArraySerializer _serializer = new ByteArraySerializer(new Lz4Compressor());       
+        private static readonly ByteArraySerializer _serializer = new ByteArraySerializer(new DeflateCompressor());       
 
         public static LightningKeyValuePair ToKeyValuePair(this Document document)
         {
@@ -22,7 +22,7 @@ namespace ExpandoDB.Storage
                 throw new ArgumentNullException(nameof(document));
 
             var key = document._id.Value.ToByteArray();
-            var value = document.ToCompressedByteArray();
+            var value = document.ToCompressedByteArray();            
 
             return new LightningKeyValuePair { Key = key, Value = value };
         }
@@ -40,7 +40,7 @@ namespace ExpandoDB.Storage
 
         public static Document ToDocument(this LightningKeyValuePair kv)
         {
-            if (kv == null)
+            if (kv.IsEmpty)
                 throw new ArgumentNullException(nameof(kv));
 
             return kv.Value.ToDocument();
@@ -48,7 +48,7 @@ namespace ExpandoDB.Storage
 
         public static DocumentCollectionSchema ToDocumentCollectionSchema(this LightningKeyValuePair kv)
         {
-            if (kv == null)
+            if (kv.IsEmpty)
                 throw new ArgumentNullException(nameof(kv));
 
             return kv.Value.ToDocumentCollectionSchema();
@@ -64,22 +64,22 @@ namespace ExpandoDB.Storage
 
         public static byte[] ToCompressedByteArray(this Document document)
         {
-            return _serializer.ToCompressedByteArray(document);
+            return _serializer.Serialize(document);
         }
 
         public static byte[] ToCompressedByteArray(this DocumentCollectionSchema collectionSchema)
         {
-            return _serializer.ToCompressedByteArray(collectionSchema);
+            return _serializer.Serialize(collectionSchema);
         }
 
         public static Document ToDocument(this byte[] value)
         {
-            return _serializer.ToDocument(value);
+            return _serializer.DeserializeDocument(value);
         }
 
         public static DocumentCollectionSchema ToDocumentCollectionSchema(this byte[] value)
         {
-            return _serializer.ToDocumentCollectionSchema(value);
+            return _serializer.DeserializeDocumentCollectionSchema(value);
         }        
     }
 }

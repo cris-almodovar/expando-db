@@ -150,10 +150,7 @@ namespace ExpandoDB
         /// <exception cref="System.ArgumentNullException"></exception>
         public async Task<SearchResult<Document>> SearchAsync(SearchCriteria criteria)
         {
-            EnsureCollectionIsNotDropped();
-
-            if (criteria == null)
-                throw new ArgumentNullException(nameof(criteria));
+            EnsureCollectionIsNotDropped();            
 
             var luceneResult = _luceneIndex.Search(criteria);
             var searchResult = new SearchResult<Document>(criteria, luceneResult.ItemCount, luceneResult.TotalHits, luceneResult.PageCount);
@@ -197,10 +194,7 @@ namespace ExpandoDB
         /// <returns></returns>
         public int Count(SearchCriteria criteria)
         {
-            EnsureCollectionIsNotDropped();
-
-            if (criteria == null)
-                throw new ArgumentNullException(nameof(criteria));
+            EnsureCollectionIsNotDropped();           
             
             criteria.TopN = 1;  // We're not interested in the docs, just the total hits.
             var luceneResult = _luceneIndex.Search(criteria);

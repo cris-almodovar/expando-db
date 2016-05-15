@@ -7,9 +7,22 @@ using System.Threading.Tasks;
 
 namespace ExpandoDB.Compression
 {
+    /// <summary>
+    /// Defines the operations that must be implemented by a Stream Compressor.
+    /// </summary>
     public interface IStreamCompressor
     {
-        Stream GetCompressionStream(Stream inputStream);
-        Stream GetDecompressionStream(Stream inputStream);
+        /// <summary>
+        /// Compresses the specified input stream; the stream will not be closed or disposed.
+        /// </summary>
+        /// <param name="inputStream">The input stream.</param>
+        /// <returns></returns>
+        Stream Compress(Stream inputStream);
+        /// <summary>
+        /// Decompresses the specified input stream; the stream will not be closed or disposed.
+        /// </summary>
+        /// <param name="inputStream">The input stream.</param>
+        /// <returns></returns>
+        Stream Decompress(Stream inputStream);
     }
 }

@@ -91,7 +91,7 @@ namespace ExpandoDB.Serialization
             _streamCompressor = streamCompressor;
         }
 
-        public byte[] ToCompressedByteArray(Document document)
+        public byte[] Serialize(Document document)
         {
             if (document == null)
                 throw new ArgumentNullException(nameof(document));
@@ -99,7 +99,7 @@ namespace ExpandoDB.Serialization
             byte[] value = null;
             using (var memoryStream = _memoryManager.GetStream())
             {
-                using (var outputStream = _streamCompressor?.GetCompressionStream(memoryStream) ?? memoryStream )
+                using (var outputStream = _streamCompressor?.Compress(memoryStream) ?? memoryStream )
                 {
                     var dictionary = document.ToDictionary();
                     _serializer.Serialize(outputStream, dictionary);
@@ -110,7 +110,7 @@ namespace ExpandoDB.Serialization
         }
         
 
-        public byte[] ToCompressedByteArray(DocumentCollectionSchema collectionSchema)
+        public byte[] Serialize(DocumentCollectionSchema collectionSchema)
         {
             if (collectionSchema == null)
                 throw new ArgumentNullException(nameof(collectionSchema));
@@ -118,7 +118,7 @@ namespace ExpandoDB.Serialization
             byte[] value = null;
             using (var memoryStream = _memoryManager.GetStream())
             {
-                using (var outputStream = _streamCompressor?.GetCompressionStream(memoryStream) ?? memoryStream)
+                using (var outputStream = _streamCompressor?.Compress(memoryStream) ?? memoryStream)
                 {                    
                     _serializer.Serialize(outputStream, collectionSchema);                    
                 }
@@ -127,7 +127,7 @@ namespace ExpandoDB.Serialization
             return value;
         }
 
-        public Document ToDocument(byte[] value)
+        public Document DeserializeDocument(byte[] value)
         {
             if (value == null)
                 return null;
@@ -135,7 +135,7 @@ namespace ExpandoDB.Serialization
             Document document = null;
             using (var memoryStream = _memoryManager.GetStream(null, value, 0, value.Length))
             {
-                using (var inputStream = _streamCompressor?.GetDecompressionStream(memoryStream) ?? memoryStream)
+                using (var inputStream = _streamCompressor?.Decompress(memoryStream) ?? memoryStream)
                 {                    
                     var dictionary = _serializer.Deserialize(inputStream) as IDictionary<string, object>;
                     document = new Document(dictionary);
@@ -145,7 +145,7 @@ namespace ExpandoDB.Serialization
             return document;
         }
 
-        public DocumentCollectionSchema ToDocumentCollectionSchema(byte[] value)
+        public DocumentCollectionSchema DeserializeDocumentCollectionSchema(byte[] value)
         {
             if (value == null)
                 return null;
@@ -153,7 +153,7 @@ namespace ExpandoDB.Serialization
             DocumentCollectionSchema documentCollectionSchema = null;
             using (var memoryStream = _memoryManager.GetStream(null, value, 0, value.Length))
             {
-                using (var inputStream = _streamCompressor?.GetDecompressionStream(memoryStream) ?? memoryStream)
+                using (var inputStream = _streamCompressor?.Decompress(memoryStream) ?? memoryStream)
                 {                    
                     documentCollectionSchema = _serializer.Deserialize(inputStream) as DocumentCollectionSchema;           
                 }             

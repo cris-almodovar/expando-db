@@ -78,7 +78,7 @@ namespace ExpandoDB.Storage
             var key = guid.ToByteArray();
             var kv = await _storageEngine.GetAsync(_collectionName, key).ConfigureAwait(false);
 
-            if (kv == null)
+            if (kv.IsEmpty)
                 return null;
 
             return kv.ToDocument();
@@ -118,7 +118,7 @@ namespace ExpandoDB.Storage
            
             var key = document._id.Value.ToByteArray();
             var existingKv = await _storageEngine.GetAsync(_collectionName, key).ConfigureAwait(false);
-            if (existingKv == null)                
+            if (existingKv.IsEmpty)                
                 return 0;
 
             // Make sure the _createdTimestamp is not overwritten
