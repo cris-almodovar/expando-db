@@ -59,7 +59,9 @@ namespace ExpandoDB.Rest.DTO
         public static SearchResponseDto PopulateWith(this SearchResponseDto responseDto, SearchRequestDto searchRequestDto, string collectionName, SearchResult<Document> searchResult)
         {
             if (searchRequestDto == null)
-                throw new ArgumentNullException(nameof(searchRequestDto));            
+                throw new ArgumentNullException(nameof(searchRequestDto));
+            if (searchResult == null)
+                throw new ArgumentNullException(nameof(searchResult));
 
             responseDto.select = searchRequestDto.select;
             responseDto.from = collectionName;

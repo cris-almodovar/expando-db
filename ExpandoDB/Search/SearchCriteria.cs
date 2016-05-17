@@ -3,7 +3,7 @@
     /// <summary>
     /// Represents the search parameters accepted by ExpandoDB.
     /// </summary>
-    public struct SearchCriteria
+    public class SearchCriteria
     {               
         public string Query { get; set; }        
         public string SortByField { get; set; }

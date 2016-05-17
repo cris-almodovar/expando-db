@@ -472,14 +472,13 @@ namespace ExpandoDB.Storage
         }
     }
 
-    public struct LightningKeyValuePair
+    public class LightningKeyValuePair
     {
         public byte[] Key { get; set; }
         public byte[] Value { get; set; }
-        public bool IsEmpty { get { return Key == null || Key.Length == 0; } }
     }
 
-    public struct WriteOperation
+    public class WriteOperation
     {
         public string Database { get; set; }
         public WriteOperationType Type { get; set; }

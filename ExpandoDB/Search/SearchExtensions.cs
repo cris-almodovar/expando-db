@@ -33,7 +33,9 @@ namespace ExpandoDB.Search
         /// <param name="topFieldDocs">The TopFieldDocs object returned by Lucene.</param>
         /// <param name="getDoc">A lambda that returns the Lucene document given the doc id.</param>
         public static void PopulateWith(this SearchResult<Guid> result, TopFieldDocs topFieldDocs, Func<int, LuceneDocument> getDoc)
-        {            
+        {
+            if (result == null)
+                throw new ArgumentNullException(nameof(result));
             if (topFieldDocs == null)
                 throw new ArgumentNullException(nameof(topFieldDocs));
             if (getDoc == null)
