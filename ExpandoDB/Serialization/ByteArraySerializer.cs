@@ -1,4 +1,5 @@
 ﻿using ExpandoDB.Compression;
+using ExpandoDB.Storage;
 using LZ4;
 using Microsoft.IO;
 using System;
@@ -14,7 +15,8 @@ namespace ExpandoDB.Serialization
     public class ByteArraySerializer
     {        
         private static readonly NetSerializer.Serializer _serializer;
-        private static readonly RecyclableMemoryStreamManager _memoryManager;
+        private static readonly RecyclableMemoryStreamManager _memoryManager;        
+        private readonly CompressionOption _compressionOption;
         private readonly IStreamCompressor _streamCompressor;
 
         /// <summary>
@@ -86,12 +88,37 @@ namespace ExpandoDB.Serialization
             _memoryManager = new RecyclableMemoryStreamManager();
         }
 
-        public ByteArraySerializer(IStreamCompressor streamCompressor = null)
+        public ByteArraySerializer(CompressionOption compressionOption)
         {
-            _streamCompressor = streamCompressor;
+            _compressionOption = compressionOption;
+
+            switch (_compressionOption)
+            {
+                case CompressionOption.LZ4:
+                    _streamCompressor = new LZ4Compressor();
+                    break;
+                case CompressionOption.Deflate:
+                    _streamCompressor = new DeflateCompressor();
+                    break;
+                default:
+                    throw new ArgumentException($"{compressionOption} is not a valid CompressionOption");
+            }
         }
 
-        public byte[] ToCompressedByteArray(Document document)
+        private IStreamCompressor GetCompressor(CompressionOption compressionOption)
+        {
+            switch(compressionOption)
+            {
+                case CompressionOption.LZ4:
+                    return new LZ4Compressor();
+                case CompressionOption.Deflate:
+                    return new DeflateCompressor();
+                default:
+                    throw new ArgumentException($"{compressionOption} is not a valid CompressionOption");
+            }
+        }
+
+        public byte[] Serialize(Document document)
         {
             if (document == null)
                 throw new ArgumentNullException(nameof(document));
@@ -99,18 +126,21 @@ namespace ExpandoDB.Serialization
             byte[] value = null;
             using (var memoryStream = _memoryManager.GetStream())
             {
-                using (var outputStream = _streamCompressor?.GetCompressionStream(memoryStream) ?? memoryStream )
-                {
-                    var dictionary = document.ToDictionary();
-                    _serializer.Serialize(outputStream, dictionary);
-                }
+                var dictionary = document.ToDictionary();
+
+                if (_compressionOption == CompressionOption.None)
+                    _serializer.Serialize(memoryStream, dictionary);
+                else
+                    using (var compressedStream = _streamCompressor.Compress(memoryStream)) 
+                        _serializer.Serialize(compressedStream, dictionary);
+                
                 value = memoryStream.ToArray();
             }
             return value;
         }
         
 
-        public byte[] ToCompressedByteArray(DocumentCollectionSchema collectionSchema)
+        public byte[] Serialize(DocumentCollectionSchema collectionSchema)
         {
             if (collectionSchema == null)
                 throw new ArgumentNullException(nameof(collectionSchema));
@@ -118,16 +148,18 @@ namespace ExpandoDB.Serialization
             byte[] value = null;
             using (var memoryStream = _memoryManager.GetStream())
             {
-                using (var outputStream = _streamCompressor?.GetCompressionStream(memoryStream) ?? memoryStream)
-                {                    
-                    _serializer.Serialize(outputStream, collectionSchema);                    
-                }
+                if (_compressionOption == CompressionOption.None)
+                    _serializer.Serialize(memoryStream, collectionSchema);
+                else
+                    using (var compressedStream = _streamCompressor.Compress(memoryStream))                                        
+                        _serializer.Serialize(compressedStream, collectionSchema);                    
+                    
                 value = memoryStream.ToArray();
             }
             return value;
         }
 
-        public Document ToDocument(byte[] value)
+        public Document DeserializeToDocument(byte[] value)
         {
             if (value == null)
                 return null;
@@ -135,17 +167,20 @@ namespace ExpandoDB.Serialization
             Document document = null;
             using (var memoryStream = _memoryManager.GetStream(null, value, 0, value.Length))
             {
-                using (var inputStream = _streamCompressor?.GetDecompressionStream(memoryStream) ?? memoryStream)
-                {                    
-                    var dictionary = _serializer.Deserialize(inputStream) as IDictionary<string, object>;
-                    document = new Document(dictionary);
-                }              
+                IDictionary<string, object> dictionary = null;
+                if (_compressionOption == CompressionOption.None)
+                    dictionary = _serializer.Deserialize(memoryStream) as IDictionary<string, object>;
+                else
+                    using (var decompressedStream = _streamCompressor.Decompress(memoryStream))                                        
+                        dictionary = _serializer.Deserialize(decompressedStream) as IDictionary<string, object>;                   
+                
+                document = new Document(dictionary);
             }
 
             return document;
         }
 
-        public DocumentCollectionSchema ToDocumentCollectionSchema(byte[] value)
+        public DocumentCollectionSchema DeserializeToDocumentCollectionSchema(byte[] value)
         {
             if (value == null)
                 return null;
@@ -153,10 +188,12 @@ namespace ExpandoDB.Serialization
             DocumentCollectionSchema documentCollectionSchema = null;
             using (var memoryStream = _memoryManager.GetStream(null, value, 0, value.Length))
             {
-                using (var inputStream = _streamCompressor?.GetDecompressionStream(memoryStream) ?? memoryStream)
-                {                    
-                    documentCollectionSchema = _serializer.Deserialize(inputStream) as DocumentCollectionSchema;           
-                }             
+                if (_compressionOption == CompressionOption.None)
+                    documentCollectionSchema = _serializer.Deserialize(memoryStream) as DocumentCollectionSchema;
+                else
+                    using (var decompressedStream = _streamCompressor.Decompress(memoryStream))                                        
+                        documentCollectionSchema = _serializer.Deserialize(decompressedStream) as DocumentCollectionSchema;           
+                                 
             }
 
             return documentCollectionSchema;

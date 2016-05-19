@@ -204,7 +204,7 @@
     </Compile>
     <Compile Include="Compression\DeflateCompressor.cs" />
     <Compile Include="Compression\IStreamCompressor.cs" />
-    <Compile Include="Compression\Lz4Compressor.cs" />
+    <Compile Include="Compression\LZ4Compressor.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="DocumentCollectionSchema.cs" />
     <Compile Include="DocumentCollection.cs" />

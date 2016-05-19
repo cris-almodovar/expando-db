@@ -3,6 +3,7 @@ using ExpandoDB.Serialization;
 using Jil;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Dynamic;
 using System.IO;
 using System.IO.Compression;
@@ -14,7 +15,14 @@ namespace ExpandoDB.Storage
 {    
     public static class LightningExtensions
     {
-        private static readonly ByteArraySerializer _serializer = new ByteArraySerializer(new Lz4Compressor());       
+        private static readonly ByteArraySerializer _serializer; 
+        private static readonly CompressionOption _compressionOption;
+
+        static LightningExtensions()
+        {
+            _compressionOption = (CompressionOption) Enum.Parse(typeof(CompressionOption), (ConfigurationManager.AppSettings["LightningStorageEngine.Compression"] ?? "LZ4"), true);
+            _serializer = new ByteArraySerializer(_compressionOption);
+        }
 
         public static LightningKeyValuePair ToKeyValuePair(this Document document)
         {
@@ -64,22 +72,29 @@ namespace ExpandoDB.Storage
 
         public static byte[] ToCompressedByteArray(this Document document)
         {
-            return _serializer.ToCompressedByteArray(document);
+            return _serializer.Serialize(document);
         }
 
         public static byte[] ToCompressedByteArray(this DocumentCollectionSchema collectionSchema)
         {
-            return _serializer.ToCompressedByteArray(collectionSchema);
+            return _serializer.Serialize(collectionSchema);
         }
 
         public static Document ToDocument(this byte[] value)
         {
-            return _serializer.ToDocument(value);
+            return _serializer.DeserializeToDocument(value);
         }
 
         public static DocumentCollectionSchema ToDocumentCollectionSchema(this byte[] value)
         {
-            return _serializer.ToDocumentCollectionSchema(value);
+            return _serializer.DeserializeToDocumentCollectionSchema(value);
         }        
+    }
+
+    public enum CompressionOption
+    {
+        None,
+        LZ4,
+        Deflate
     }
 }

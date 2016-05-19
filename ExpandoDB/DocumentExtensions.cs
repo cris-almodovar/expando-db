@@ -93,6 +93,9 @@ namespace ExpandoDB
         /// <returns></returns>        
         public static ExpandoObject ToExpando(this IDictionary<string, object> dictionary)
         {
+            if (dictionary == null)
+                throw new ArgumentNullException(nameof(dictionary));
+
             var expando = new ExpandoObject();
             var expandoDictionary = (IDictionary<string, object>)expando;
 

@@ -18,9 +18,9 @@ namespace ExpandoDB.Storage
     /// </summary>    
     public class LightningStorageEngine : IDisposable
     {
-        private const long MAX_MAP_SIZE = 1000000000000;  // 1 terabyte
-        private const int MAX_DATABASES = 100;  // 100 collections/tables; NOTE: Lightning database = RDBMS table
-        private const int MAX_READERS = 512;
+        private const long MAX_MAP_SIZE = 1000000000000;  // Limit on the size of the memory mapped file.
+        private const int MAX_DATABASES = 100;            // Limit on the number of named Ligtning databases. NOTE: In Lightning, a "database" is analogous to an RDBMS "table".
+        private const int MAX_READERS = 1024;             // Limit on the number of reader threads. 
         private readonly LightningEnvironment _environment;
         private readonly ConcurrentDictionary<string, LightningDatabase> _openDatabases;        
         private readonly BlockingCollection<WriteOperation> _writeOperationsQueue;
