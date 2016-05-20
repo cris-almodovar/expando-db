@@ -27,7 +27,7 @@ namespace ExpandoDB.Rest
             var appDirectory = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
             Directory.SetCurrentDirectory(appDirectory);
 
-            var baseUriString = ConfigurationManager.AppSettings["NancyBaseUrl"] ?? DEFAULT_BASE_URL;
+            var baseUriString = ConfigurationManager.AppSettings["RestService.BaseUrl"] ?? DEFAULT_BASE_URL;
             if (!baseUriString.Trim().EndsWith("/", StringComparison.InvariantCulture))
                 baseUriString += "/";
 

@@ -54,7 +54,7 @@ namespace ExpandoDB.Rest
         /// <param name="pipelines">The pipelines.</param>
         private void ConfigureExceptionHandling(IPipelines pipelines)
         {
-            StaticConfiguration.DisableErrorTraces = Boolean.Parse(ConfigurationManager.AppSettings["NancyDisableErrorTraces"] ?? "false");
+            StaticConfiguration.DisableErrorTraces = Boolean.Parse(ConfigurationManager.AppSettings["RestService.DisableErrorTraces"] ?? "false");
 
             // Configure exception handling for Web Service endpoints.                        
             pipelines.OnError.AddItemToStartOfPipeline((ctx, ex) =>
@@ -127,7 +127,7 @@ namespace ExpandoDB.Rest
         {
             base.ConfigureApplicationContainer(container);
 
-            Config.LuceneNullToken = ConfigurationManager.AppSettings["LuceneNullToken"] ?? Config.LuceneNullToken;
+            Config.LuceneNullToken = ConfigurationManager.AppSettings["Lucene.NullToken"] ?? Config.LuceneNullToken;
             Config.DataPath = ConfigurationManager.AppSettings["DataPath"] ?? Config.DataPath;
 
             // There is only one instance of the Database object in the application.

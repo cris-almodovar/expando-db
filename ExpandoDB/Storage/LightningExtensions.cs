@@ -20,7 +20,7 @@ namespace ExpandoDB.Storage
 
         static LightningExtensions()
         {
-            _compressionOption = (CompressionOption) Enum.Parse(typeof(CompressionOption), (ConfigurationManager.AppSettings["LightningStorageEngine.Compression"] ?? "LZ4"), true);
+            _compressionOption = (CompressionOption) Enum.Parse(typeof(CompressionOption), (ConfigurationManager.AppSettings["StorageEngine.Compression"] ?? "LZ4"), true);
             _serializer = new ByteArraySerializer(_compressionOption);
         }
 
