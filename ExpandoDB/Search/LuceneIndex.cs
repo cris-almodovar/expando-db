@@ -54,12 +54,12 @@ namespace ExpandoDB.Search
                 System.IO.Directory.CreateDirectory(indexPath);
 
             var path = Paths.get(indexPath);
-            _indexDirectory = new MMapDirectory(path);
+            _indexDirectory = new MMapDirectory(path);            
 
             _indexSchema = indexSchema ?? IndexSchema.CreateDefault();
             _compositeAnalyzer = new CompositeAnalyzer(_indexSchema);            
 
-            _ramBufferSizeMB = Double.Parse(ConfigurationManager.AppSettings["Lucene.RAMBufferSizeMB"] ?? "64");            
+            _ramBufferSizeMB = Double.Parse(ConfigurationManager.AppSettings["IndexWriter.RAMBufferSizeMB"] ?? "128");            
 
             var config = new IndexWriterConfig(_compositeAnalyzer)
                             .SetOpenMode(IndexWriterConfigOpenMode.CREATE_OR_APPEND)
@@ -70,8 +70,8 @@ namespace ExpandoDB.Search
 
             _searcherManager = new SearcherManager(_writer, true, false, null);    // TODO: Add to config - applyAllDeletes        
 
-            _refreshIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["Lucene.RefreshIntervalSeconds"] ?? "0.5");    
-            _commitIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["Lucene.CommitIntervalSeconds"] ?? "60");
+            _refreshIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["IndexSearcher.RefreshIntervalSeconds"] ?? "0.5");    
+            _commitIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["IndexWriter.CommitIntervalSeconds"] ?? "60");
 
             _refreshTimer = new Timer(o => Refresh(), null, TimeSpan.FromSeconds(_refreshIntervalSeconds), TimeSpan.FromSeconds(_refreshIntervalSeconds));
             _commitTimer = new Timer(o => Commit(), null, TimeSpan.FromSeconds(_commitIntervalSeconds), TimeSpan.FromSeconds(_commitIntervalSeconds));

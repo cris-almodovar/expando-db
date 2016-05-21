@@ -43,9 +43,11 @@ namespace ExpandoDB
 
             _dataPath = dataPath;            
             EnsureDataDirectoryExists(_dataPath);
+            _log.Info($"Data Path: {_dataPath}");
 
             _indexPath = Path.Combine(_dataPath, INDEX_DIRECTORY_NAME);
             EnsureIndexDirectoryExists(_indexPath);
+            _log.Info($"Index Path: {_indexPath}");
 
             _storageEngine = new LightningStorageEngine(_dataPath); 
             _documentCollections = new Dictionary<string, DocumentCollection>(); 

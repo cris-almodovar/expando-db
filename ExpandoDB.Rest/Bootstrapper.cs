@@ -127,8 +127,8 @@ namespace ExpandoDB.Rest
         {
             base.ConfigureApplicationContainer(container);
 
-            Config.LuceneNullToken = ConfigurationManager.AppSettings["Lucene.NullToken"] ?? Config.LuceneNullToken;
-            Config.DataPath = ConfigurationManager.AppSettings["DataPath"] ?? Config.DataPath;
+            Config.LuceneNullToken = ConfigurationManager.AppSettings["IndexSearcher.NullToken"] ?? Config.LuceneNullToken;
+            Config.DataPath = ConfigurationManager.AppSettings["App.DataPath"] ?? Config.DataPath;
 
             // There is only one instance of the Database object in the application.
             // It is created here, and registered with the IOC container so that 

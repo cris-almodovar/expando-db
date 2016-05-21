@@ -15,8 +15,8 @@ namespace ExpandoDB.Storage
 {    
     public static class LightningExtensions
     {
-        private static readonly ByteArraySerializer _serializer; 
-        private static readonly CompressionOption _compressionOption;
+        private static readonly ByteArraySerializer _serializer;
+        internal static readonly CompressionOption _compressionOption;        
 
         static LightningExtensions()
         {

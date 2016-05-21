@@ -28,7 +28,7 @@ namespace ExpandoDB.Storage
         private readonly CancellationToken _cancellationToken;
         private readonly ILog _log = LogManager.GetLogger(typeof(LightningStorageEngine).Name);
         public string DataPath { get; private set; }
-        public string DbPath { get; private set; }
+        public string DbPath { get; private set; }        
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LightningStorageEngine"/> class.
@@ -41,6 +41,9 @@ namespace ExpandoDB.Storage
 
             if (!Directory.Exists(DbPath))
                 Directory.CreateDirectory(DbPath);
+
+            _log.Info($"DB Path: {DbPath}");
+            _log.Info($"Compression Option: {LightningExtensions._compressionOption}");
 
             var config = new EnvironmentConfiguration
             {

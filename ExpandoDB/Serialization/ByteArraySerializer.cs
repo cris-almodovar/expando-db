@@ -12,6 +12,9 @@ using System.Threading.Tasks;
 
 namespace ExpandoDB.Serialization
 {
+    /// <summary>
+    /// Serializes/deserialize documents and schemas to byte arrays, with the option to compress/decompress the data.
+    /// </summary>
     public class ByteArraySerializer
     {        
         private static readonly NetSerializer.Serializer _serializer;
@@ -88,6 +91,10 @@ namespace ExpandoDB.Serialization
             _memoryManager = new RecyclableMemoryStreamManager();
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ByteArraySerializer"/> class.
+        /// </summary>
+        /// <param name="compressionOption">The compression option.</param>
         public ByteArraySerializer(CompressionOption compressionOption)
         {
             _compressionOption = compressionOption;
@@ -99,9 +106,7 @@ namespace ExpandoDB.Serialization
                     break;
                 case CompressionOption.Deflate:
                     _streamCompressor = new DeflateCompressor();
-                    break;
-                default:
-                    throw new ArgumentException($"{compressionOption} is not a valid CompressionOption");
+                    break;                
             }
         }
 
