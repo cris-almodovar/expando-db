@@ -20,14 +20,28 @@ namespace ExpandoDB.Rest
         private const string DEFAULT_BASE_URL = @"http://localhost:9000/";
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ServiceApp"/> class.
+        /// Initializes the <see cref="ServiceApp"/> class.
         /// </summary>
-        public ServiceApp()
+        static ServiceApp()
         {
             var appDirectory = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
             Directory.SetCurrentDirectory(appDirectory);
 
-            var baseUriString = ConfigurationManager.AppSettings["NancyBaseUrl"] ?? DEFAULT_BASE_URL;
+            var logFolder = ConfigurationManager.AppSettings["App.LogPath"] ?? "log";
+            if (!Directory.Exists(logFolder))
+                Directory.CreateDirectory(logFolder);
+
+            var logFile = Path.Combine(logFolder, "ExpandoDB.log");
+            GlobalContext.Properties["App.LogFilename"] = logFile;
+        }
+
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ServiceApp"/> class.
+        /// </summary>
+        public ServiceApp()
+        { 
+            var baseUriString = ConfigurationManager.AppSettings["RestService.BaseUrl"] ?? DEFAULT_BASE_URL;
             if (!baseUriString.Trim().EndsWith("/", StringComparison.InvariantCulture))
                 baseUriString += "/";
 
@@ -36,7 +50,7 @@ namespace ExpandoDB.Rest
             {
                 UrlReservations = new UrlReservations { CreateAutomatically = true }
             };            
-        }
+        }        
 
         /// <summary>
         /// Starts the ExpandoDB server
@@ -44,12 +58,15 @@ namespace ExpandoDB.Rest
         /// <returns></returns>
         public bool Start()
         {
-            _log.Info("---------------------------------------------");
-            _log.Info("Starting ExpandoDB service ...");            
-
             _nancyHost = new NancyHost(_nancyHostConfig, _baseUri);
-            _nancyHost.Start();
+            _nancyHost.Start();            
+            
+            _log.Info($"REST Web Service endpoint: {_baseUri}");
 
+            var logFile = GlobalContext.Properties["App.LogFilename"];
+            _log.Info($"Log file: {logFile}");
+
+            _log.Info("---------------------------------------------");
             _log.Info("ExpandoDB service started successfully.");
             _log.Info("---------------------------------------------");
 
@@ -61,11 +78,13 @@ namespace ExpandoDB.Rest
         /// </summary>
         /// <returns></returns>
         public bool Stop()
-        {
+        {    
             _nancyHost.Dispose();
             _nancyHost.Stop();
 
+            _log.Info("---------------------------------------------");
             _log.Info("ExpandoDB service stopped successfully.");
+            _log.Info("---------------------------------------------");
 
             return true;
         }        
