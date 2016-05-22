@@ -178,13 +178,13 @@
         "Entry"
         {
         "MsmKey" = "8:_4157AD0B4052CCAFCA8F5E1C56FAB057"
-        "OwnerKey" = "8:_C4CBFA4CD5ED4CCEBD923EBFF14A8186"
+        "OwnerKey" = "8:_F46FD75FD1B5750743B25F66BA9F9E65"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
         "MsmKey" = "8:_4157AD0B4052CCAFCA8F5E1C56FAB057"
-        "OwnerKey" = "8:_F46FD75FD1B5750743B25F66BA9F9E65"
+        "OwnerKey" = "8:_C4CBFA4CD5ED4CCEBD923EBFF14A8186"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -502,13 +502,13 @@
         "Entry"
         {
         "MsmKey" = "8:_DA28E6576F9F3A5FC30F083259ABC717"
-        "OwnerKey" = "8:_C4CBFA4CD5ED4CCEBD923EBFF14A8186"
+        "OwnerKey" = "8:_F46FD75FD1B5750743B25F66BA9F9E65"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
         "MsmKey" = "8:_DA28E6576F9F3A5FC30F083259ABC717"
-        "OwnerKey" = "8:_F46FD75FD1B5750743B25F66BA9F9E65"
+        "OwnerKey" = "8:_C4CBFA4CD5ED4CCEBD923EBFF14A8186"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -884,6 +884,14 @@
             "PrerequisitesLocation" = "2:1"
             "Url" = "8:"
             "ComponentsUrl" = "8:"
+                "Items"
+                {
+                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:.NETFramework,Version=v4.5"
+                    {
+                    "Name" = "8:Microsoft .NET Framework 4.5 (x86 and x64)"
+                    "ProductCode" = "8:.NETFramework,Version=v4.5"
+                    }
+                }
             }
         }
         "Release"
@@ -938,7 +946,7 @@
                 {
                 "Name" = "8:.NET Framework"
                 "Message" = "8:[VSDNETMSG]"
-                "FrameworkVersion" = "8:.NETFramework,Version=v4.5"
+                "FrameworkVersion" = "8:.NETFramework,Version=v4.5.1"
                 "AllowLaterVersions" = "11:FALSE"
                 "InstallUrl" = "8:http://go.microsoft.com/fwlink/?LinkId=395269"
                 }
@@ -2088,7 +2096,7 @@
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:ExpandoDB"
         "ProductCode" = "8:{83B45CA9-F4F4-421F-A3F6-B896DC00FA93}"
-        "PackageCode" = "8:{DFC1ABB7-655A-4A12-A03E-7E8ADBFA8029}"
+        "PackageCode" = "8:{14211C9E-FDEF-4879-8108-6CDAC5299F70}"
         "UpgradeCode" = "8:{76F4F9C9-DD2F-4BFF-ACE9-55393964C718}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
