@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace ExpandoDB
 {
     /// <summary>
-    /// Represents a collection of <see cref="DocumentCollection"/> objects. 
+    /// Represents a collection of <see cref="Collection"/> objects. 
     /// </summary>
     /// <remarks>
     /// This class is analogous to a MongoDB database.
@@ -25,7 +25,7 @@ namespace ExpandoDB
         internal const string INDEX_DIRECTORY_NAME = "index";
         private readonly string _dataPath;                
         private readonly string _indexPath;
-        private readonly IDictionary<string, DocumentCollection> _documentCollections;
+        private readonly IDictionary<string, Collection> _documentCollections;
         private readonly LightningStorageEngine _storageEngine;        
         private readonly ILog _log = LogManager.GetLogger(typeof(Database).Name);
 
@@ -50,12 +50,12 @@ namespace ExpandoDB
             _log.Info($"Index Path: {_indexPath}");
 
             _storageEngine = new LightningStorageEngine(_dataPath); 
-            _documentCollections = new Dictionary<string, DocumentCollection>(); 
+            _documentCollections = new Dictionary<string, Collection>(); 
                        
             var persistedSchemas = new LightningSchemaStorage(_storageEngine).GetAllAsync().Result;             
             foreach (var schema in persistedSchemas)
             {
-                var collection = new DocumentCollection(schema, _storageEngine);
+                var collection = new Collection(schema, _storageEngine);
                 _documentCollections.Add(schema.Name, collection);
             }           
         }       
@@ -80,28 +80,28 @@ namespace ExpandoDB
         }
 
         /// <summary>
-        /// Gets the <see cref="DocumentCollection"/> with the specified name.
+        /// Gets the <see cref="Collection"/> with the specified name.
         /// </summary>
         /// <value>
-        /// The <see cref="DocumentCollection"/> with the specified name.
+        /// The <see cref="Collection"/> with the specified name.
         /// </value>
         /// <param name="name">The name of the DocumentCollection.</param>
         /// <returns></returns>
-        public DocumentCollection this [string name]
+        public Collection this [string name]
         {
             get
             {
                 if (String.IsNullOrWhiteSpace(name))
                     throw new ArgumentException("name cannot be null or blank");
 
-                DocumentCollection collection = null;
+                Collection collection = null;
                 if (!_documentCollections.ContainsKey(name))
                 {
                     lock (_documentCollections)
                     {
                         if (!_documentCollections.ContainsKey(name))
                         {
-                            collection = new DocumentCollection(name, _storageEngine);
+                            collection = new Collection(name, _storageEngine);
                             _documentCollections.Add(name, collection);
                         }
                     }
@@ -137,7 +137,7 @@ namespace ExpandoDB
                 return false;
 
             var isSuccessful = false;
-            DocumentCollection collection = null;
+            Collection collection = null;
             
             lock (_documentCollections)
             {

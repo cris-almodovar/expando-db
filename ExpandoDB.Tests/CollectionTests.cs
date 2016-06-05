@@ -15,7 +15,7 @@ namespace ExpandoDB.Tests
     {
         private string _appPath;
         private string _dataPath;        
-        private DocumentCollection _collection;
+        private Collection _collection;
         private LightningStorageEngine _storageEngine;
 
         [TestInitialize]
@@ -29,7 +29,7 @@ namespace ExpandoDB.Tests
 
             _storageEngine = new LightningStorageEngine(_dataPath);
 
-           _collection = new DocumentCollection("books", _storageEngine);
+           _collection = new Collection("books", _storageEngine);
         }
 
         [TestCleanup]

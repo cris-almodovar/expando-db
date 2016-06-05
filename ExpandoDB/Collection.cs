@@ -16,7 +16,7 @@ namespace ExpandoDB
     /// <remarks>
     /// This class is analogous to an MongoDB collection.
     /// </remarks>
-    public class DocumentCollection : IDisposable
+    public class Collection : IDisposable
     {
         private readonly LightningStorageEngine _storageEngine;
         private readonly string _indexPath;
@@ -27,7 +27,7 @@ namespace ExpandoDB
         private readonly string _name;
         private readonly Timer _schemaPersistenceTimer;
         private readonly double _schemaPersistenceIntervalSeconds;        
-        private readonly ILog _log = LogManager.GetLogger(typeof(DocumentCollection).Name);
+        private readonly ILog _log = LogManager.GetLogger(typeof(Collection).Name);
 
         /// <summary>
         /// Gets the IndexSchema associated with the DocumentCollection.
@@ -54,22 +54,22 @@ namespace ExpandoDB
         public bool IsDropped { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DocumentCollection" /> class based on a DocumentCollectionSchema.
+        /// Initializes a new instance of the <see cref="Collection" /> class based on a DocumentCollectionSchema.
         /// </summary>
         /// <param name="schema">The DocumentCollectionSchema.</param>
         /// <param name="storageEngine">The storage engine.</param>
-        public DocumentCollection(DocumentCollectionSchema schema, LightningStorageEngine storageEngine)
+        public Collection(DocumentCollectionSchema schema, LightningStorageEngine storageEngine)
             : this(schema.Name, storageEngine, schema.ToIndexSchema())
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DocumentCollection" /> class.
+        /// Initializes a new instance of the <see cref="Collection" /> class.
         /// </summary>
         /// <param name="name">The name of the DocumentCollection.</param>
         /// <param name="storageEngine">The storage engine.</param>
         /// <param name="indexSchema">The index schema.</param>        
-        public DocumentCollection(string name, LightningStorageEngine storageEngine, IndexSchema indexSchema = null)
+        public Collection(string name, LightningStorageEngine storageEngine, IndexSchema indexSchema = null)
         {
             if (String.IsNullOrWhiteSpace(name))
                 throw new ArgumentException($"{nameof(name)} cannot be null or blank");

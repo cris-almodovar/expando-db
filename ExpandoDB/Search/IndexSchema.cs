@@ -11,14 +11,9 @@ namespace ExpandoDB
     public class IndexSchema
     {
         public string Name { get; set; }
-        public ConcurrentDictionary<string, IndexedField> Fields { get; set; }
+        public ConcurrentDictionary<string, IndexedField> Fields { get; set; } = new ConcurrentDictionary<string, IndexedField>();       
 
-        public IndexSchema()
-        {
-            Fields = new ConcurrentDictionary<string, IndexedField>();
-        }
-
-        public IndexSchema(string name) : this()
+        public IndexSchema(string name) 
         {
             Name = name;            
         }
@@ -82,7 +77,8 @@ namespace ExpandoDB
         public FieldDataType DataType { get; set; }
         public FieldDataType ArrayElementDataType { get; set; }
         public IndexSchema ObjectSchema { get; set; }
-        public bool IsTopLevel { get { return (Name ?? String.Empty).IndexOf('.') < 0 && !IsArrayElement; } }
+        public bool IsTopLevel { get { return !(Name ?? String.Empty).Contains(".") && !IsArrayElement; } }
+        public bool IsSortable { get { return IsTopLevel && DataType != FieldDataType.Array && DataType != FieldDataType.Object; } }
         public bool IsArrayElement { get; set; }
     }
 

@@ -207,7 +207,7 @@
     <Compile Include="Compression\LZ4Compressor.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="DocumentCollectionSchema.cs" />
-    <Compile Include="DocumentCollection.cs" />
+    <Compile Include="Collection.cs" />
     <Compile Include="Document.cs" />
     <Compile Include="DocumentExtensions.cs" />
     <Compile Include="Database.cs" />

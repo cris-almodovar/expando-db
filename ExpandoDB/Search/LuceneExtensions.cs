@@ -467,7 +467,7 @@ namespace ExpandoDB.Search
             luceneFields.Add(new LegacyDoubleField(fieldName, doubleValue, FieldStore.NO));
 
             // Only top-level and non-array fields are sortable
-            if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
+            if (indexedField.IsSortable)
             {
                 var sortFieldName = fieldName.ToSortFieldName();
                 luceneFields.Add(new DoubleDocValuesField(sortFieldName, doubleValue));
@@ -489,7 +489,7 @@ namespace ExpandoDB.Search
             luceneFields.Add(new LegacyIntField(fieldName, intValue, FieldStore.NO)); 
 
             // Only top-level and non-array fields are sortable
-            if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
+            if (indexedField.IsSortable)
             {
                 var sortFieldName = fieldName.ToSortFieldName();
                 luceneFields.Add(new NumericDocValuesField(sortFieldName, intValue));
@@ -510,7 +510,7 @@ namespace ExpandoDB.Search
             luceneFields.Add(new TextField(fieldName, stringValue, FieldStore.NO));
 
             // Only top-level and non-array fields are sortable
-            if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
+            if (indexedField.IsSortable)
             {
                 var stringValueForSorting = (stringValue.Length > SORT_FIELD_MAX_TEXT_LENGTH ? stringValue.Substring(0, SORT_FIELD_MAX_TEXT_LENGTH) : stringValue).Trim().ToLowerInvariant();
                 var sortFieldName = fieldName.ToSortFieldName();
@@ -533,7 +533,7 @@ namespace ExpandoDB.Search
             luceneFields.Add(new LegacyLongField(fieldName, dateTimeTicks, FieldStore.NO));
 
             // Only top-level and non-array fields are sortable
-            if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
+            if (indexedField.IsSortable)
             {
                 var sortFieldName = fieldName.ToSortFieldName();
                 luceneFields.Add(new NumericDocValuesField(sortFieldName, dateTimeTicks));
@@ -556,7 +556,7 @@ namespace ExpandoDB.Search
             luceneFields.Add(new StringField(fieldName, guidValue, isStored));
 
             // Only top-level and non-array fields are sortable
-            if (indexedField.IsTopLevel && indexedField.DataType != FieldDataType.Array && indexedField.DataType != FieldDataType.Object)
+            if (indexedField.IsSortable)
             {
                 var sortFieldName = fieldName.ToSortFieldName();
                 luceneFields.Add(new SortedDocValuesField(sortFieldName, new BytesRef(guidValue)));
