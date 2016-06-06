@@ -339,7 +339,7 @@ namespace ExpandoDB.Rest
             // Retrieve the Document to be PATCHed.
             var collection = _database[collectionName];
 
-            var count = collection.Count(new SearchCriteria { Query = $"{Document.ID_FIELD_NAME}: {guid}" });
+            var count = collection.Count(new SearchCriteria { Query = $"{Schema.StandardField.ID}: {guid}" });
             if (count == 0)
                 return HttpStatusCode.NotFound;
 
@@ -391,7 +391,7 @@ namespace ExpandoDB.Rest
 
             var collection = _database[collectionName];
 
-            var count = collection.Count(new SearchCriteria { Query = $"{Document.ID_FIELD_NAME}: {guid}" });
+            var count = collection.Count(new SearchCriteria { Query = $"{Schema.StandardField.ID}: {guid}" });
             if (count == 0)
                 return HttpStatusCode.NotFound;
 

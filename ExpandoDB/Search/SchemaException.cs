@@ -6,13 +6,13 @@ namespace ExpandoDB.Search
     /// Represents an error in the Lucene IndexSchema
     /// </summary>
     [Serializable]
-    public class IndexSchemaException : Exception
+    public class SchemaException : Exception
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="IndexSchemaException"/> class.
+        /// Initializes a new instance of the <see cref="SchemaException"/> class.
         /// </summary>
         /// <param name="message">The message that describes the error.</param>
-        public IndexSchemaException(string message) : base (message)
+        public SchemaException(string message) : base (message)
         {
         }
     }

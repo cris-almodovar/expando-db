@@ -12,12 +12,6 @@ namespace ExpandoDB
     [Serializable]
     public class Document : DynamicObject
     {
-        public const string ID_FIELD_NAME = "_id";
-        public const string CREATED_TIMESTAMP_FIELD_NAME = "_createdTimestamp";
-        public const string MODIFIED_TIMESTAMP_FIELD_NAME = "_modifiedTimestamp";
-        public const string PARSE_ERROR_MESSAGE_FIELD_NAME = "_parseErrorMessage";
-        public const string PARSE_ERROR_JSON_FIELD_NAME = "_parseErrorJson";
-
         private readonly dynamic _expando;
         private readonly IDictionary<string, object> _expandoDictionary;        
 
@@ -61,8 +55,8 @@ namespace ExpandoDB
             _expandoDictionary = (IDictionary<string, object>)_expando;
 
             EnsureIdIsValid();
-            EnsureTimestampIsValid(CREATED_TIMESTAMP_FIELD_NAME);
-            EnsureTimestampIsValid(MODIFIED_TIMESTAMP_FIELD_NAME);
+            EnsureTimestampIsValid(Schema.StandardField.CREATED_TIMESTAMP);
+            EnsureTimestampIsValid(Schema.StandardField.MODIFIED_TIMESTAMP);
         }
 
         /// <summary>
@@ -73,28 +67,25 @@ namespace ExpandoDB
         /// </remarks>        
         private void EnsureIdIsValid()
         {
-            if (!_expandoDictionary.ContainsKey(ID_FIELD_NAME))
+            if (!_expandoDictionary.ContainsKey(Schema.StandardField.ID))
             {
-                _expandoDictionary[ID_FIELD_NAME] = Guid.NewGuid();
+                _expandoDictionary[Schema.StandardField.ID] = Guid.NewGuid();
                 return;
             }
 
-            var idValue = _expandoDictionary[ID_FIELD_NAME];
+            var idValue = _expandoDictionary[Schema.StandardField.ID];
             if (idValue == null)
             {
-                _expandoDictionary[ID_FIELD_NAME] = Guid.NewGuid();
+                _expandoDictionary[Schema.StandardField.ID] = Guid.NewGuid();
                 return;
             }
 
             var idType = idValue.GetType();
             if (idType == typeof(Guid))
             {
-                if ((Guid)idValue == Guid.Empty &&
-                    !_expandoDictionary.ContainsKey(PARSE_ERROR_MESSAGE_FIELD_NAME) &&
-                    !_expandoDictionary.ContainsKey(PARSE_ERROR_JSON_FIELD_NAME))
-                {
-                    _expandoDictionary[ID_FIELD_NAME] = Guid.NewGuid();
-                }
+                if ((Guid)idValue == Guid.Empty)                
+                    _expandoDictionary[Schema.StandardField.ID] = Guid.NewGuid();
+                
                 return;
             }
 
@@ -131,8 +122,8 @@ namespace ExpandoDB
         {
             get
             {
-                if (_expandoDictionary.ContainsKey(ID_FIELD_NAME))
-                    return (Guid?)_expandoDictionary[ID_FIELD_NAME];
+                if (_expandoDictionary.ContainsKey(Schema.StandardField.ID))
+                    return (Guid?)_expandoDictionary[Schema.StandardField.ID];
                 return null;                
             }
             set
@@ -140,7 +131,7 @@ namespace ExpandoDB
                 if (value == null || value == Guid.Empty)
                     throw new ArgumentException("_id cannot be null or empty");
 
-                _expandoDictionary[ID_FIELD_NAME] = value;
+                _expandoDictionary[Schema.StandardField.ID] = value;
             }
         }
 
@@ -155,8 +146,8 @@ namespace ExpandoDB
         {
             get
             {
-                if (_expandoDictionary.ContainsKey(CREATED_TIMESTAMP_FIELD_NAME))
-                    return (DateTime?)_expandoDictionary[CREATED_TIMESTAMP_FIELD_NAME];
+                if (_expandoDictionary.ContainsKey(Schema.StandardField.CREATED_TIMESTAMP))
+                    return (DateTime?)_expandoDictionary[Schema.StandardField.CREATED_TIMESTAMP];
 
                 return null;
             }
@@ -165,7 +156,7 @@ namespace ExpandoDB
                 if (value == null)
                     throw new ArgumentNullException(nameof(value));
 
-                _expandoDictionary[CREATED_TIMESTAMP_FIELD_NAME] = value;
+                _expandoDictionary[Schema.StandardField.CREATED_TIMESTAMP] = value;
             }
         }
 
@@ -179,8 +170,8 @@ namespace ExpandoDB
         {
             get
             {
-                if (_expandoDictionary.ContainsKey(MODIFIED_TIMESTAMP_FIELD_NAME))
-                    return (DateTime?)_expandoDictionary[MODIFIED_TIMESTAMP_FIELD_NAME];
+                if (_expandoDictionary.ContainsKey(Schema.StandardField.MODIFIED_TIMESTAMP))
+                    return (DateTime?)_expandoDictionary[Schema.StandardField.MODIFIED_TIMESTAMP];
 
                 return null;
             }
@@ -189,7 +180,7 @@ namespace ExpandoDB
                 if (value == null)
                     throw new ArgumentNullException(nameof(value));
 
-                _expandoDictionary[MODIFIED_TIMESTAMP_FIELD_NAME] = value;
+                _expandoDictionary[Schema.StandardField.MODIFIED_TIMESTAMP] = value;
             }
         }
         
@@ -256,12 +247,12 @@ namespace ExpandoDB
             var isAllowed = false;
             switch (memberName)
             {
-                case ID_FIELD_NAME:
+                case Schema.StandardField.ID:
                     isAllowed = IsGuid(value);
                     break;
 
-                case CREATED_TIMESTAMP_FIELD_NAME:                    
-                case MODIFIED_TIMESTAMP_FIELD_NAME:
+                case Schema.StandardField.CREATED_TIMESTAMP:                    
+                case Schema.StandardField.MODIFIED_TIMESTAMP:
                     isAllowed = IsDateTime(value);
                     break;
 

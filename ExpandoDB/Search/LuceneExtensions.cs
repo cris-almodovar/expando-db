@@ -16,69 +16,68 @@ namespace ExpandoDB.Search
     /// Implements extension methods for converting Document objects to Lucene documents.
     /// </summary>
     public static class LuceneExtensions
-    {
-        public const string FULL_TEXT_FIELD_NAME = "_full_text_";     
+    {        
         public const string DEFAULT_NULL_TOKEN = "_null_";
-        public const string ILLEGAL_FIELDNAME_CHARS = @"[\+&|!\(\)\{\}\[\]^""~\*\?:\\ ]";
+        public const string QUERY_PARSER_ILLEGAL_CHARS = @"[\+&|!\(\)\{\}\[\]^""~\*\?:\\ ]";
         public const int INDEX_NULL_VALUE = 1; // This is a marker value for NULL in the Lucene index.
         public const int SORT_FIELD_MAX_TEXT_LENGTH = 20;
         public static readonly JavaDouble DOUBLE_MIN_VALUE = new JavaDouble(Double.MinValue);
         public static readonly JavaDouble DOUBLE_MAX_VALUE = new JavaDouble(Double.MaxValue);
         public static readonly JavaLong LONG_MIN_VALUE = new JavaLong(Int64.MinValue);
         public static readonly JavaLong LONG_MAX_VALUE = new JavaLong(Int64.MaxValue);
-        private static readonly System.Text.RegularExpressions.Regex _illegalFieldNameCharsRegex = new System.Text.RegularExpressions.Regex(ILLEGAL_FIELDNAME_CHARS);
+        private static readonly System.Text.RegularExpressions.Regex _queryParserIllegalCharsRegex = new System.Text.RegularExpressions.Regex(QUERY_PARSER_ILLEGAL_CHARS);
 
         /// <summary>
         /// Converts a <see cref="Document"/> object to a <see cref="LuceneDocument"/> object.
         /// </summary>
         /// <param name="document">The Document object</param>
-        /// <param name="indexSchema">The index schema.</param>
+        /// <param name="schema">The index schema.</param>
         /// <returns></returns>
         /// <exception cref="System.ArgumentNullException"></exception>
         /// <exception cref="System.InvalidOperationException">Cannot index a Document that does not have an _id.</exception>
-        public static LuceneDocument ToLuceneDocument(this Document document, IndexSchema indexSchema = null)
+        public static LuceneDocument ToLuceneDocument(this Document document, Schema schema = null)
         {
             if (document == null)
                 throw new ArgumentNullException(nameof(document));
 
-            if (indexSchema == null)
-                indexSchema = IndexSchema.CreateDefault();
+            if (schema == null)
+                schema = Schema.CreateDefault();
 
             var documentDictionary = document.AsDictionary();
-            if (!documentDictionary.ContainsKey(Document.ID_FIELD_NAME))
+            if (!documentDictionary.ContainsKey(Schema.StandardField.ID))
                 throw new InvalidOperationException("Cannot index a Document that does not have an _id.");
 
             var luceneDocument = new LuceneDocument();
 
             // Make sure the _id field is the first field added to the Lucene document
-            var keys = documentDictionary.Keys.Except(new[] { Document.ID_FIELD_NAME }).ToList();
-            keys.Insert(0, Document.ID_FIELD_NAME);
+            var keys = documentDictionary.Keys.Except(new[] { Schema.StandardField.ID }).ToList();
+            keys.Insert(0, Schema.StandardField.ID);
 
             foreach (var fieldName in keys)
             {
-                // Validate fieldName - must not contain space or Lucene QueryParser special characters.
-                if (_illegalFieldNameCharsRegex.IsMatch(fieldName))
-                    throw new IndexSchemaException($"The fieldName '{fieldName}' contains illegal characters.");
+                // Validate fieldName - must not contain space or Lucene QueryParser illegal characters.
+                if (_queryParserIllegalCharsRegex.IsMatch(fieldName))
+                    throw new SchemaException($"The fieldName '{fieldName}' contains illegal characters.");
 
-                IndexedField indexedField = null;
-                if (!indexSchema.Fields.TryGetValue(fieldName, out indexedField))
+                Schema.Field schemaField = null;
+                if (!schema.Fields.TryGetValue(fieldName, out schemaField))
                 {
-                    indexedField = new IndexedField
+                    schemaField = new Schema.Field
                     {
                         Name = fieldName
                     };
-                    indexSchema.Fields.TryAdd(fieldName, indexedField);
+                    schema.Fields.TryAdd(fieldName, schemaField);
                 }
 
                 var fieldValue = documentDictionary[fieldName];
-                var luceneFields = fieldValue.ToLuceneFields(indexedField);
+                var luceneFields = fieldValue.ToLuceneFields(schemaField);
                 foreach (var luceneField in luceneFields)
                     luceneDocument.Add(luceneField);
             }
 
             // The full-text field is always auto-generated and added to the Lucene document.
             var fullText = document.ToLuceneFullTextString();
-            luceneDocument.Add(new TextField(FULL_TEXT_FIELD_NAME, fullText, FieldStore.NO));
+            luceneDocument.Add(new TextField(Schema.StandardField.FULL_TEXT, fullText, FieldStore.NO));
 
             return luceneDocument;
         }
@@ -87,54 +86,54 @@ namespace ExpandoDB.Search
         /// Generates Lucene fields for the given value.
         /// </summary>
         /// <param name="value">The value.</param>
-        /// <param name="indexedField">The indexed field.</param>
+        /// <param name="schemaField">The schema field.</param>
         /// <returns></returns>
-        public static IList<Field> ToLuceneFields(this object value, IndexedField indexedField)
+        public static IList<Field> ToLuceneFields(this object value, Schema.Field schemaField)
         {
-            if (indexedField == null)
-                throw new ArgumentNullException(nameof(indexedField));
+            if (schemaField == null)
+                throw new ArgumentNullException(nameof(schemaField));
 
             var luceneFields = new List<Field>();  // This will contain the generated Lucene fields for the passed in value.
 
-            var fieldName = indexedField.Name.Trim();            
+            var fieldName = schemaField.Name.Trim();            
             var fieldDataType = GetFieldDataType(value);
 
-            indexedField.ValidateDataType(fieldDataType);           
+            schemaField.ValidateDataType(fieldDataType);           
 
             switch (fieldDataType)
             {
-                case FieldDataType.Number:                    
-                    luceneFields.AddNumberField(indexedField, value);
+                case Schema.DataType.Number:                    
+                    luceneFields.AddNumberField(schemaField, value);
                     break;
 
-                case FieldDataType.Boolean:                    
-                    luceneFields.AddBooleanField(indexedField, value);
+                case Schema.DataType.Boolean:                    
+                    luceneFields.AddBooleanField(schemaField, value);
                     break;
 
-                case FieldDataType.Text:                    
-                    luceneFields.AddTextField(indexedField, value);
+                case Schema.DataType.Text:                    
+                    luceneFields.AddTextField(schemaField, value);
                     break;
 
-                case FieldDataType.DateTime:                    
-                    luceneFields.AddDateTimeField(indexedField, value);
+                case Schema.DataType.DateTime:                    
+                    luceneFields.AddDateTimeField(schemaField, value);
                     break;
 
-                case FieldDataType.Guid:                    
-                    luceneFields.AddGuidField(indexedField, value);
+                case Schema.DataType.Guid:                    
+                    luceneFields.AddGuidField(schemaField, value);
                     break;
 
-                case FieldDataType.Array:          
+                case Schema.DataType.Array:          
                     var list = value as IList;
-                    luceneFields.AddRange(list.ToLuceneFields(indexedField));
+                    luceneFields.AddRange(list.ToLuceneFields(schemaField));
                     break;
 
-                case FieldDataType.Object:
+                case Schema.DataType.Object:
                     var dictionary = value as IDictionary<string, object>;
-                    luceneFields.AddRange(dictionary.ToLuceneFields(indexedField));
+                    luceneFields.AddRange(dictionary.ToLuceneFields(schemaField));
                     break;
 
-                case FieldDataType.Null: 
-                    luceneFields.AddNullField(indexedField);
+                case Schema.DataType.Null: 
+                    luceneFields.AddNullField(schemaField);
                     break;
             }
 
@@ -142,26 +141,26 @@ namespace ExpandoDB.Search
         }
         
 
-        private static void ValidateDataType(this IndexedField indexedField, FieldDataType dataType)
+        private static void ValidateDataType(this Schema.Field schemaField, Schema.DataType newDataType)
         { 
-            if (indexedField.DataType == FieldDataType.Null)
+            if (schemaField.DataType == Schema.DataType.Null)
             {
-                indexedField.DataType = dataType;
+                schemaField.DataType = newDataType;
             }
             else
             {
-                if (indexedField.DataType != dataType && dataType != FieldDataType.Null)
+                if (schemaField.DataType != newDataType && newDataType != Schema.DataType.Null)
                 {
-                    var message = $"Cannot change the data type of the field '{indexedField.Name}' from {indexedField.DataType} to {dataType}.";
-                    throw new IndexSchemaException(message);
+                    var message = $"Cannot change the data type of the field '{schemaField.Name}' from {schemaField.DataType} to {newDataType}.";
+                    throw new SchemaException(message);
                 }
             }
         }
 
-        private static FieldDataType GetFieldDataType(object value)
+        private static Schema.DataType GetFieldDataType(object value)
         {
             if (value == null)
-                return FieldDataType.Null;
+                return Schema.DataType.Null;
 
             var type = value.GetType();
             var typeCode = Type.GetTypeCode(type);
@@ -177,77 +176,77 @@ namespace ExpandoDB.Search
                 case TypeCode.Decimal:
                 case TypeCode.Double:
                 case TypeCode.Single:
-                    return FieldDataType.Number;
+                    return Schema.DataType.Number;
 
                 case TypeCode.Boolean:
-                    return FieldDataType.Boolean;
+                    return Schema.DataType.Boolean;
 
                 case TypeCode.String:
-                    return FieldDataType.Text;
+                    return Schema.DataType.Text;
 
                 case TypeCode.DateTime:
-                    return FieldDataType.DateTime;
+                    return Schema.DataType.DateTime;
 
                 case TypeCode.Object:
                     if (type == typeof(Guid) || type == typeof(Guid?))
-                        return FieldDataType.Guid;
+                        return Schema.DataType.Guid;
                     else if (value is IList)
-                        return FieldDataType.Array;
+                        return Schema.DataType.Array;
                     else if (value is IDictionary<string, object>)
-                        return FieldDataType.Object;
+                        return Schema.DataType.Object;
                     break;
 
                 case TypeCode.Empty:
-                    return FieldDataType.Null;
+                    return Schema.DataType.Null;
             }
 
-            throw new IndexSchemaException($"Unsupported data type: '{type.Name}'");
+            throw new SchemaException($"Unsupported data type: '{type.Name}'");
         }
 
-        private static List<Field> ToLuceneFields(this IList list, IndexedField indexedField)
+        private static List<Field> ToLuceneFields(this IList list, Schema.Field schemaField)
         {
             var luceneFields = new List<Field>();
             if (list.Count > 0)
             {
-                IndexedField scalarIndexedField = null;
+                Schema.Field arrayElementSchemaField = null;
 
-                foreach (var item in list)
+                foreach (var element in list)
                 {
-                    if (item == null)
+                    if (element == null)
                         continue;
 
-                    if (indexedField.ArrayElementDataType == FieldDataType.Null)
-                        indexedField.ArrayElementDataType = GetFieldDataType(item);
-                    else if (indexedField.ArrayElementDataType != GetFieldDataType(item))
-                        throw new IndexSchemaException($"All the elements of '{indexedField.Name}' must be of type '{indexedField.ArrayElementDataType}'");
+                    if (schemaField.ArrayElementDataType == Schema.DataType.Null)
+                        schemaField.ArrayElementDataType = GetFieldDataType(element);
+                    else if (schemaField.ArrayElementDataType != GetFieldDataType(element))
+                        throw new SchemaException($"All the elements of '{schemaField.Name}' must be of type '{schemaField.ArrayElementDataType}'");
 
-                    switch (indexedField.ArrayElementDataType)
+                    switch (schemaField.ArrayElementDataType)
                     {
-                        case FieldDataType.Guid:
-                        case FieldDataType.Text:
-                        case FieldDataType.Number:
-                        case FieldDataType.DateTime:
-                        case FieldDataType.Boolean:
-                            if (scalarIndexedField == null && indexedField.ArrayElementDataType != FieldDataType.Null)
+                        case Schema.DataType.Guid:
+                        case Schema.DataType.Text:
+                        case Schema.DataType.Number:
+                        case Schema.DataType.DateTime:
+                        case Schema.DataType.Boolean:
+                            if (arrayElementSchemaField == null && schemaField.ArrayElementDataType != Schema.DataType.Null)
                             {
-                                scalarIndexedField = new IndexedField()
+                                arrayElementSchemaField = new Schema.Field()
                                 {
-                                    Name = indexedField.Name,
-                                    DataType = indexedField.ArrayElementDataType,
+                                    Name = schemaField.Name,
+                                    DataType = schemaField.ArrayElementDataType,
                                     IsArrayElement = true
                                 };
                             }
-                            luceneFields.AddRange(item.ToLuceneFields(scalarIndexedField ?? indexedField));
+                            luceneFields.AddRange(element.ToLuceneFields(arrayElementSchemaField ?? schemaField));
                             break;
 
-                        case FieldDataType.Array:
-                            throw new IndexSchemaException("JSON with nested arrays are currently not supported.");
+                        case Schema.DataType.Array:
+                            throw new SchemaException("JSON with nested arrays are currently not supported.");
                             //break;
 
-                        case FieldDataType.Object:
-                            var dictionary = item as IDictionary<string, object>;
+                        case Schema.DataType.Object:
+                            var dictionary = element as IDictionary<string, object>;
                             if (dictionary != null)
-                                luceneFields.AddRange(dictionary.ToLuceneFields(indexedField));
+                                luceneFields.AddRange(dictionary.ToLuceneFields(schemaField));
                             break;
                     }
                 }
@@ -256,47 +255,50 @@ namespace ExpandoDB.Search
             return luceneFields;
         }
 
-        private static List<Field> ToLuceneFields(this IDictionary<string, object> dictionary, IndexedField parentIndexedField)
+        private static List<Field> ToLuceneFields(this IDictionary<string, object> dictionary, Schema.Field parentSchemaField)
         {
             var luceneFields = new List<Field>();
-            var childSchema = parentIndexedField.ObjectSchema ?? new IndexSchema(parentIndexedField.Name);
-            if (parentIndexedField.DataType == FieldDataType.Array)
-                parentIndexedField.ArrayElementDataType = FieldDataType.Object;
-            parentIndexedField.ObjectSchema = childSchema;
+
+            var childSchema = parentSchemaField.ObjectSchema ?? new Schema(parentSchemaField.Name);
+
+            if (parentSchemaField.DataType == Schema.DataType.Array)
+                parentSchemaField.ArrayElementDataType = Schema.DataType.Object;
+
+            parentSchemaField.ObjectSchema = childSchema;
 
             foreach (var fieldName in dictionary.Keys)
             {
                 var childField = dictionary[fieldName];
                 var childFieldDataType = GetFieldDataType(childField);
 
-                var childIndexedField = new IndexedField
+                var childSchemaField = new Schema.Field
                 {
-                    Name = $"{parentIndexedField.Name}.{fieldName}",
+                    Name = $"{parentSchemaField.Name}.{fieldName}",
                     DataType = childFieldDataType
                 };
-                childSchema.Fields.TryAdd(childIndexedField.Name, childIndexedField);
+                childSchema.Fields.TryAdd(childSchemaField.Name, childSchemaField);
 
                 switch (childFieldDataType)
                 {
-                    case FieldDataType.Null:
-                    case FieldDataType.Guid:
-                    case FieldDataType.Text:
-                    case FieldDataType.Number:
-                    case FieldDataType.DateTime:
-                    case FieldDataType.Boolean:
-                        luceneFields.AddRange(childField.ToLuceneFields(childIndexedField));
+                    case Schema.DataType.Null:
+                    case Schema.DataType.Guid:
+                    case Schema.DataType.Text:
+                    case Schema.DataType.Number:
+                    case Schema.DataType.DateTime:
+                    case Schema.DataType.Boolean:
+                        luceneFields.AddRange(childField.ToLuceneFields(childSchemaField));
                         break;
 
-                    case FieldDataType.Array:
-                        var list = childField as IList;
-                        if (list != null)
-                            luceneFields.AddRange(list.ToLuceneFields(childIndexedField));
+                    case Schema.DataType.Array:
+                        var array = childField as IList;
+                        if (array != null)
+                            luceneFields.AddRange(array.ToLuceneFields(childSchemaField));
                         break;
 
-                    case FieldDataType.Object:
+                    case Schema.DataType.Object:
                         var nestedDictionary = childField as IDictionary<string, object>;
                         if (nestedDictionary != null)
-                            luceneFields.AddRange(nestedDictionary.ToLuceneFields(childIndexedField));
+                            luceneFields.AddRange(nestedDictionary.ToLuceneFields(childSchemaField));
                         break;
                 }
             }
@@ -317,7 +319,7 @@ namespace ExpandoDB.Search
             var buffer = new StringBuilder();
 
             var dictionary = document.AsDictionary();
-            var keys = dictionary.Keys.Except(new[] { Document.ID_FIELD_NAME, Document.CREATED_TIMESTAMP_FIELD_NAME, Document.MODIFIED_TIMESTAMP_FIELD_NAME });
+            var keys = dictionary.Keys.Except(new[] { Schema.StandardField.ID, Schema.StandardField.CREATED_TIMESTAMP, Schema.StandardField.MODIFIED_TIMESTAMP });
 
             foreach (var fieldName in keys)
             {
@@ -457,17 +459,17 @@ namespace ExpandoDB.Search
         /// Adds a Number field to the given list of Lucene fields.
         /// </summary>
         /// <param name="luceneFields">The lucene fields.</param>
-        /// <param name="indexedField">The indexed field.</param>
+        /// <param name="schemaField">The indexed field.</param>
         /// <param name="value">The value.</param>
-        private static void AddNumberField(this List<Field> luceneFields, IndexedField indexedField, object value)
+        private static void AddNumberField(this List<Field> luceneFields, Schema.Field schemaField, object value)
         {
             var doubleValue = Convert.ToDouble(value);
-            var fieldName = indexedField.Name.Trim();
+            var fieldName = schemaField.Name.Trim();
 
             luceneFields.Add(new LegacyDoubleField(fieldName, doubleValue, FieldStore.NO));
 
             // Only top-level and non-array fields are sortable
-            if (indexedField.IsSortable)
+            if (schemaField.IsSortable)
             {
                 var sortFieldName = fieldName.ToSortFieldName();
                 luceneFields.Add(new DoubleDocValuesField(sortFieldName, doubleValue));
@@ -479,17 +481,17 @@ namespace ExpandoDB.Search
         /// Adds a Booean field to the given list of Lucene fields.
         /// </summary>
         /// <param name="luceneFields">The lucene fields.</param>
-        /// <param name="indexedField">The indexed field.</param>
+        /// <param name="schemaField">The indexed field.</param>
         /// <param name="value">The value.</param>        
-        private static void AddBooleanField(this List<Field> luceneFields, IndexedField indexedField, object value)
+        private static void AddBooleanField(this List<Field> luceneFields, Schema.Field schemaField, object value)
         {
             var intValue = (bool)value ? 1 : 0;
-            var fieldName = indexedField.Name.Trim();
+            var fieldName = schemaField.Name.Trim();
 
             luceneFields.Add(new LegacyIntField(fieldName, intValue, FieldStore.NO)); 
 
             // Only top-level and non-array fields are sortable
-            if (indexedField.IsSortable)
+            if (schemaField.IsSortable)
             {
                 var sortFieldName = fieldName.ToSortFieldName();
                 luceneFields.Add(new NumericDocValuesField(sortFieldName, intValue));
@@ -500,17 +502,17 @@ namespace ExpandoDB.Search
         /// Adds a Text field to the given list of Lucene fields.
         /// </summary>
         /// <param name="luceneFields">The lucene fields.</param>
-        /// <param name="indexedField">The indexed field.</param>
+        /// <param name="schemaField">The indexed field.</param>
         /// <param name="value">The value.</param>
-        private static void AddTextField(this List<Field> luceneFields, IndexedField indexedField, object value)
+        private static void AddTextField(this List<Field> luceneFields, Schema.Field schemaField, object value)
         {
             var stringValue = (string)value;
-            var fieldName = indexedField.Name.Trim();
+            var fieldName = schemaField.Name.Trim();
 
             luceneFields.Add(new TextField(fieldName, stringValue, FieldStore.NO));
 
             // Only top-level and non-array fields are sortable
-            if (indexedField.IsSortable)
+            if (schemaField.IsSortable)
             {
                 var stringValueForSorting = (stringValue.Length > SORT_FIELD_MAX_TEXT_LENGTH ? stringValue.Substring(0, SORT_FIELD_MAX_TEXT_LENGTH) : stringValue).Trim().ToLowerInvariant();
                 var sortFieldName = fieldName.ToSortFieldName();
@@ -522,18 +524,18 @@ namespace ExpandoDB.Search
         /// Adds a DateTime field to the given list of Lucene fields.
         /// </summary>
         /// <param name="luceneFields">The lucene fields.</param>
-        /// <param name="indexedField">The indexed field.</param>
+        /// <param name="schemaField">The indexed field.</param>
         /// <param name="value">The value.</param>        
-        private static void AddDateTimeField(this List<Field> luceneFields, IndexedField indexedField, object value)
+        private static void AddDateTimeField(this List<Field> luceneFields, Schema.Field schemaField, object value)
         {
             var dateTimeValue = (DateTime)value;
             var dateTimeTicks = dateTimeValue.Ticks;
-            var fieldName = indexedField.Name.Trim();
+            var fieldName = schemaField.Name.Trim();
 
             luceneFields.Add(new LegacyLongField(fieldName, dateTimeTicks, FieldStore.NO));
 
             // Only top-level and non-array fields are sortable
-            if (indexedField.IsSortable)
+            if (schemaField.IsSortable)
             {
                 var sortFieldName = fieldName.ToSortFieldName();
                 luceneFields.Add(new NumericDocValuesField(sortFieldName, dateTimeTicks));
@@ -545,18 +547,18 @@ namespace ExpandoDB.Search
         /// Adds a Guid field to the given list of Lucene fields.
         /// </summary>
         /// <param name="luceneFields">The lucene fields.</param>
-        /// <param name="indexedField">The indexed field.</param>
+        /// <param name="schemaField">The indexed field.</param>
         /// <param name="value">The value.</param>
-        private static void AddGuidField(this List<Field> luceneFields, IndexedField indexedField, object value)
+        private static void AddGuidField(this List<Field> luceneFields, Schema.Field schemaField, object value)
         {
             var guidValue = ((Guid)value).ToString().ToLower();
-            var isStored = (indexedField.Name == Document.ID_FIELD_NAME ? FieldStore.YES : FieldStore.NO);
-            var fieldName = indexedField.Name.Trim();
+            var isStored = (schemaField.Name == Schema.StandardField.ID ? FieldStore.YES : FieldStore.NO);
+            var fieldName = schemaField.Name.Trim();
 
             luceneFields.Add(new StringField(fieldName, guidValue, isStored));
 
             // Only top-level and non-array fields are sortable
-            if (indexedField.IsSortable)
+            if (schemaField.IsSortable)
             {
                 var sortFieldName = fieldName.ToSortFieldName();
                 luceneFields.Add(new SortedDocValuesField(sortFieldName, new BytesRef(guidValue)));
@@ -567,10 +569,10 @@ namespace ExpandoDB.Search
         /// Adds a null field to the given list of Lucene fields.
         /// </summary>
         /// <param name="luceneFields">The lucene fields.</param>
-        /// <param name="indexedField">The indexed field.</param>        
-        private static void AddNullField(this List<Field> luceneFields, IndexedField indexedField)
+        /// <param name="schemaField">The indexed field.</param>        
+        private static void AddNullField(this List<Field> luceneFields, Schema.Field schemaField)
         {
-            var fieldName = indexedField.Name.Trim().ToNullFieldName();
+            var fieldName = schemaField.Name.Trim().ToNullFieldName();
             luceneFields.Add(new LegacyIntField(fieldName, INDEX_NULL_VALUE, FieldStore.NO));            
         }
     }

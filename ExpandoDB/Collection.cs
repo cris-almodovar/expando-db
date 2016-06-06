@@ -23,7 +23,7 @@ namespace ExpandoDB
         private readonly IDocumentStorage _documentStorage;
         private readonly ISchemaStorage _schemaStorage;
         private readonly LuceneIndex _luceneIndex;
-        private readonly IndexSchema _indexSchema;
+        private readonly Schema _schema;
         private readonly string _name;
         private readonly Timer _schemaPersistenceTimer;
         private readonly double _schemaPersistenceIntervalSeconds;        
@@ -35,7 +35,7 @@ namespace ExpandoDB
         /// <value>
         /// The IndexSchema object.
         /// </value>
-        public IndexSchema IndexSchema { get { return _indexSchema; } }
+        public Schema Schema { get { return _schema; } }
 
         /// <summary>
         /// Gets the name of the DocumentCollection.
@@ -68,8 +68,8 @@ namespace ExpandoDB
         /// </summary>
         /// <param name="name">The name of the DocumentCollection.</param>
         /// <param name="storageEngine">The storage engine.</param>
-        /// <param name="indexSchema">The index schema.</param>        
-        public Collection(string name, LightningStorageEngine storageEngine, IndexSchema indexSchema = null)
+        /// <param name="schema">The index schema.</param>        
+        public Collection(string name, LightningStorageEngine storageEngine, Schema schema = null)
         {
             if (String.IsNullOrWhiteSpace(name))
                 throw new ArgumentException($"{nameof(name)} cannot be null or blank");
@@ -86,8 +86,8 @@ namespace ExpandoDB
             _documentStorage = new LightningDocumentStorage(_name, _storageEngine);
             _schemaStorage = new LightningSchemaStorage(_storageEngine);
 
-            _indexSchema = indexSchema ?? IndexSchema.CreateDefault(name);
-            _luceneIndex = new LuceneIndex(_indexPath, _indexSchema);
+            _schema = schema ?? Schema.CreateDefault(name);
+            _luceneIndex = new LuceneIndex(_indexPath, _schema);
 
             _schemaPersistenceIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["SchemaPersistenceIntervalSeconds"] ?? "1");
             _schemaPersistenceTimer = new Timer( _ => Task.Run(async() => await PersistSchema().ConfigureAwait(false)), null, TimeSpan.FromSeconds(_schemaPersistenceIntervalSeconds), TimeSpan.FromSeconds(_schemaPersistenceIntervalSeconds));
@@ -99,7 +99,7 @@ namespace ExpandoDB
                 return;            
             try
             {
-                var liveSchema = _indexSchema.ToDocumentCollectionSchema();
+                var liveSchema = _schema.ToDocumentCollectionSchema();
                 var savedSchema = await _schemaStorage.GetAsync(_name).ConfigureAwait(false);
 
                 if (savedSchema == null)
@@ -305,9 +305,9 @@ namespace ExpandoDB
         internal DocumentCollectionSchema GetSchema()
         {
             var schema = new DocumentCollectionSchema(Name);
-            foreach (var fieldName in IndexSchema.Fields.Keys)
+            foreach (var fieldName in Schema.Fields.Keys)
             {
-                var field = IndexSchema.Fields[fieldName];
+                var field = Schema.Fields[fieldName];
                 if (field == null)
                     continue;
 

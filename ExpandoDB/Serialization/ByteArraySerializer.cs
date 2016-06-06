@@ -84,7 +84,7 @@ namespace ExpandoDB.Serialization
                 typeof(DocumentCollectionSchema),
                 typeof(DocumentCollectionSchemaField),
                 typeof(List<DocumentCollectionSchemaField>),
-                typeof(FieldDataType)
+                typeof(Schema.DataType)
             };
 
             _serializer = new NetSerializer.Serializer(supportedTypes);

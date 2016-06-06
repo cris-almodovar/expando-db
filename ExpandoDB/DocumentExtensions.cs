@@ -142,17 +142,7 @@ namespace ExpandoDB
             }
 
             return parsedItems;
-        }
-
-        /// <summary>
-        /// Deserializes the JSON string into a Document object.
-        /// </summary>
-        /// <param name="json">The JSON string to deserialize.</param>
-        /// <returns></returns>
-        public static Document ToDocument(this string json)
-        {
-            return new Document(json.ToDictionary().ToExpando());
-        }
+        }       
         
 
         /// <summary>

@@ -30,25 +30,25 @@ namespace ExpandoDB.Search
         private readonly SearcherManager _searcherManager;        
         private readonly Timer _refreshTimer;
         private readonly Timer _commitTimer;
-        private readonly IndexSchema _indexSchema;
+        private readonly Schema _schema;
         private readonly ILog _log = LogManager.GetLogger(typeof(LuceneIndex).Name);    
         private readonly double _refreshIntervalSeconds;
         private readonly double _commitIntervalSeconds;        
         private readonly double _ramBufferSizeMB;
 
-        public IndexSchema Schema { get { return _indexSchema; } }       
+        public Schema Schema { get { return _schema; } }       
 
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LuceneIndex"/> class.
         /// </summary>
         /// <param name="indexPath">The path to the directory that will contain the Lucene index files.</param>
-        public LuceneIndex(string indexPath, IndexSchema indexSchema = null)
+        public LuceneIndex(string indexPath, Schema schema = null)
         {
             if (String.IsNullOrWhiteSpace(indexPath))
                 throw new ArgumentNullException(nameof(indexPath)); 
-            if (indexSchema == null)
-                indexSchema = IndexSchema.CreateDefault();
+            if (schema == null)
+                schema = Schema.CreateDefault();
 
             if (!System.IO.Directory.Exists(indexPath))
                 System.IO.Directory.CreateDirectory(indexPath);
@@ -56,8 +56,8 @@ namespace ExpandoDB.Search
             var path = Paths.get(indexPath);
             _indexDirectory = new MMapDirectory(path);            
 
-            _indexSchema = indexSchema ?? IndexSchema.CreateDefault();
-            _compositeAnalyzer = new CompositeAnalyzer(_indexSchema);            
+            _schema = schema ?? Schema.CreateDefault();
+            _compositeAnalyzer = new CompositeAnalyzer(_schema);            
 
             _ramBufferSizeMB = Double.Parse(ConfigurationManager.AppSettings["IndexWriter.RAMBufferSizeMB"] ?? "128");            
 
@@ -68,7 +68,7 @@ namespace ExpandoDB.Search
             
             _writer = new IndexWriter(_indexDirectory, config);            
 
-            _searcherManager = new SearcherManager(_writer, true, false, null);    // TODO: Add to config - applyAllDeletes        
+            _searcherManager = new SearcherManager(_writer, true, false, null);         
 
             _refreshIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["IndexSearcher.RefreshIntervalSeconds"] ?? "0.5");    
             _commitIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["IndexWriter.CommitIntervalSeconds"] ?? "60");
@@ -130,7 +130,7 @@ namespace ExpandoDB.Search
             if (document._id == null || document._id.Value == Guid.Empty)
                 document._id = Guid.NewGuid();
 
-            var luceneDocument = document.ToLuceneDocument(_indexSchema);            
+            var luceneDocument = document.ToLuceneDocument(_schema);            
             _writer.AddDocument(luceneDocument);            
         }
 
@@ -143,7 +143,7 @@ namespace ExpandoDB.Search
             if (guid == Guid.Empty)
                 throw new ArgumentException(nameof(guid) + " cannot be empty");
 
-            var idTerm = new Term(Document.ID_FIELD_NAME, guid.ToString());
+            var idTerm = new Term(Schema.StandardField.ID, guid.ToString().ToLower());
             _writer.DeleteDocuments(idTerm);
         }
 
@@ -160,9 +160,9 @@ namespace ExpandoDB.Search
             if (document._id == null || document._id == Guid.Empty)
                 throw new InvalidOperationException("Cannot update Document that does not have an _id");
 
-            var luceneDocument = document.ToLuceneDocument(_indexSchema);
-            var id = document._id.ToString();
-            var idTerm = new Term(Document.ID_FIELD_NAME, id);
+            var luceneDocument = document.ToLuceneDocument(_schema);
+            var id = document._id.ToString().ToLower();
+            var idTerm = new Term(Schema.StandardField.ID, id);
 
             _writer.UpdateDocument(idTerm, luceneDocument);
         }        
@@ -184,7 +184,7 @@ namespace ExpandoDB.Search
             criteria.Validate();
 
             var result = new SearchResult<Guid>(criteria);
-            var queryParser = new LuceneQueryParser(LuceneExtensions.FULL_TEXT_FIELD_NAME, _compositeAnalyzer, _indexSchema);
+            var queryParser = new LuceneQueryParser(Schema.StandardField.FULL_TEXT, _compositeAnalyzer, _schema);
             var query = queryParser.Parse(criteria.Query);
 
             var searcher = _searcherManager.Acquire() as IndexSearcher;
@@ -216,9 +216,9 @@ namespace ExpandoDB.Search
             if (isDescending)
                 fieldName = fieldName.TrimStart('-');
 
-            var indexedField = _indexSchema.FindField(fieldName, false);
-            if (indexedField == null)
-                throw new QueryParserException($"Invalid sortBy field: '{fieldName}'.");
+            var sortBySchemaField = _schema.FindField(fieldName, false);
+            if (sortBySchemaField == null)
+                throw new LuceneQueryParserException($"Invalid sortBy field: '{fieldName}'.");
 
             // Notes: 
             // 1. The actual sort fieldname is different, e.g. 'fieldName' ==> '__fieldName_sort__'
@@ -228,27 +228,27 @@ namespace ExpandoDB.Search
             var sortFieldName = fieldName.ToSortFieldName();
             SortField sortField = null;
 
-            switch (indexedField.DataType)
+            switch (sortBySchemaField.DataType)
             {
-                case FieldDataType.Number:
+                case Schema.DataType.Number:
                     sortField = new SortField(sortFieldName, SortFieldType.DOUBLE, isDescending);
                     sortField.SetMissingValue(isDescending ? LuceneExtensions.DOUBLE_MIN_VALUE : LuceneExtensions.DOUBLE_MAX_VALUE);
                     break;
 
-                case FieldDataType.DateTime:
-                case FieldDataType.Boolean:
+                case Schema.DataType.DateTime:
+                case Schema.DataType.Boolean:
                     sortField = new SortField(sortFieldName, SortFieldType.LONG, isDescending);
                     sortField.SetMissingValue(isDescending ? LuceneExtensions.LONG_MIN_VALUE : LuceneExtensions.LONG_MAX_VALUE);
                     break;
 
-                case FieldDataType.Text:
-                case FieldDataType.Guid:
+                case Schema.DataType.Text:
+                case Schema.DataType.Guid:
                     sortField = new SortField(sortFieldName, SortFieldType.STRING, isDescending);
                     sortField.SetMissingValue(isDescending ?  SortField.STRING_FIRST : SortField.STRING_LAST );
                     break;
 
                 default:
-                    throw new QueryParserException($"Invalid sortBy field: '{fieldName}'. Only Number, DateTime, Boolean, Text, and GUID fields can be used for sorting.");
+                    throw new LuceneQueryParserException($"Invalid sortBy field: '{fieldName}'. Only Number, DateTime, Boolean, Text, and GUID fields can be used for sorting.");
             }
 
             if (sortField == null)

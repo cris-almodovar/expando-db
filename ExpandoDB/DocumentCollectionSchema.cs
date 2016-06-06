@@ -117,14 +117,14 @@ namespace ExpandoDB
     public class DocumentCollectionSchemaField
     {
         public string Name { get; set; }
-        public FieldDataType DataType { get; set; }
-        public FieldDataType ArrayElementDataType { get; set; }
+        public Schema.DataType DataType { get; set; }
+        public Schema.DataType ArrayElementDataType { get; set; }
         public DocumentCollectionSchema ObjectSchema { get; set; }        
     }
 
     public static class DocumentCollectionSchemaUtil
     {
-        public static DocumentCollectionSchema ToDocumentCollectionSchema(this IndexSchema fromSchema)
+        public static DocumentCollectionSchema ToDocumentCollectionSchema(this Schema fromSchema)
         {
             if (fromSchema == null)
                 return null;
@@ -152,15 +152,15 @@ namespace ExpandoDB
         /// Gets the IndexSchema based on the IndexedFields of this instance.
         /// </summary>
         /// <returns></returns>
-        public static IndexSchema ToIndexSchema(this DocumentCollectionSchema fromSchema)
+        public static Schema ToIndexSchema(this DocumentCollectionSchema fromSchema)
         {
             if (fromSchema == null)
                 return null;
 
-            var toSchema = new IndexSchema(fromSchema.Name);
+            var toSchema = new Schema(fromSchema.Name);
             foreach (var fromField in fromSchema.Fields)
             {
-                var toField = new IndexedField
+                var toField = new Schema.Field
                 {
                     Name = fromField.Name,
                     DataType = fromField.DataType,
