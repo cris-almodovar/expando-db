@@ -259,7 +259,7 @@ namespace ExpandoDB.Search
         {
             var luceneFields = new List<Field>();
 
-            var childSchema = parentSchemaField.ObjectSchema ?? new Schema(parentSchemaField.Name);
+            var childSchema = parentSchemaField.ObjectSchema ?? new Schema { Name = parentSchemaField.Name };
 
             if (parentSchemaField.DataType == Schema.DataType.Array)
                 parentSchemaField.ArrayElementDataType = Schema.DataType.Object;
@@ -459,14 +459,14 @@ namespace ExpandoDB.Search
         /// Adds a Number field to the given list of Lucene fields.
         /// </summary>
         /// <param name="luceneFields">The lucene fields.</param>
-        /// <param name="schemaField">The indexed field.</param>
+        /// <param name="schemaField">The schema field.</param>
         /// <param name="value">The value.</param>
         private static void AddNumberField(this List<Field> luceneFields, Schema.Field schemaField, object value)
         {
             var doubleValue = Convert.ToDouble(value);
             var fieldName = schemaField.Name.Trim();
 
-            luceneFields.Add(new LegacyDoubleField(fieldName, doubleValue, FieldStore.NO));
+            luceneFields.Add(new DoublePoint(fieldName, doubleValue));
 
             // Only top-level and non-array fields are sortable
             if (schemaField.IsSortable)
@@ -481,14 +481,14 @@ namespace ExpandoDB.Search
         /// Adds a Booean field to the given list of Lucene fields.
         /// </summary>
         /// <param name="luceneFields">The lucene fields.</param>
-        /// <param name="schemaField">The indexed field.</param>
+        /// <param name="schemaField">The schema field.</param>
         /// <param name="value">The value.</param>        
         private static void AddBooleanField(this List<Field> luceneFields, Schema.Field schemaField, object value)
         {
             var intValue = (bool)value ? 1 : 0;
             var fieldName = schemaField.Name.Trim();
 
-            luceneFields.Add(new LegacyIntField(fieldName, intValue, FieldStore.NO)); 
+            luceneFields.Add(new IntPoint(fieldName, intValue)); 
 
             // Only top-level and non-array fields are sortable
             if (schemaField.IsSortable)
@@ -502,7 +502,7 @@ namespace ExpandoDB.Search
         /// Adds a Text field to the given list of Lucene fields.
         /// </summary>
         /// <param name="luceneFields">The lucene fields.</param>
-        /// <param name="schemaField">The indexed field.</param>
+        /// <param name="schemaField">The schema field.</param>
         /// <param name="value">The value.</param>
         private static void AddTextField(this List<Field> luceneFields, Schema.Field schemaField, object value)
         {
@@ -524,7 +524,7 @@ namespace ExpandoDB.Search
         /// Adds a DateTime field to the given list of Lucene fields.
         /// </summary>
         /// <param name="luceneFields">The lucene fields.</param>
-        /// <param name="schemaField">The indexed field.</param>
+        /// <param name="schemaField">The schema field.</param>
         /// <param name="value">The value.</param>        
         private static void AddDateTimeField(this List<Field> luceneFields, Schema.Field schemaField, object value)
         {
@@ -532,7 +532,7 @@ namespace ExpandoDB.Search
             var dateTimeTicks = dateTimeValue.Ticks;
             var fieldName = schemaField.Name.Trim();
 
-            luceneFields.Add(new LegacyLongField(fieldName, dateTimeTicks, FieldStore.NO));
+            luceneFields.Add(new LongPoint(fieldName, dateTimeTicks));
 
             // Only top-level and non-array fields are sortable
             if (schemaField.IsSortable)
@@ -547,7 +547,7 @@ namespace ExpandoDB.Search
         /// Adds a Guid field to the given list of Lucene fields.
         /// </summary>
         /// <param name="luceneFields">The lucene fields.</param>
-        /// <param name="schemaField">The indexed field.</param>
+        /// <param name="schemaField">The schema field.</param>
         /// <param name="value">The value.</param>
         private static void AddGuidField(this List<Field> luceneFields, Schema.Field schemaField, object value)
         {
@@ -569,11 +569,11 @@ namespace ExpandoDB.Search
         /// Adds a null field to the given list of Lucene fields.
         /// </summary>
         /// <param name="luceneFields">The lucene fields.</param>
-        /// <param name="schemaField">The indexed field.</param>        
+        /// <param name="schemaField">The schema field.</param>        
         private static void AddNullField(this List<Field> luceneFields, Schema.Field schemaField)
         {
             var fieldName = schemaField.Name.Trim().ToNullFieldName();
-            luceneFields.Add(new LegacyIntField(fieldName, INDEX_NULL_VALUE, FieldStore.NO));            
+            luceneFields.Add(new IntPoint(fieldName, INDEX_NULL_VALUE));            
         }
     }
 }

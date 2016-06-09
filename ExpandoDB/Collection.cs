@@ -17,36 +17,34 @@ namespace ExpandoDB
     /// This class is analogous to an MongoDB collection.
     /// </remarks>
     public class Collection : IDisposable
-    {
-        private readonly LightningStorageEngine _storageEngine;
+    {        
         private readonly string _indexPath;
-        private readonly IDocumentStorage _documentStorage;
-        private readonly ISchemaStorage _schemaStorage;
-        private readonly LuceneIndex _luceneIndex;
-        private readonly Schema _schema;
+        private readonly IDocumentStorage _documentStorage;        
+        private readonly LuceneIndex _luceneIndex;        
         private readonly string _name;
         private readonly Timer _schemaPersistenceTimer;
+        private readonly object _schemaPersistenceLock = new object();
         private readonly double _schemaPersistenceIntervalSeconds;        
         private readonly ILog _log = LogManager.GetLogger(typeof(Collection).Name);
 
         /// <summary>
-        /// Gets the IndexSchema associated with the DocumentCollection.
+        /// Gets the IndexSchema associated with the Document Collection.
         /// </summary>
         /// <value>
         /// The IndexSchema object.
         /// </value>
-        public Schema Schema { get { return _schema; } }
+        public Schema Schema { get; private set; }
 
         /// <summary>
-        /// Gets the name of the DocumentCollection.
+        /// Gets the name of the Document Collection.
         /// </summary>
         /// <value>
-        /// The name of the DocumentCollection
+        /// The name of the Document Collection
         /// </value>
         public string Name { get { return _name; } }
 
         /// <summary>
-        /// Gets a value indicating whether this DocumentCollection has already been dropped.
+        /// Gets a value indicating whether this Document Collection has already been dropped.
         /// </summary>
         /// <value>
         /// <c>true</c> if this instance has already been dropped; otherwise, <c>false</c>.
@@ -54,40 +52,39 @@ namespace ExpandoDB
         public bool IsDropped { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Collection" /> class based on a DocumentCollectionSchema.
+        /// Initializes a new instance of the <see cref="Collection" /> class based on a Schema.
         /// </summary>
-        /// <param name="schema">The DocumentCollectionSchema.</param>
-        /// <param name="storageEngine">The storage engine.</param>
-        public Collection(DocumentCollectionSchema schema, LightningStorageEngine storageEngine)
-            : this(schema.Name, storageEngine, schema.ToIndexSchema())
+        /// <param name="schema">The Schema.</param>
+        /// <param name="documentStorage">The document storage.</param>
+        public Collection(Schema schema, IDocumentStorage documentStorage)
+            : this(schema.Name, documentStorage, schema)
         {
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Collection" /> class.
         /// </summary>
-        /// <param name="name">The name of the DocumentCollection.</param>
-        /// <param name="storageEngine">The storage engine.</param>
-        /// <param name="schema">The index schema.</param>        
-        public Collection(string name, LightningStorageEngine storageEngine, Schema schema = null)
+        /// <param name="name">The name of the Document Collection.</param>
+        /// <param name="documentStorage">The Document storage.</param>
+        /// <param name="schema">The schema.</param>
+        /// <exception cref="System.ArgumentException"></exception>
+        /// <exception cref="System.ArgumentNullException"></exception>
+        public Collection(string name, IDocumentStorage documentStorage, Schema schema = null)
         {
             if (String.IsNullOrWhiteSpace(name))
                 throw new ArgumentException($"{nameof(name)} cannot be null or blank");
-            if (storageEngine == null)
-                throw new ArgumentNullException(nameof(storageEngine));
+            if (documentStorage == null)
+                throw new ArgumentNullException(nameof(documentStorage));
 
             _name = name;
-            _storageEngine = storageEngine;
+            _documentStorage = documentStorage;            
 
-            _indexPath = Path.Combine(_storageEngine.DataPath, Database.INDEX_DIRECTORY_NAME, name);
+            _indexPath = Path.Combine(_documentStorage.DataPath, Database.INDEX_DIRECTORY_NAME, name);
             if (!Directory.Exists(_indexPath))
-                Directory.CreateDirectory(_indexPath);
+                Directory.CreateDirectory(_indexPath);            
 
-            _documentStorage = new LightningDocumentStorage(_name, _storageEngine);
-            _schemaStorage = new LightningSchemaStorage(_storageEngine);
-
-            _schema = schema ?? Schema.CreateDefault(name);
-            _luceneIndex = new LuceneIndex(_indexPath, _schema);
+            Schema = schema ?? Schema.CreateDefault(name);
+            _luceneIndex = new LuceneIndex(_indexPath, Schema);
 
             _schemaPersistenceIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["SchemaPersistenceIntervalSeconds"] ?? "1");
             _schemaPersistenceTimer = new Timer( _ => Task.Run(async() => await PersistSchema().ConfigureAwait(false)), null, TimeSpan.FromSeconds(_schemaPersistenceIntervalSeconds), TimeSpan.FromSeconds(_schemaPersistenceIntervalSeconds));
@@ -95,27 +92,45 @@ namespace ExpandoDB
 
         private async Task PersistSchema()
         {
-            if (IsDropped)
-                return;            
+            if (IsDropped || _isDisposed)
+                return;
+
+            var isLockTaken = false;
             try
             {
-                var liveSchema = _schema.ToDocumentCollectionSchema();
-                var savedSchema = await _schemaStorage.GetAsync(_name).ConfigureAwait(false);
+                isLockTaken = Monitor.TryEnter(_schemaPersistenceLock, 500);
+                if (!isLockTaken || IsDropped || _isDisposed)
+                    return;
 
-                if (savedSchema == null)
-                    await _schemaStorage.InsertAsync(liveSchema).ConfigureAwait(false);
+                var liveSchemaDocument = Schema.ToDocument();  
+                var savedSchemaDocument = await _documentStorage.GetAsync(Schema.COLLECTION_NAME, Schema._id);
+
+                if (savedSchemaDocument == null)
+                {
+                    await _documentStorage.InsertAsync(Schema.COLLECTION_NAME, liveSchemaDocument);
+                    liveSchemaDocument = await _documentStorage.GetAsync(Schema.COLLECTION_NAME, liveSchemaDocument._id.Value);
+                    Schema._createdTimestamp = liveSchemaDocument._createdTimestamp;
+                    Schema._modifiedTimestamp = liveSchemaDocument._modifiedTimestamp;
+                }
                 else
-                    if (liveSchema != savedSchema)
-                        await _schemaStorage.UpdateAsync(liveSchema).ConfigureAwait(false);
+                {
+                    if (liveSchemaDocument != savedSchemaDocument)
+                        await _documentStorage.UpdateAsync(Schema.COLLECTION_NAME, liveSchemaDocument);
+                }
             }
             catch (Exception ex)
             {
                 _log.Error(ex);
             }            
+            finally
+            {
+                if (isLockTaken)
+                    Monitor.Exit(_schemaPersistenceLock);
+            }
         }
 
         /// <summary>
-        /// Inserts the specified Document into the DocumentCollection
+        /// Inserts the specified Document into the Document Collection
         /// </summary>
         /// <param name="document">The Document object to insert</param>
         /// <returns></returns>
@@ -128,7 +143,7 @@ namespace ExpandoDB
 
             if (document._id.HasValue)
             {
-                var exists = await _documentStorage.ExistsAsync(document._id.Value).ConfigureAwait(false);
+                var exists = await _documentStorage.ExistsAsync(Name, document._id.Value).ConfigureAwait(false);
                 if (exists)
                     throw new InvalidOperationException("There is an existing Document with the same _id");
             }
@@ -137,13 +152,13 @@ namespace ExpandoDB
                 document._id = Guid.NewGuid();            
 
             _luceneIndex.Insert(document);
-            var guid = await _documentStorage.InsertAsync(document).ConfigureAwait(false);             
+            var guid = await _documentStorage.InsertAsync(Name, document).ConfigureAwait(false);             
 
             return guid;
         }
 
         /// <summary>
-        /// Searches the DocumentCollection for Document objects that match the specified search criteria.
+        /// Searches the Document Collection for Document objects that match the specified search criteria.
         /// </summary>
         /// <param name="criteria">The search criteria.</param>
         /// <returns></returns>
@@ -159,7 +174,7 @@ namespace ExpandoDB
             var searchResult = new SearchResult<Document>(criteria, luceneResult.ItemCount, luceneResult.TotalHits, luceneResult.PageCount);
 
             if (searchResult.ItemCount > 0)
-                searchResult.Items = await _documentStorage.GetAsync(luceneResult.Items.ToList()).ConfigureAwait(false); 
+                searchResult.Items = await _documentStorage.GetAsync(Name, luceneResult.Items.ToList()).ConfigureAwait(false); 
 
             // NOTE: At this point the Items collection only contains the compressed binary form of the Document objects.
             // The Items collection will be deserialized to Document objects only when enumerated.
@@ -186,7 +201,7 @@ namespace ExpandoDB
             if (guid == Guid.Empty)
                 throw new ArgumentException("guid cannot be empty");
 
-            var document = await _documentStorage.GetAsync(guid).ConfigureAwait(false); 
+            var document = await _documentStorage.GetAsync(Name, guid).ConfigureAwait(false); 
             return document;
         }
 
@@ -220,7 +235,7 @@ namespace ExpandoDB
                 throw new ArgumentNullException(nameof(document));
 
             _luceneIndex.Update(document);
-            var affected = await _documentStorage.UpdateAsync(document).ConfigureAwait(false); 
+            var affected = await _documentStorage.UpdateAsync(Name, document).ConfigureAwait(false); 
 
             return affected;
         }
@@ -239,26 +254,26 @@ namespace ExpandoDB
                 throw new ArgumentException("guid cannot be empty");
 
             _luceneIndex.Delete(guid);
-            var affected = await _documentStorage.DeleteAsync(guid).ConfigureAwait(false);             
+            var affected = await _documentStorage.DeleteAsync(Name, guid).ConfigureAwait(false);             
 
             return affected;
         }
 
         /// <summary>
-        /// Drops this DocumentCollection.
+        /// Drops this Document Collection.
         /// </summary>
         /// <returns></returns>
-        /// <remarks>Dropping a DocumentCollection means dropping the underlying storage table Lucene index.</remarks>
+        /// <remarks>Dropping a Document Collection means dropping the underlying storage table Lucene index.</remarks>
         public async Task<bool> DropAsync()
         {
             EnsureCollectionIsNotDropped();
 
             IsDropped = true;
 
-            await _documentStorage.DropAsync().ConfigureAwait(false);
+            await _documentStorage.DropAsync(Name).ConfigureAwait(false);
 
             _schemaPersistenceTimer.Dispose();
-            await _schemaStorage.DeleteAsync(_name).ConfigureAwait(false);
+            await _documentStorage.DeleteAsync(Schema.COLLECTION_NAME, Schema._id).ConfigureAwait(false);
 
             _luceneIndex.Dispose();
             
@@ -278,53 +293,48 @@ namespace ExpandoDB
                 throw new Exception($"Unable to delete Lucene index directory: {_indexPath}");
             
             return IsDropped;
+        }       
+
+        /// <summary>
+        /// Raises an exception if the Document Collection has already been dropped.
+        /// </summary>
+        /// <exception cref="System.InvalidOperationException">This Document Collection has already been dropped.</exception>
+        private void EnsureCollectionIsNotDropped()
+        {
+            if (IsDropped)
+                throw new InvalidOperationException("This Document Collection has already been dropped.");
+        }
+
+        #region IDisposable Support
+        private bool _isDisposed = false;
+
+        /// <summary>
+        /// Releases unmanaged and - optionally - managed resources.
+        /// </summary>
+        /// <param name="disposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            EnsureCollectionIsNotDropped();
+
+            if (!_isDisposed)
+            {
+                if (disposing)
+                {
+                    _schemaPersistenceTimer.Dispose();
+                    _luceneIndex.Dispose();
+                }               
+
+                _isDisposed = true;
+            }
         }
 
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>
         public void Dispose()
-        {
-            EnsureCollectionIsNotDropped();
-            PersistSchema().Wait();
-
-            _schemaPersistenceTimer.Dispose();
-            _luceneIndex.Dispose();            
+        {            
+            Dispose(true);         
         }
-
-        /// <summary>
-        /// Raises an exception if the DocumentCollection has already been dropped.
-        /// </summary>
-        /// <exception cref="System.InvalidOperationException">This DocumentCollection has already been dropped.</exception>
-        private void EnsureCollectionIsNotDropped()
-        {
-            if (IsDropped)
-                throw new InvalidOperationException("This DocumentCollection has already been dropped.");
-        }
-
-        internal DocumentCollectionSchema GetSchema()
-        {
-            var schema = new DocumentCollectionSchema(Name);
-            foreach (var fieldName in Schema.Fields.Keys)
-            {
-                var field = Schema.Fields[fieldName];
-                if (field == null)
-                    continue;
-
-                var fieldCopy = new DocumentCollectionSchemaField
-                {
-                    Name = field.Name,
-                    DataType = field.DataType,
-                    ArrayElementDataType = field.ArrayElementDataType,
-                    ObjectSchema = field.ObjectSchema.ToDocumentCollectionSchema()
-                };
-
-                schema.Fields.Add(fieldCopy);
-            }
-
-            schema.Fields = schema.Fields.OrderBy(f => f.Name).ToList();
-
-            return schema;
-        }
+        #endregion
     }
 }

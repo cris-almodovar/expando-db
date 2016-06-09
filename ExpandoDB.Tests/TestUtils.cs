@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace ExpandoDB.Tests
 {
@@ -16,6 +17,7 @@ namespace ExpandoDB.Tests
             book.PublishDate = publishDate;
             book.Rating = rating;
             book.Description = description;
+            book.List = new List<IDictionary<string, object>> { new Dictionary<string, object> { ["key"] = "value" } };
 
             return document;
         }

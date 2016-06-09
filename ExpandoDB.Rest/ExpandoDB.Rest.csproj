@@ -43,20 +43,20 @@
       <HintPath>..\packages\Jil.2.14.3\lib\net45\Jil.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Metrics, Version=0.3.5.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Metrics.NET.0.3.5\lib\net45\Metrics.dll</HintPath>
+    <Reference Include="Metrics, Version=0.3.7.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Metrics.NET.0.3.7\lib\net45\Metrics.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Nancy, Version=1.4.2.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Nancy.1.4.3\lib\net40\Nancy.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Nancy.Metrics, Version=0.3.5.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nancy.Metrics.0.3.5\lib\net45\Nancy.Metrics.dll</HintPath>
+    <Reference Include="Nancy.Metrics, Version=0.3.7.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Nancy.Metrics.0.3.7\lib\net45\Nancy.Metrics.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Nancy.Serialization.Jil, Version=1.45.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nancy.Serialization.Jil.1.45.0\lib\net45\Nancy.Serialization.Jil.dll</HintPath>
+    <Reference Include="Nancy.Serialization.Jil, Version=1.46.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Nancy.Serialization.Jil.1.46.0\lib\net45\Nancy.Serialization.Jil.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Sigil, Version=4.7.0.0, Culture=neutral, PublicKeyToken=2d06c3494341c8ab, processorArchitecture=MSIL">

@@ -181,6 +181,7 @@ namespace ExpandoDB
 
             using (var md5 = System.Security.Cryptography.MD5.Create())
             {
+                
                 var data = schema.ToCompressedByteArray();
                 byte[] hash = md5.ComputeHash(data);
 

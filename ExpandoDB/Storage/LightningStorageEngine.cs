@@ -452,27 +452,44 @@ namespace ExpandoDB.Storage
                 txn.Reset();
 
             return exists;
+        }        
+
+        #region IDisposable Support
+        private bool _isDisposed = false; 
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_isDisposed)
+            {
+                if (disposing)
+                {
+                    _writeOperationsQueue.CompleteAdding();
+                    _cancellationTokenSource.Cancel();
+
+                    foreach (var txn in _readonlyTransaction.Values)
+                        txn.Dispose();
+
+                    foreach (var db in _openDatabases.Values)
+                        db.Dispose();
+
+                    _readonlyTransaction.Dispose();
+                    _environment.Dispose();
+                    _writeOperationsQueue.Dispose();
+                    _cancellationTokenSource.Dispose();
+                }
+
+                _isDisposed = true;
+            }
         }
 
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>
         public void Dispose()
-        {
-            _writeOperationsQueue.CompleteAdding();
-            _cancellationTokenSource.Cancel();
-
-            foreach (var txn in _readonlyTransaction.Values)
-                txn.Dispose();
-
-            foreach (var db in _openDatabases.Values)
-                db.Dispose();
-
-            _readonlyTransaction.Dispose();            
-            _environment.Dispose();
-            _writeOperationsQueue.Dispose();
-            _cancellationTokenSource.Dispose();            
+        {            
+            Dispose(true);         
         }
+        #endregion
     }
 
     public class LightningKeyValuePair

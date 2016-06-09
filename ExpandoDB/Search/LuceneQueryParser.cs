@@ -6,6 +6,7 @@ using System;
 using LuceneDouble = java.lang.Double;
 using LuceneLong = java.lang.Long;
 using LuceneInteger = java.lang.Integer;
+using FlexLucene.Document;
 
 namespace ExpandoDB.Search
 {
@@ -15,8 +16,7 @@ namespace ExpandoDB.Search
     /// <seealso cref="FlexLucene.Queryparser.Classic.QueryParser" />
     public class LuceneQueryParser : QueryParser
     {
-        private readonly Schema _schema;
-        private static readonly LuceneInteger _indexNullValue = new LuceneInteger(LuceneExtensions.INDEX_NULL_VALUE);
+        private readonly Schema _schema;        
 
         public LuceneQueryParser(string defaultFieldName, Analyzer analyzer, Schema schema) 
             : base (defaultFieldName, analyzer)
@@ -49,9 +49,15 @@ namespace ExpandoDB.Search
                     if (part2 == null || part2 == "*")
                         part2 = Double.MaxValue.ToString();
 
-                    var number1 = part1.ToLuceneDouble();
-                    var number2 = part2.ToLuceneDouble();
-                    query = LegacyNumericRangeQuery.NewDoubleRange(fieldName, number1, number2, startInclusive, endInclusive);
+                    var number1 = part1.ToDouble();
+                    var number2 = part2.ToDouble();
+
+                    if (!startInclusive)
+                        number1 = java.lang.Math.nextUp(number1);
+                    if (!endInclusive)
+                        number2 = java.lang.Math.nextDown(number2);
+
+                    query = DoublePoint.NewRangeQuery(fieldName, number1, number2);
                     break;
 
                 case Schema.DataType.DateTime:
@@ -60,20 +66,32 @@ namespace ExpandoDB.Search
                     if (part2 == null || part2 == "*")
                         part2 = DateTime.MaxValue.ToUniversalTime().ToString(DateTimeFormat.DATE_HHMM_UTC);
 
-                    var ticks1 = part1.ToLuceneDateTimeTicks();
-                    var ticks2 = part2.ToLuceneDateTimeTicks();
-                    query = LegacyNumericRangeQuery.NewLongRange(fieldName, ticks1, ticks2, startInclusive, endInclusive);
+                    var ticks1 = part1.ToDateTimeLongTicks();
+                    var ticks2 = part2.ToDateTimeLongTicks();
+
+                    if (!startInclusive)
+                        ticks1 += 1;
+                    if (!endInclusive)
+                        ticks1 -= 1;
+
+                    query = LongPoint.NewRangeQuery(fieldName, ticks1, ticks2);
                     break;
 
                 case Schema.DataType.Boolean:
                     if (part1 == null || part1 == "*")
-                        part1 = Boolean.FalseString.ToLower();
+                        part1 = "false";
                     if (part2 == null || part2 == "*")
-                        part2 = Boolean.TrueString.ToLower();
+                        part2 = "true";
 
-                    var numericBool1 = part1.ToLuceneNumericBoolean();
-                    var numericBool2 = part2.ToLuceneNumericBoolean();
-                    query = LegacyNumericRangeQuery.NewIntRange(fieldName, numericBool1, numericBool2, startInclusive, endInclusive);
+                    var numericBool1 = part1.ToInteger();
+                    var numericBool2 = part2.ToInteger();
+
+                    if (!startInclusive)
+                        numericBool1 += 1;
+                    if (!endInclusive)
+                        numericBool2 -= 1;
+
+                    query = IntPoint.NewRangeQuery(fieldName, numericBool1, numericBool2);
                     break;
 
                 case Schema.DataType.Guid:
@@ -82,8 +100,8 @@ namespace ExpandoDB.Search
                     if (part2 == null || part2 == "*")
                         part2 = String.Empty;
 
-                    part1 = part1.ToLuceneGuidString();
-                    part2 = part2.ToLuceneGuidString();
+                    part1 = part1.ToGuidString();
+                    part2 = part2.ToGuidString();
                     break;
             }                    
             
@@ -100,7 +118,7 @@ namespace ExpandoDB.Search
             {
                 // Special case: searching for null value
                 var nullFieldName = fieldName.ToNullFieldName();
-                return LegacyNumericRangeQuery.NewIntRange(nullFieldName, _indexNullValue, _indexNullValue, true, true);
+                return IntPoint.NewExactQuery(nullFieldName, LuceneExtensions.INDEX_NULL_VALUE);
             }
             else
             {
@@ -108,22 +126,22 @@ namespace ExpandoDB.Search
                 switch (schemaField.DataType)
                 {
                     case Schema.DataType.Number:
-                        var number = queryText.ToLuceneDouble();
-                        query = LegacyNumericRangeQuery.NewDoubleRange(fieldName, number, number, true, true);
+                        var number = queryText.ToDouble();
+                        query = DoublePoint.NewExactQuery(fieldName, number);
                         break;
 
                     case Schema.DataType.DateTime:
-                        var ticks = queryText.ToLuceneDateTimeTicks();
-                        query = LegacyNumericRangeQuery.NewLongRange(fieldName, ticks, ticks, true, true);
+                        var ticks = queryText.ToDateTimeLongTicks();
+                        query = LongPoint.NewExactQuery(fieldName, ticks);
                         break;
 
                     case Schema.DataType.Boolean:
-                        var numericBool = queryText.ToLuceneNumericBoolean();
-                        query = LegacyNumericRangeQuery.NewIntRange(fieldName, numericBool, numericBool, true, true);
+                        var numericBool = queryText.ToInteger();
+                        query = IntPoint.NewExactQuery(fieldName, numericBool);
                         break;
 
                     case Schema.DataType.Guid:
-                        queryText = queryText.ToLuceneGuidString();
+                        queryText = queryText.ToGuidString();
                         break;
                 }
 
@@ -189,16 +207,16 @@ namespace ExpandoDB.Search
 
     internal static class LuceneQueryParserExtensions
     {
-        public static LuceneDouble ToLuceneDouble(this string value)
+        public static double ToDouble(this string value)
         {
             double doubleValue;
             if (!Double.TryParse(value, out doubleValue))
                 throw new LuceneQueryParserException($"Invalid number in query: '{value}'");
 
-            return new LuceneDouble(doubleValue);
+            return doubleValue;
         }
 
-        public static LuceneLong ToLuceneDateTimeTicks(this string value)
+        public static long ToDateTimeLongTicks(this string value)
         {
             var dateTimeValue = DateTime.MinValue;
             if (!DynamicJsonSerializer.TryParseDateTime(value, ref dateTimeValue))
@@ -206,20 +224,20 @@ namespace ExpandoDB.Search
 
             var utcDateTime = dateTimeValue.ToUniversalTime();
 
-            return new LuceneLong(utcDateTime.Ticks);
+            return utcDateTime.Ticks;
         }
 
-        public static LuceneInteger ToLuceneNumericBoolean(this string value)
+        public static int ToInteger(this string value)
         {
             bool boolValue;
             if (!Boolean.TryParse(value, out boolValue))
                 throw new LuceneQueryParserException($"Invalid boolean in query: '{value}'");
 
             var numericBool =  boolValue ? 1 : 0;
-            return new LuceneInteger(numericBool);
+            return numericBool;
         }
 
-        public static string ToLuceneGuidString(this string value)
+        public static string ToGuidString(this string value)
         {            
             Guid guid;
             if (!Guid.TryParse(value, out guid))

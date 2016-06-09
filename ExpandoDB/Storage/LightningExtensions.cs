@@ -33,18 +33,7 @@ namespace ExpandoDB.Storage
             var value = document.ToCompressedByteArray();
 
             return new LightningKeyValuePair { Key = key, Value = value };
-        }
-
-        public static LightningKeyValuePair ToKeyValuePair(this DocumentCollectionSchema collectionSchema)
-        {
-            if (collectionSchema == null)
-                throw new ArgumentNullException(nameof(collectionSchema));
-
-            var key = collectionSchema.Name.ToByteArray();
-            var value = collectionSchema.ToCompressedByteArray();
-
-            return new LightningKeyValuePair { Key = key, Value = value };
-        }
+        }        
 
         public static Document ToDocument(this LightningKeyValuePair kv)
         {
@@ -52,15 +41,7 @@ namespace ExpandoDB.Storage
                 throw new ArgumentNullException(nameof(kv));
 
             return kv.Value.ToDocument();
-        }
-
-        public static DocumentCollectionSchema ToDocumentCollectionSchema(this LightningKeyValuePair kv)
-        {
-            if (kv == null)
-                throw new ArgumentNullException(nameof(kv));
-
-            return kv.Value.ToDocumentCollectionSchema();
-        }
+        }        
 
         public static byte[] ToByteArray(this string stringValue)
         {
@@ -73,22 +54,12 @@ namespace ExpandoDB.Storage
         public static byte[] ToCompressedByteArray(this Document document)
         {
             return _serializer.Serialize(document);
-        }
-
-        public static byte[] ToCompressedByteArray(this DocumentCollectionSchema collectionSchema)
-        {
-            return _serializer.Serialize(collectionSchema);
-        }
+        }        
 
         public static Document ToDocument(this byte[] value)
         {
-            return _serializer.DeserializeToDocument(value);
-        }
-
-        public static DocumentCollectionSchema ToDocumentCollectionSchema(this byte[] value)
-        {
-            return _serializer.DeserializeToDocumentCollectionSchema(value);
-        }        
+            return _serializer.Deserialize(value);
+        }             
     }
 
     public enum CompressionOption

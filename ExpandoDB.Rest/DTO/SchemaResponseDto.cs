@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Dynamic;
 
 namespace ExpandoDB.Rest.DTO
 {
@@ -8,7 +9,7 @@ namespace ExpandoDB.Rest.DTO
     /// <seealso cref="ExpandoDB.Rest.DTO.ResponseDto" />
     public class SchemaResponseDto : ResponseDto
     {          
-        public DocumentCollectionSchema schema { get; set; }
+        public ExpandoObject schema { get; set; }
     }
 
     /// <summary>
@@ -17,6 +18,6 @@ namespace ExpandoDB.Rest.DTO
     /// <seealso cref="ExpandoDB.Rest.DTO.ResponseDto" />
     public class DatabaseSchemaResponseDto : ResponseDto
     {
-        public List<DocumentCollectionSchema> schemas { get; set; }
+        public List<ExpandoObject> schemas { get; set; }
     }
 }

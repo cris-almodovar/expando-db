@@ -17,6 +17,7 @@ namespace ExpandoDB.Tests
         private string _dataPath;        
         private Collection _collection;
         private LightningStorageEngine _storageEngine;
+        private LightningDocumentStorage _documentStorage;
 
         [TestInitialize]
         public void Initialize()
@@ -28,8 +29,9 @@ namespace ExpandoDB.Tests
                 Directory.Delete(_dataPath, true);
 
             _storageEngine = new LightningStorageEngine(_dataPath);
+            _documentStorage = new LightningDocumentStorage(_storageEngine);
 
-           _collection = new Collection("books", _storageEngine);
+           _collection = new Collection("books", _documentStorage);
         }
 
         [TestCleanup]

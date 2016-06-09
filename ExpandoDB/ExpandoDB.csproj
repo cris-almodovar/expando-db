@@ -47,8 +47,8 @@
       <HintPath>..\packages\Common.Logging.Core.3.3.1\lib\net40\Common.Logging.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="FlexLucene, Version=6.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\FlexLucene.6.0.0.0\lib\net40\FlexLucene.dll</HintPath>
+    <Reference Include="FlexLucene, Version=6.0.2.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\FlexLucene.6.0.2.0\lib\net40\FlexLucene.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="IKVM.AWT.WinForms, Version=8.1.5717.0, Culture=neutral, PublicKeyToken=13235d27fcbfff58, processorArchitecture=MSIL">
@@ -206,7 +206,6 @@
     <Compile Include="Compression\IStreamCompressor.cs" />
     <Compile Include="Compression\LZ4Compressor.cs" />
     <Compile Include="Config.cs" />
-    <Compile Include="DocumentCollectionSchema.cs" />
     <Compile Include="Collection.cs" />
     <Compile Include="Document.cs" />
     <Compile Include="DocumentExtensions.cs" />
@@ -217,6 +216,7 @@
     <Compile Include="Search\LuceneExtensions.cs" />
     <Compile Include="Search\LuceneHighlighter.cs" />
     <Compile Include="Search\LuceneQueryParser.cs" />
+    <Compile Include="Search\SchemaExtensions.cs" />
     <Compile Include="Search\SearchExtensions.cs" />
     <Compile Include="Search\FullTextAnalyzer.cs" />
     <Compile Include="Search\LuceneIndex.cs" />
@@ -229,12 +229,10 @@
     <Compile Include="Serialization\DateTimeFormat.cs" />
     <Compile Include="Serialization\DynamicJsonSerializer.cs" />
     <Compile Include="Serialization\SerializationException.cs" />
-    <Compile Include="Storage\ISchemaStorage.cs" />
     <Compile Include="Storage\EnumerableDocuments.cs" />
     <Compile Include="Storage\IDocumentStorage.cs" />
     <Compile Include="Storage\LightningExtensions.cs" />
     <Compile Include="Storage\LightningDocumentStorage.cs" />
-    <Compile Include="Storage\LightningSchemaStorage.cs" />
     <Compile Include="Storage\LightningStorageEngine.cs" />
   </ItemGroup>
   <ItemGroup>

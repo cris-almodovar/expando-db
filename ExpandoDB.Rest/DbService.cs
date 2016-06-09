@@ -44,12 +44,10 @@ namespace ExpandoDB.Rest
             Patch["/{collection}/{id:guid}", true] = OnPatchDocumentAsync;
             Delete["/{collection}/{id:guid}", true] = OnDeleteDocumentAsync;
             Delete["/{collection}", true] = OnDeleteCollectionAsync;
-        }
-
-        
+        }        
 
         /// <summary>
-        /// Inserts a new Document object into a DocumentCollection.
+        /// Inserts a new Document object into a Document Collection.
         /// </summary>
         /// <param name="req">The request object.</param>
         /// <param name="token">The cancellation token.</param>
@@ -69,10 +67,10 @@ namespace ExpandoDB.Rest
             var dictionary = this.Bind<DynamicDictionary>(excludedFields).ToDictionary();
             var document = new Document(dictionary);
 
-            // Get the target DocumentCollection; it will be auto-created if it doesn't exist.
+            // Get the target Document Collection; it will be auto-created if it doesn't exist.
             var collection = _database[collectionName];
 
-            // Insert the Document object into the target DocumentCollection.
+            // Insert the Document object into the target Document Collection.
             var guid = await collection.InsertAsync(document).ConfigureAwait(false);
 
             stopwatch.Stop();
@@ -89,7 +87,7 @@ namespace ExpandoDB.Rest
         }
 
         /// <summary>
-        /// Returns the schema of a DocumentCollection; a schema is simply a set of fields and their corresponding data types.
+        /// Returns the schema of a Document Collection; a schema is simply a set of fields and their corresponding data types.
         /// </summary>
         /// <param name="req">The request object.</param>
         /// <returns></returns>
@@ -107,7 +105,7 @@ namespace ExpandoDB.Rest
                 return HttpStatusCode.NotFound;
 
             var collection = _database[collectionName];
-            var schema = collection.GetSchema();
+            var schemaDocument = collection.Schema.ToDocument().AsExpando();
 
             stopwatch.Stop();
 
@@ -115,14 +113,14 @@ namespace ExpandoDB.Rest
             {
                 timestamp = DateTime.UtcNow,
                 elapsed = stopwatch.Elapsed.ToString(),
-                schema = schema
+                schema = schemaDocument
             };
 
             return Response.AsJson(responseDto);
         }
 
         /// <summary>
-        /// Returns the schemas of all DocumentCollections in the database; a schema is simply a set of fields and their corresponding data types.
+        /// Returns the schemas of all Document Collections in the database; a schema is simply a set of fields and their corresponding data types.
         /// </summary>
         /// <param name="req">The request object.</param>
         /// <returns></returns>        
@@ -131,10 +129,10 @@ namespace ExpandoDB.Rest
             var stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            var schemas = (from collectionName in _database.GetCollectionNames().OrderBy(n=> n)
-                          let schema = _database[collectionName]?.GetSchema()
-                          where schema != null
-                          select schema).ToList();                        
+            var schemaDocuments = (from collectionName in _database.GetCollectionNames().OrderBy(n=> n)
+                                  let schema = _database[collectionName]?.Schema
+                                  where schema != null
+                                  select schema.ToDocument().AsExpando()).ToList();                        
 
             stopwatch.Stop();
 
@@ -142,14 +140,14 @@ namespace ExpandoDB.Rest
             {
                 timestamp = DateTime.UtcNow,
                 elapsed = stopwatch.Elapsed.ToString(),
-                schemas = schemas
+                schemas = schemaDocuments
             };
 
             return Response.AsJson(responseDto);
         }
 
         /// <summary>
-        /// Searches a DocumentCollection for Documents that match a query expression.
+        /// Searches a Document Collection for Documents that match a query expression.
         /// </summary>
         /// <param name="req">The request object.</param>
         /// <param name="token">The cancellation token.</param>
@@ -178,7 +176,7 @@ namespace ExpandoDB.Rest
         }
 
         /// <summary>
-        /// Returns the number of Document objects in a DocumentCollection that match a query expression.
+        /// Returns the number of Document objects in a Document Collection that match a query expression.
         /// </summary>
         /// <param name="req">The request object.</param>
         /// <returns></returns>
@@ -215,7 +213,7 @@ namespace ExpandoDB.Rest
         }
 
         /// <summary>
-        /// Gets a Document object identified by its id, from a DocumentCollection.
+        /// Gets a Document object identified by its id, from a Document Collection.
         /// </summary>
         /// <param name="req">The request object.</param>
         /// <param name="token">The cancellation token.</param>
@@ -255,7 +253,7 @@ namespace ExpandoDB.Rest
         }
 
         /// <summary>
-        /// Replaces a Document object identified by its _id, in a DocumentCollection.
+        /// Replaces a Document object identified by its _id, in a Document Collection.
         /// </summary>
         /// <param name="req">The request object.</param>
         /// <param name="token">The cancellation token.</param>
@@ -309,7 +307,7 @@ namespace ExpandoDB.Rest
         }
 
         /// <summary>
-        /// Updates specific fields of a Document object identified by its _id, in a DocumentCollection.
+        /// Updates specific fields of a Document object identified by its _id, in a Document Collection.
         /// </summary>
         /// <param name="req">The request object.</param>
         /// <param name="token">The cancellation token.</param>
@@ -368,7 +366,7 @@ namespace ExpandoDB.Rest
         }
 
         /// <summary>
-        /// Deletes a Document object identified by its _id, in a DocumentCollection.
+        /// Deletes a Document object identified by its _id, in a Document Collection.
         /// </summary>
         /// <param name="req">The request object.</param>
         /// <param name="token">The cancellation token.</param>
@@ -411,7 +409,7 @@ namespace ExpandoDB.Rest
         }
 
         /// <summary>
-        /// Deletes the entire DocumentCollection.
+        /// Deletes the entire Document Collection.
         /// </summary>
         /// <param name="req">The req.</param>
         /// <param name="token">The token.</param>

@@ -9,6 +9,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using ExpandoDB.Search;
 
 namespace ExpandoDB
 {
@@ -25,8 +26,9 @@ namespace ExpandoDB
         internal const string INDEX_DIRECTORY_NAME = "index";
         private readonly string _dataPath;                
         private readonly string _indexPath;
-        private readonly IDictionary<string, Collection> _documentCollections;
-        private readonly LightningStorageEngine _storageEngine;        
+        private readonly IDictionary<string, Collection> _collections;
+        private readonly LightningStorageEngine _storageEngine;
+        private readonly LightningDocumentStorage _documentStorage;      
         private readonly ILog _log = LogManager.GetLogger(typeof(Database).Name);
 
         /// <summary>
@@ -49,14 +51,15 @@ namespace ExpandoDB
             EnsureIndexDirectoryExists(_indexPath);
             _log.Info($"Index Path: {_indexPath}");
 
-            _storageEngine = new LightningStorageEngine(_dataPath); 
-            _documentCollections = new Dictionary<string, Collection>(); 
-                       
-            var persistedSchemas = new LightningSchemaStorage(_storageEngine).GetAllAsync().Result;             
+            _storageEngine = new LightningStorageEngine(_dataPath);
+            _documentStorage = new LightningDocumentStorage(_storageEngine);
+            _collections = new Dictionary<string, Collection>();
+
+            var persistedSchemas = _documentStorage.GetAllAsync(Schema.COLLECTION_NAME).Result.Select(d => new Schema().PopulateWith(d.AsDictionary()));  
             foreach (var schema in persistedSchemas)
             {
-                var collection = new Collection(schema, _storageEngine);
-                _documentCollections.Add(schema.Name, collection);
+                var collection = new Collection(schema, _documentStorage);
+                _collections.Add(schema.Name, collection);
             }           
         }       
 
@@ -85,7 +88,7 @@ namespace ExpandoDB
         /// <value>
         /// The <see cref="Collection"/> with the specified name.
         /// </value>
-        /// <param name="name">The name of the DocumentCollection.</param>
+        /// <param name="name">The name of the Document Collection.</param>
         /// <returns></returns>
         public Collection this [string name]
         {
@@ -95,19 +98,19 @@ namespace ExpandoDB
                     throw new ArgumentException("name cannot be null or blank");
 
                 Collection collection = null;
-                if (!_documentCollections.ContainsKey(name))
+                if (!_collections.ContainsKey(name))
                 {
-                    lock (_documentCollections)
+                    lock (_collections)
                     {
-                        if (!_documentCollections.ContainsKey(name))
+                        if (!_collections.ContainsKey(name))
                         {
-                            collection = new Collection(name, _storageEngine);
-                            _documentCollections.Add(name, collection);
+                            collection = new Collection(name, _documentStorage);
+                            _collections.Add(name, collection);
                         }
                     }
                 }
 
-                collection = _documentCollections[name];
+                collection = _collections[name];
                 if (collection == null || collection.IsDropped)
                     throw new InvalidOperationException($"The Document Collection '{name}' does not exist.");
 
@@ -116,35 +119,35 @@ namespace ExpandoDB
         }
 
         /// <summary>
-        /// Gets the names of all DocumentCollections in the Database.
+        /// Gets the names of all Document Collections in the Database.
         /// </summary>
         /// <value>
-        /// The name of all DocumentCollections in the Database.
+        /// The name of all Document Collections in the Database.
         /// </value>
-        internal IEnumerable<string> GetCollectionNames()
+        public IEnumerable<string> GetCollectionNames()
         {
-            return _documentCollections.Keys;
+            return _collections.Keys;
         }
 
         /// <summary>
-        /// Drops the DocumentCollection with the specified name.
+        /// Drops the Document Collection with the specified name.
         /// </summary>
-        /// <param name="collectionName">The name of the DocumentCollection to drop.</param>
+        /// <param name="collectionName">The name of the Document Collection to drop.</param>
         /// <returns></returns>
         public async Task<bool> DropCollectionAsync(string collectionName)
         {
-            if (!_documentCollections.ContainsKey(collectionName))
+            if (!_collections.ContainsKey(collectionName))
                 return false;
 
             var isSuccessful = false;
             Collection collection = null;
             
-            lock (_documentCollections)
+            lock (_collections)
             {
-                if (_documentCollections.ContainsKey(collectionName))
+                if (_collections.ContainsKey(collectionName))
                 {
-                    collection = _documentCollections[collectionName];
-                    _documentCollections.Remove(collectionName);
+                    collection = _collections[collectionName];
+                    _collections.Remove(collectionName);
                 }                    
             }
 
@@ -157,24 +160,47 @@ namespace ExpandoDB
         }
 
         /// <summary>
-        /// Determines whether the Database contains a DocumentCollection with the specified name.
+        /// Determines whether the Database contains a Document Collection with the specified name.
         /// </summary>
-        /// <param name="collectionName">The name of the DocumentCollection.</param>
+        /// <param name="collectionName">The name of the Document Collection.</param>
         /// <returns></returns>
         public bool ContainsCollection(string collectionName)
         {
-            return _documentCollections.ContainsKey(collectionName);
+            return _collections.ContainsKey(collectionName);
+        }
+
+        #region IDisposable Support
+
+        private bool _isDisponsed = false;
+
+        /// <summary>
+        /// Releases unmanaged and - optionally - managed resources.
+        /// </summary>
+        /// <param name="disposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_isDisponsed)
+            {
+                if (disposing)
+                {
+                    foreach (var collection in _collections.Values)
+                        collection.Dispose();
+
+                    _storageEngine.Dispose();
+                }
+
+                _isDisponsed = true;
+            }
         }
 
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-        /// </summary>        
+        /// </summary>
         public void Dispose()
-        {
-            foreach (var collection in _documentCollections.Values)            
-                collection.Dispose();
-
-            _storageEngine.Dispose();       
+        {            
+            Dispose(true);         
         }
+
+        #endregion
     }
 }

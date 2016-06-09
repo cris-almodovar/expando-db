@@ -3,6 +3,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Dynamic;
+using ExpandoDB.Storage;
+using System.Text;
 
 namespace ExpandoDB
 {
@@ -10,11 +12,10 @@ namespace ExpandoDB
     /// Represents a dynamic JSON Document.
     /// </summary>
     [Serializable]
-    public class Document : DynamicObject
+    public class Document : DynamicObject, IEquatable<Document>
     {
         private readonly dynamic _expando;
-        private readonly IDictionary<string, object> _expandoDictionary;        
-
+        private readonly IDictionary<string, object> _expandoDictionary;  
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Document"/> class.
@@ -372,5 +373,111 @@ namespace ExpandoDB
         {
             return _id.ToString();
         }
+
+
+        /// <summary>
+        /// Indicates whether the current Document is equal to another Document.
+        /// </summary>
+        /// <param name="other">A Document object to compare with this Document.</param>
+        /// <returns>
+        /// true if the current Document is equal to the <paramref name="other" /> parameter; otherwise, false.
+        /// </returns>
+        public bool Equals(Document other)
+        {
+            if (other == null)
+                return false;
+
+            if (_id != other._id)
+                return false;
+
+            var thisHash = ComputeMd5Hash();
+            var otherHash = other.ComputeMd5Hash();
+
+            return string.Compare(thisHash, otherHash, StringComparison.Ordinal) == 0;
+        }
+
+        /// <summary>
+        /// Determines whether the specified <see cref="System.Object" />, is equal to this instance.
+        /// </summary>
+        /// <param name="obj">The <see cref="System.Object" /> to compare with this instance.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.
+        /// </returns>
+        public override bool Equals(object obj)
+        {
+            if (obj == null)
+                return false;
+
+            var document = obj as Document;
+            if (document == null)
+                return false;
+            else
+                return Equals(document);
+        }
+
+        /// <summary>
+        /// Implements the operator ==.
+        /// </summary>
+        /// <param name="document1">The document1.</param>
+        /// <param name="document2">The document2.</param>
+        /// <returns>
+        /// The result of the operator.
+        /// </returns>
+        public static bool operator ==(Document document1, Document document2)
+        {
+            if (((object)document1) == null || ((object)document2) == null)
+                return Object.Equals(document1, document2);
+
+            return document1.Equals(document2);
+        }
+
+        /// <summary>
+        /// Implements the operator !=.
+        /// </summary>
+        /// <param name="document1">The document1.</param>
+        /// <param name="document2">The document2.</param>
+        /// <returns>
+        /// The result of the operator.
+        /// </returns>
+        public static bool operator !=(Document document1, Document document2)
+        {
+            if (((object)document1) == null || ((object)document2) == null)
+                return !Object.Equals(document1, document2);
+
+            return !document1.Equals(document2);
+        }
+
+        /// <summary>
+        /// Returns a hash code for this instance.
+        /// </summary>
+        /// <returns>
+        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
+        /// </returns>
+        public override int GetHashCode()
+        {
+            return ComputeMd5Hash().GetHashCode();
+        }
+
+        /// <summary>
+        /// Computes the MD5 hash for this Document
+        /// </summary>
+        /// <returns></returns>
+        public string ComputeMd5Hash()
+        {
+            using (var md5 = System.Security.Cryptography.MD5.Create())
+            {
+                var json = DynamicJsonSerializer.Serialize(this);
+                var data = Encoding.UTF8.GetBytes(json);
+                byte[] hash = md5.ComputeHash(data);
+
+                var buffer = new System.Text.StringBuilder();
+                for (int i = 0; i < data.Length; i++)
+                    buffer.Append(data[i].ToString("x2"));
+
+                // Return the hexadecimal string.
+                return buffer.ToString();
+            }
+        }
+
     }
 }
