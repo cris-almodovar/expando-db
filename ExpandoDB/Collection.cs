@@ -108,9 +108,9 @@ namespace ExpandoDB
                 if (savedSchemaDocument == null)
                 {
                     await _documentStorage.InsertAsync(Schema.COLLECTION_NAME, liveSchemaDocument);
-                    liveSchemaDocument = await _documentStorage.GetAsync(Schema.COLLECTION_NAME, liveSchemaDocument._id.Value);
-                    Schema._createdTimestamp = liveSchemaDocument._createdTimestamp;
-                    Schema._modifiedTimestamp = liveSchemaDocument._modifiedTimestamp;
+                    savedSchemaDocument = await _documentStorage.GetAsync(Schema.COLLECTION_NAME, liveSchemaDocument._id.Value);
+                    Schema._createdTimestamp = savedSchemaDocument._createdTimestamp;
+                    Schema._modifiedTimestamp = savedSchemaDocument._modifiedTimestamp;
                 }
                 else
                 {
