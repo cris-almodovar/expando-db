@@ -3,7 +3,7 @@
 namespace ExpandoDB.Search
 {
     /// <summary>
-    /// Represents an error in the Lucene IndexSchema
+    /// Represents an error in the Schema
     /// </summary>
     [Serializable]
     public class SchemaException : Exception

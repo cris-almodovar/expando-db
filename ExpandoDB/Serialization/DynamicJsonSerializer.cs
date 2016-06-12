@@ -10,7 +10,7 @@ using System.Linq;
 namespace ExpandoDB.Serialization
 {
     /// <summary>
-    /// Provides methods for serializing/deserializing dynamic Document object to/from JSON.
+    /// Provides methods for serializing/deserializing Document object to/from JSON strings.
     /// </summary>
     public static class DynamicJsonSerializer
     {
@@ -91,7 +91,7 @@ namespace ExpandoDB.Serialization
             return JSON.Deserialize<T>(reader);
         }       
 
-        public static IDictionary<string, object> Unwrap(this IDictionary<string, object> dictionary)
+        internal static IDictionary<string, object> Unwrap(this IDictionary<string, object> dictionary)
         {
             if (dictionary == null)
                 throw new ArgumentNullException(nameof(dictionary));
@@ -108,7 +108,7 @@ namespace ExpandoDB.Serialization
             return unwrappedDictionary;
         }
 
-        public static IList<object> Unwrap(this IEnumerable enumerable)
+        internal static IList<object> Unwrap(this IEnumerable enumerable)
         {
             var list = new List<object>();
             foreach (var item in enumerable)
@@ -118,7 +118,7 @@ namespace ExpandoDB.Serialization
             return list;
         }
 
-        public static object Unwrap(this object value)
+        internal static object Unwrap(this object value)
         {
             if (value == null)
                 return null;
@@ -182,7 +182,7 @@ namespace ExpandoDB.Serialization
         }
         
 
-        public static bool TryParseDateTime(string value, ref DateTime dateValue)
+        internal static bool TryParseDateTime(string value, ref DateTime dateValue)
         {
             if (!IsDateTimeString(value))
                 return false;
@@ -258,7 +258,7 @@ namespace ExpandoDB.Serialization
             return false;
         }
 
-        public static bool TryParseGuid(string value, ref Guid guid)
+        internal static bool TryParseGuid(string value, ref Guid guid)
         {
             return value.Length == GUID_STRING_LENGTH &&
                    value.Count(c => c == '-') == 4 &&

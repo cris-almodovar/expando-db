@@ -9,7 +9,7 @@ using ExpandoDB.Storage;
 namespace ExpandoDB
 {
     /// <summary>
-    /// Represents the Document fields that are automatically indexed, and are thus searchable.
+    /// Defines the fields of a Document; these fields are auto-indexed using Lucene.
     /// </summary>    
     [Serializable]
     public class Schema
@@ -35,12 +35,15 @@ namespace ExpandoDB
             defaultSchema.Name = name;      
             defaultSchema.Fields[StandardField.ID] = new Field { Name = StandardField.ID, DataType = DataType.Guid };
             defaultSchema.Fields[StandardField.CREATED_TIMESTAMP] = new Field { Name = StandardField.CREATED_TIMESTAMP, DataType = DataType.DateTime };
-            defaultSchema.Fields[StandardField.CREATED_TIMESTAMP] = new Field { Name = StandardField.CREATED_TIMESTAMP, DataType = DataType.DateTime };
+            defaultSchema.Fields[StandardField.MODIFIED_TIMESTAMP] = new Field { Name = StandardField.MODIFIED_TIMESTAMP, DataType = DataType.DateTime };
             defaultSchema.Fields[StandardField.FULL_TEXT] = new Field { Name = StandardField.FULL_TEXT, DataType = DataType.Text };
             
             return defaultSchema;      
-        }        
+        }
 
+        /// <summary>
+        /// Defines the fields that all Documents must contain.
+        /// </summary>
         [Serializable]
         public static class StandardField
         {
@@ -50,6 +53,9 @@ namespace ExpandoDB
             public const string FULL_TEXT = "_full_text_";
         }
 
+        /// <summary>
+        /// Represents the definition of a Document field.
+        /// </summary>
         [Serializable]
         public class Field
         {
@@ -62,6 +68,9 @@ namespace ExpandoDB
             public bool IsArrayElement { get; set; }        
         }
 
+        /// <summary>
+        /// Specifies the type of a Document field.
+        /// </summary>
         [Serializable]
         public enum DataType
         {

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace ExpandoDB.Search
 {
     /// <summary>
-    /// Encapsulates information about an ExpandoDB serch query and its result.
+    /// Encapsulates information about an ExpandoDB search query and its result.
     /// </summary>
     /// <typeparam name="TResult">The type of the result.</typeparam>
     public class SearchResult<TResult>

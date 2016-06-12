@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace ExpandoDB.Serialization
 {
+    /// <summary>
+    /// The DateTime formats supported by the JSON serializer/deserializer.
+    /// </summary>
     public static class DateTimeFormat
     {
         public const string DATE_ONLY = "yyyy-MM-dd";

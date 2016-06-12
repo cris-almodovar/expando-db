@@ -17,7 +17,7 @@ using JavaInteger = java.lang.Integer;
 namespace ExpandoDB.Search
 {
     /// <summary>
-    /// Represents the Lucene full-text index for a Collection of dynamic Documents objects
+    /// Represents the Lucene full-text index for a Collection of Documents objects
     /// </summary>
     public class LuceneIndex : IDisposable
     {

@@ -3,7 +3,7 @@
 namespace ExpandoDB.Serialization
 {
     /// <summary>
-    /// Represents errors that occur as a result of JSON serialization/deserialization.
+    /// Represents errors that occur as a result of serialization/deserialization.
     /// </summary>
     /// <seealso cref="System.Exception" />
     [Serializable]

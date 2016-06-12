@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace ExpandoDB.Serialization
 {
     /// <summary>
-    /// Serializes/deserialize documents and schemas to byte arrays, with the option to compress/decompress the data.
+    /// Serializes/deserialize Documents to and from byte arrays, with an option to compress/decompress the data.
     /// </summary>
     public class ByteArraySerializer
     {        
@@ -99,16 +99,7 @@ namespace ExpandoDB.Serialization
         public ByteArraySerializer(CompressionOption compressionOption)
         {
             _compressionOption = compressionOption;
-
-            switch (_compressionOption)
-            {
-                case CompressionOption.LZ4:
-                    _streamCompressor = new LZ4Compressor();
-                    break;
-                case CompressionOption.Deflate:
-                    _streamCompressor = new DeflateCompressor();
-                    break;                
-            }
+            _streamCompressor = GetCompressor(compressionOption);
         }
 
         private IStreamCompressor GetCompressor(CompressionOption compressionOption)
@@ -124,6 +115,12 @@ namespace ExpandoDB.Serialization
             }
         }
 
+        /// <summary>
+        /// Serializes the specified Document to a byte array.
+        /// </summary>
+        /// <param name="document">The Document.</param>
+        /// <returns></returns>
+        /// <exception cref="System.ArgumentNullException"></exception>
         public byte[] Serialize(Document document)
         {
             if (document == null)
@@ -145,6 +142,11 @@ namespace ExpandoDB.Serialization
             return value;
         }
 
+        /// <summary>
+        /// Deserializes the specified byte array to a Document.
+        /// </summary>
+        /// <param name="value">The byte array.</param>
+        /// <returns></returns>
         public Document Deserialize(byte[] value)
         {
             if (value == null)
