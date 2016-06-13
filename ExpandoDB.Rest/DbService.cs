@@ -10,6 +10,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using ExpandoDB.Serialization;
+using Nancy.Metrics;
+using Metrics;
 
 namespace ExpandoDB.Rest
 {
@@ -21,7 +23,7 @@ namespace ExpandoDB.Rest
     public class DbService : NancyModule
     {
         private readonly Database _database;
-        private readonly ILog _log = LogManager.GetLogger(typeof(DbService).Name);
+        private readonly ILog _log = LogManager.GetLogger(typeof(DbService).Name);        
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DbService"/> class.
@@ -43,7 +45,7 @@ namespace ExpandoDB.Rest
             Put["/{collection}/{id:guid}", true] = OnUpdateDocumentAsync;                       
             Patch["/{collection}/{id:guid}", true] = OnPatchDocumentAsync;
             Delete["/{collection}/{id:guid}", true] = OnDeleteDocumentAsync;
-            Delete["/{collection}", true] = OnDeleteCollectionAsync;
+            Delete["/{collection}", true] = OnDropCollectionAsync;
         }        
 
         /// <summary>
@@ -73,7 +75,7 @@ namespace ExpandoDB.Rest
             // Insert the Document object into the target Document Collection.
             var guid = await collection.InsertAsync(document).ConfigureAwait(false);
 
-            stopwatch.Stop();
+            stopwatch.Stop();            
 
             var responseDto = new InsertResponseDto
             {
@@ -415,7 +417,7 @@ namespace ExpandoDB.Rest
         /// <param name="token">The token.</param>
         /// <returns></returns>
         /// <exception cref="System.ArgumentException">collection cannot be null or blank</exception>
-        private async Task<object> OnDeleteCollectionAsync(dynamic req, CancellationToken token)
+        private async Task<object> OnDropCollectionAsync(dynamic req, CancellationToken token)
         {
             var stopwatch = new Stopwatch();
             stopwatch.Start();

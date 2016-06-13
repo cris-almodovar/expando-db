@@ -28,10 +28,10 @@ namespace ExpandoDB
         private readonly ILog _log = LogManager.GetLogger(typeof(Collection).Name);
 
         /// <summary>
-        /// Gets the IndexSchema associated with the Document Collection.
+        /// Gets the Schema associated with the Document Collection.
         /// </summary>
         /// <value>
-        /// The IndexSchema object.
+        /// The Schema object.
         /// </value>
         public Schema Schema { get; private set; }
 

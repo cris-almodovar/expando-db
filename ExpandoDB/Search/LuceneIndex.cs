@@ -10,9 +10,6 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Threading;
 using System.Threading.Tasks;
-using JavaDouble = java.lang.Double;
-using JavaLong = java.lang.Long;
-using JavaInteger = java.lang.Integer;
 
 namespace ExpandoDB.Search
 {
@@ -34,7 +31,7 @@ namespace ExpandoDB.Search
         private readonly ILog _log = LogManager.GetLogger(typeof(LuceneIndex).Name);    
         private readonly double _refreshIntervalSeconds;
         private readonly double _commitIntervalSeconds;        
-        private readonly double _ramBufferSizeMB;
+        private readonly double _ramBufferSizeMB;        
 
         public Schema Schema { get { return _schema; } }       
 

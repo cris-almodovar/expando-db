@@ -38,11 +38,11 @@ namespace ExpandoDB.Rest
             // Configure JSON handling.
             JsonSettings.RetainCasing = true;
             JsonSettings.ISO8601DateFormat = true;
-            JsonSettings.MaxJsonLength = Int32.MaxValue;            
+            JsonSettings.MaxJsonLength = Int32.MaxValue;
 
             // Configure Metrics.NET             
-            Metric.Config                                 
-                  .WithAppCounters()                  
+            Metric.Config
+                  .WithAppCounters()
                   .WithNancy(pipelines);            
 
             ConfigureExceptionHandling(pipelines);

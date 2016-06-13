@@ -24,7 +24,7 @@ namespace ExpandoDB
         /// <summary>
         /// Creates a default Schema, which contains the _id, _createdTimestamp, _modifiedTimestamp, and _full_text_ fields.
         /// </summary>
-        /// <param name="name">The name of the IndexSchema.</param>
+        /// <param name="name">The name of the Schema.</param>
         /// <returns></returns>
         public static Schema CreateDefault(string name = null)
         {            
@@ -69,7 +69,7 @@ namespace ExpandoDB
         }
 
         /// <summary>
-        /// Specifies the type of a Document field.
+        /// Specifies the type of a Document field; this maps to the data types supported by JSON.
         /// </summary>
         [Serializable]
         public enum DataType
