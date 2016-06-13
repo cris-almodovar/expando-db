@@ -31,7 +31,7 @@ namespace ExpandoDB.Rest
         /// <param name="database">The Database instance; this is auto-injected by NancyFX's IOC container.</param>
         public DbService(Database database) : base("/db")
         {
-            _database = database;
+            _database = database;            
 
             // Here we define the routes and their corresponding handlers.
             // Note that all handlers except OnGetCount() and OnGetCollectionSchema() are async.

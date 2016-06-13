@@ -20,20 +20,8 @@ namespace ExpandoDB
     {        
         private readonly string _indexPath;
         private readonly IDocumentStorage _documentStorage;        
-        private readonly LuceneIndex _luceneIndex;        
-        private readonly string _name;
-        private readonly Timer _schemaPersistenceTimer;
-        private readonly object _schemaPersistenceLock = new object();
-        private readonly double _schemaPersistenceIntervalSeconds;        
+        private readonly LuceneIndex _luceneIndex;
         private readonly ILog _log = LogManager.GetLogger(typeof(Collection).Name);
-
-        /// <summary>
-        /// Gets the Schema associated with the Document Collection.
-        /// </summary>
-        /// <value>
-        /// The Schema object.
-        /// </value>
-        public Schema Schema { get; private set; }
 
         /// <summary>
         /// Gets the name of the Document Collection.
@@ -41,7 +29,15 @@ namespace ExpandoDB
         /// <value>
         /// The name of the Document Collection
         /// </value>
-        public string Name { get { return _name; } }
+        public string Name { get; private set; }
+
+        /// <summary>
+        /// Gets the Schema associated with the Document Collection.
+        /// </summary>
+        /// <value>
+        /// The Schema object.
+        /// </value>
+        public Schema Schema { get; private set; }        
 
         /// <summary>
         /// Gets a value indicating whether this Document Collection has already been dropped.
@@ -76,7 +72,7 @@ namespace ExpandoDB
             if (documentStorage == null)
                 throw new ArgumentNullException(nameof(documentStorage));
 
-            _name = name;
+            Name = name;
             _documentStorage = documentStorage;            
 
             _indexPath = Path.Combine(_documentStorage.DataPath, Database.INDEX_DIRECTORY_NAME, name);
@@ -84,50 +80,8 @@ namespace ExpandoDB
                 Directory.CreateDirectory(_indexPath);            
 
             Schema = schema ?? Schema.CreateDefault(name);
-            _luceneIndex = new LuceneIndex(_indexPath, Schema);
-
-            _schemaPersistenceIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["SchemaPersistenceIntervalSeconds"] ?? "1");
-            _schemaPersistenceTimer = new Timer( _ => Task.Run(async() => await PersistSchema().ConfigureAwait(false)), null, TimeSpan.FromSeconds(_schemaPersistenceIntervalSeconds), TimeSpan.FromSeconds(_schemaPersistenceIntervalSeconds));
-        }
-
-        private async Task PersistSchema()
-        {
-            if (IsDropped || _isDisposed)
-                return;
-
-            var isLockTaken = false;
-            try
-            {
-                isLockTaken = Monitor.TryEnter(_schemaPersistenceLock, 500);
-                if (!isLockTaken || IsDropped || _isDisposed)
-                    return;
-
-                var liveSchemaDocument = Schema.ToDocument();  
-                var savedSchemaDocument = await _documentStorage.GetAsync(Schema.COLLECTION_NAME, Schema._id);
-
-                if (savedSchemaDocument == null)
-                {
-                    await _documentStorage.InsertAsync(Schema.COLLECTION_NAME, liveSchemaDocument);
-                    savedSchemaDocument = await _documentStorage.GetAsync(Schema.COLLECTION_NAME, liveSchemaDocument._id.Value);
-                    Schema._createdTimestamp = savedSchemaDocument._createdTimestamp;
-                    Schema._modifiedTimestamp = savedSchemaDocument._modifiedTimestamp;
-                }
-                else
-                {
-                    if (liveSchemaDocument != savedSchemaDocument)
-                        await _documentStorage.UpdateAsync(Schema.COLLECTION_NAME, liveSchemaDocument);
-                }
-            }
-            catch (Exception ex)
-            {
-                _log.Error(ex);
-            }            
-            finally
-            {
-                if (isLockTaken)
-                    Monitor.Exit(_schemaPersistenceLock);
-            }
-        }
+            _luceneIndex = new LuceneIndex(_indexPath, Schema);            
+        }        
 
         /// <summary>
         /// Inserts the specified Document into the Document Collection
@@ -270,10 +224,7 @@ namespace ExpandoDB
 
             IsDropped = true;
 
-            await _documentStorage.DropAsync(Name).ConfigureAwait(false);
-
-            _schemaPersistenceTimer.Dispose();
-            await _documentStorage.DeleteAsync(Schema.COLLECTION_NAME, Schema._id).ConfigureAwait(false);
+            await _documentStorage.DropAsync(Name).ConfigureAwait(false);            
 
             _luceneIndex.Dispose();
             
@@ -306,7 +257,8 @@ namespace ExpandoDB
         }
 
         #region IDisposable Support
-        private bool _isDisposed = false;
+
+        public bool IsDisposed { get; private set; }
 
         /// <summary>
         /// Releases unmanaged and - optionally - managed resources.
@@ -316,15 +268,14 @@ namespace ExpandoDB
         {
             EnsureCollectionIsNotDropped();
 
-            if (!_isDisposed)
+            if (!IsDisposed)
             {
                 if (disposing)
-                {
-                    _schemaPersistenceTimer.Dispose();
+                {                    
                     _luceneIndex.Dispose();
                 }               
 
-                _isDisposed = true;
+                IsDisposed = true;
             }
         }
 

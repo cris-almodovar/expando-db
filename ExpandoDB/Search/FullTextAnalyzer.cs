@@ -10,7 +10,7 @@ using System.Collections.Generic;
 namespace ExpandoDB.Search
 {
     /// <summary>
-    /// Lucene analyzer that breaks up Text into individual tokens using a list of separator chars, and then stems the tokens using
+    /// Lucene Analyzer that breaks up the input text into tokens, using a list of separator chars, and then stems the tokens using
     /// the Porter stemming algorithm.
     /// </summary>
     public class FullTextAnalyzer : Analyzer
@@ -58,9 +58,9 @@ namespace ExpandoDB.Search
         }
 
         /// <summary>
-        /// Breaks up the text into tokens.
+        /// Breaks up the input text into individual tokens.
         /// </summary>
-        /// <param name="text">The text.</param>
+        /// <param name="text">The input text.</param>
         /// <param name="enableStemming">if set to <c>true</c>, the FullTextIndex will stem 
         /// the tokens that make up the texts, using the Porter stemming algorithm.</param>
         /// <param name="ignoreCase">if set to <c>true</c>, character casing is ignored.</param>

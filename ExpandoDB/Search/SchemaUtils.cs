@@ -10,10 +10,10 @@ namespace ExpandoDB.Search
     /// <summary>
     /// Implements utility methods for coverting between Schema and Document objects.
     /// </summary>
-    public static class SchemaExtensions
+    public static class SchemaUtils
     {
         /// <summary>
-        /// Converts a Document to a Schema object.
+        /// Converts the Document object to a Schema object.
         /// </summary>
         /// <param name="document">The Document.</param>
         /// <returns></returns>
@@ -46,7 +46,7 @@ namespace ExpandoDB.Search
         }
 
         /// <summary>
-        /// Converts a Schema to a Document object.
+        /// Converts the Schema object to a Document object.
         /// </summary>
         /// <param name="schema">The Schema.</param>
         /// <returns></returns>
@@ -67,7 +67,12 @@ namespace ExpandoDB.Search
             return document;
         }
 
-        
+
+        /// <summary>
+        /// Converts the Schema object to a dictionary.
+        /// </summary>
+        /// <param name="schema">The schema.</param>
+        /// <returns></returns>
         internal static IDictionary<string, object> ToDictionary(this Schema schema)
         {
             var dictionary = new Dictionary<string, object>();
@@ -83,6 +88,11 @@ namespace ExpandoDB.Search
             return dictionary;
         }
 
+        /// <summary>
+        /// Converts the Schema Field object to a dictionary.
+        /// </summary>
+        /// <param name="field">The field.</param>
+        /// <returns></returns>
         internal static IDictionary<string, object> ToDictionary(this Schema.Field field)
         {
             var dictionary = new Dictionary<string, object>();
@@ -98,7 +108,7 @@ namespace ExpandoDB.Search
         }
 
         /// <summary>
-        /// Populates the Schema object with values from the dictionary object.
+        /// Populates the Schema object with values from the given dictionary.
         /// </summary>
         /// <param name="schema">The Schema.</param>
         /// <param name="dictionary">The dictionary.</param>
@@ -129,7 +139,7 @@ namespace ExpandoDB.Search
         }
 
         /// <summary>
-        /// Populates the Schema.Field object with values from the dictionary object.
+        /// Populates the Schema.Field object with values from the given dictionary.
         /// </summary>
         /// <param name="field">The Schema.Field.</param>
         /// <param name="dictionary">The dictionary.</param>
@@ -156,7 +166,7 @@ namespace ExpandoDB.Search
         }
 
         /// <summary>
-        /// Searches (recursively) within the Schema object, to find the Schema.Field with the given name.
+        /// Searches (recursively) within the Schema object, to find the Schema Field with the specified name.
         /// </summary>
         /// <param name="fieldName">Name of the Schema.Field.</param>
         /// <param name="recursive">if set to <c>true</c>, the FindField method will search child objects.</param>

@@ -28,7 +28,10 @@ namespace ExpandoDB
         private readonly string _indexPath;
         private readonly IDictionary<string, Collection> _collections;
         private readonly LightningStorageEngine _storageEngine;
-        private readonly LightningDocumentStorage _documentStorage;      
+        private readonly LightningDocumentStorage _documentStorage;
+        private readonly Timer _schemaPersistenceTimer;
+        private readonly object _schemaPersistenceLock = new object();
+        private readonly double _schemaPersistenceIntervalSeconds;
         private readonly ILog _log = LogManager.GetLogger(typeof(Database).Name);
 
         /// <summary>
@@ -60,7 +63,10 @@ namespace ExpandoDB
             {
                 var collection = new Collection(schema, _documentStorage);
                 _collections.Add(schema.Name, collection);
-            }           
+            }
+
+            _schemaPersistenceIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["Schema.PersistenceIntervalSeconds"] ?? "1");
+            _schemaPersistenceTimer = new Timer(_ => Task.Run(async () => await PersistSchemas().ConfigureAwait(false)), null, TimeSpan.FromSeconds(_schemaPersistenceIntervalSeconds), TimeSpan.FromSeconds(_schemaPersistenceIntervalSeconds));
         }       
 
         /// <summary>
@@ -147,14 +153,15 @@ namespace ExpandoDB
                 if (_collections.ContainsKey(collectionName))
                 {
                     collection = _collections[collectionName];
-                    _collections.Remove(collectionName);
+                    _collections.Remove(collectionName);                   
                 }                    
             }
 
             if (collection == null)
                 return false;
-
-            isSuccessful = await collection.DropAsync().ConfigureAwait(false);
+            
+            isSuccessful = await collection.DropAsync().ConfigureAwait(false) &&
+                           await _documentStorage.DeleteAsync(Schema.COLLECTION_NAME, collection.Schema._id).ConfigureAwait(false) == 1;
 
             return isSuccessful;
         }
@@ -169,9 +176,63 @@ namespace ExpandoDB
             return _collections.ContainsKey(collectionName);
         }
 
+        private async Task PersistSchemas()
+        {
+            var isLockTaken = false;
+            try
+            {
+                isLockTaken = Monitor.TryEnter(_schemaPersistenceLock, 500);
+                if (!isLockTaken)
+                    return;
+
+                foreach (var collection in _collections.Values)
+                {
+                    if (collection.IsDropped || collection.IsDisposed)
+                        continue;
+
+                    await PersistSchema(collection).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                _log.Error(ex);
+            }
+            finally
+            {
+                if (isLockTaken)
+                    Monitor.Exit(_schemaPersistenceLock);
+            }
+        }
+
+        private async Task PersistSchema(Collection collection)
+        {
+            try
+            {
+                var liveSchemaDocument = collection.Schema.ToDocument();
+                var savedSchemaDocument = await _documentStorage.GetAsync(Schema.COLLECTION_NAME, collection.Schema._id);
+
+                if (savedSchemaDocument == null)
+                {
+                    await _documentStorage.InsertAsync(Schema.COLLECTION_NAME, liveSchemaDocument);
+                    savedSchemaDocument = await _documentStorage.GetAsync(Schema.COLLECTION_NAME, liveSchemaDocument._id.Value);
+                    collection.Schema._createdTimestamp = savedSchemaDocument._createdTimestamp;
+                    collection.Schema._modifiedTimestamp = savedSchemaDocument._modifiedTimestamp;
+                }
+                else
+                {
+                    if (liveSchemaDocument != savedSchemaDocument)
+                        await _documentStorage.UpdateAsync(Schema.COLLECTION_NAME, liveSchemaDocument);
+                }
+            }
+            catch (Exception ex)
+            {
+                _log.Error(ex);
+            }
+        }
+
         #region IDisposable Support
 
-        private bool _isDisponsed = false;
+        public bool IsDisposed { get; private set; }
 
         /// <summary>
         /// Releases unmanaged and - optionally - managed resources.
@@ -179,17 +240,19 @@ namespace ExpandoDB
         /// <param name="disposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
         protected virtual void Dispose(bool disposing)
         {
-            if (!_isDisponsed)
+            if (!IsDisposed)
             {
                 if (disposing)
                 {
+                    _schemaPersistenceTimer.Dispose();
+
                     foreach (var collection in _collections.Values)
                         collection.Dispose();
 
                     _storageEngine.Dispose();
                 }
 
-                _isDisponsed = true;
+                IsDisposed = true;
             }
         }
 

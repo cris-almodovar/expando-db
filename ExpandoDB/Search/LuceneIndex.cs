@@ -229,13 +229,13 @@ namespace ExpandoDB.Search
             {
                 case Schema.DataType.Number:
                     sortField = new SortField(sortFieldName, SortFieldType.DOUBLE, isDescending);
-                    sortField.SetMissingValue(isDescending ? LuceneExtensions.DOUBLE_MIN_VALUE : LuceneExtensions.DOUBLE_MAX_VALUE);
+                    sortField.SetMissingValue(isDescending ? LuceneUtils.DOUBLE_MIN_VALUE : LuceneUtils.DOUBLE_MAX_VALUE);
                     break;
 
                 case Schema.DataType.DateTime:
                 case Schema.DataType.Boolean:
                     sortField = new SortField(sortFieldName, SortFieldType.LONG, isDescending);
-                    sortField.SetMissingValue(isDescending ? LuceneExtensions.LONG_MIN_VALUE : LuceneExtensions.LONG_MAX_VALUE);
+                    sortField.SetMissingValue(isDescending ? LuceneUtils.LONG_MIN_VALUE : LuceneUtils.LONG_MAX_VALUE);
                     break;
 
                 case Schema.DataType.Text:
@@ -252,23 +252,45 @@ namespace ExpandoDB.Search
                 return Sort.RELEVANCE;
             else   
                 return new Sort(new[] { sortField });
-        }       
+        } 
+        
+
+        #region IDisposable Support
+        public bool IsDisposed { get; private set; }
+
+        /// <summary>
+        /// Releases unmanaged and - optionally - managed resources.
+        /// </summary>
+        /// <param name="disposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!IsDisposed)
+            {
+                if (disposing)
+                {
+                    _refreshTimer.Dispose();
+                    _commitTimer.Dispose();
+
+                    _searcherManager.Close();
+
+                    if (_writer.HasUncommittedChanges())
+                        _writer.Commit();
+
+                    _writer.Close();
+                }               
+
+                IsDisposed = true;
+            }
+        }
+
 
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>
         public void Dispose()
-        {
-            _refreshTimer.Dispose();
-            _commitTimer.Dispose();
-
-            _searcherManager.Close();
-
-            if (_writer.HasUncommittedChanges())
-                _writer.Commit();
-
-            _writer.Close();
-                  
+        {           
+            Dispose(true);            
         }
+        #endregion
     }
 }

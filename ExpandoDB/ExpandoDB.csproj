@@ -212,12 +212,13 @@
     <Compile Include="Database.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Search\CompositeAnalyzer.cs" />
+    <Compile Include="Search\LuceneQueryParserUtils.cs" />
     <Compile Include="Search\SchemaException.cs" />
-    <Compile Include="Search\LuceneExtensions.cs" />
+    <Compile Include="Search\LuceneUtils.cs" />
     <Compile Include="Search\LuceneHighlighter.cs" />
     <Compile Include="Search\LuceneQueryParser.cs" />
-    <Compile Include="Search\SchemaExtensions.cs" />
-    <Compile Include="Search\SearchExtensions.cs" />
+    <Compile Include="Search\SchemaUtils.cs" />
+    <Compile Include="Search\SearchUtils.cs" />
     <Compile Include="Search\FullTextAnalyzer.cs" />
     <Compile Include="Search\LuceneIndex.cs" />
     <Compile Include="Search\Schema.cs" />
@@ -231,7 +232,7 @@
     <Compile Include="Serialization\SerializationException.cs" />
     <Compile Include="Storage\EnumerableDocuments.cs" />
     <Compile Include="Storage\IDocumentStorage.cs" />
-    <Compile Include="Storage\LightningExtensions.cs" />
+    <Compile Include="Storage\LightningStorageUtils.cs" />
     <Compile Include="Storage\LightningDocumentStorage.cs" />
     <Compile Include="Storage\LightningStorageEngine.cs" />
   </ItemGroup>

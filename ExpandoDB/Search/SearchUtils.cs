@@ -10,7 +10,7 @@ namespace ExpandoDB.Search
     /// <summary>
     /// Implements utility methods for Lucene search.
     /// </summary>
-    public static class SearchExtensions
+    public static class SearchUtils
     {
         /// <summary>
         /// Validates the specified search criteria.

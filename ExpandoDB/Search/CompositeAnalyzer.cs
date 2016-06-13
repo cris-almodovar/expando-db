@@ -7,12 +7,12 @@ using System.Collections.Generic;
 namespace ExpandoDB.Search
 {
     /// <summary>
-    /// A custom Lucene AnalyzerWrapper that returns a <see cref="FullTextAnalyzer"/>
+    /// A custom Lucene Analyzer that returns a <see cref="FullTextAnalyzer"/>
     /// or a <see cref="KeywordAnalyzer"/>, depending on the field being analyzed.
     /// </summary>
     /// <remarks>
-    /// An instance of CompositeAnalyzer is associated with an instance of <see cref="LuceneIndex"/>,
-    /// which in turn is associated with an instance of <see cref="Collection"/>.
+    /// The CompositeAnalyzer class is used by the <see cref="LuceneIndex"/> class
+    /// to determine what Lucene Analyzer to use for each field."/>.
     /// </remarks>
     /// <seealso cref="FlexLucene.Analysis.AnalyzerWrapper" />
     public class CompositeAnalyzer : AnalyzerWrapper
@@ -40,7 +40,7 @@ namespace ExpandoDB.Search
             _perFieldAnalyzers = new ConcurrentDictionary<string, Analyzer>();
             _knownDataTypes = new ConcurrentDictionary<string, Schema.DataType>();
 
-            // Assign suitable Analyzers for each field in the schema.
+            // Assign Analyzers for each field of the Schema.
             RefreshAnalyzer(_schema);
         }
 
@@ -86,7 +86,7 @@ namespace ExpandoDB.Search
                 return;
 
             // Here we will try to assign an Analyzer to a new field,
-            // i.e. a field that has just been added to the schema.
+            // i.e. a field that has just been added to the Schema.
             if (!_perFieldAnalyzers.ContainsKey(fieldName))
                 RefreshAnalyzer(schemaField);
 
@@ -102,7 +102,7 @@ namespace ExpandoDB.Search
         }
 
         /// <summary>
-        /// Gets the Analyzer for the specified field.
+        /// Gets the Analyzer for the specified Document field.
         /// </summary>
         /// <param name="fieldName">Name of the field.</param>
         /// <returns></returns>

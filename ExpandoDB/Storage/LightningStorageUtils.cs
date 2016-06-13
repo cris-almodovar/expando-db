@@ -12,13 +12,16 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace ExpandoDB.Storage
-{    
-    public static class LightningExtensions
+{
+    /// <summary>
+    /// Implements utility methods used by the <see cref="LightningStorageEngine"/> class.
+    /// </summary>
+    public static class LightningStorageUtils
     {
         private static readonly ByteArraySerializer _serializer;
         internal static readonly CompressionOption _compressionOption;        
 
-        static LightningExtensions()
+        static LightningStorageUtils()
         {
             _compressionOption = (CompressionOption) Enum.Parse(typeof(CompressionOption), (ConfigurationManager.AppSettings["StorageEngine.Compression"] ?? "LZ4"), true);
             _serializer = new ByteArraySerializer(_compressionOption);
@@ -62,6 +65,9 @@ namespace ExpandoDB.Storage
         }             
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
     public enum CompressionOption
     {
         None,

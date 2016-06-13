@@ -3,7 +3,7 @@
 namespace ExpandoDB.Search
 {
     /// <summary>
-    /// Represents an error in the Schema
+    /// Represents an error related to Document Schema
     /// </summary>
     [Serializable]
     public class SchemaException : Exception

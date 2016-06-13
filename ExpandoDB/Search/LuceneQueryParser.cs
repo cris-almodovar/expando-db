@@ -11,7 +11,7 @@ using FlexLucene.Document;
 namespace ExpandoDB.Search
 {
     /// <summary>
-    /// A custom QueryParser that automatically converts dates and numbers in query expressions to ExpandoDB's date and number formats.
+    /// A custom Lucene QueryParser that automatically converts dates and numbers in query expressions to ExpandoDB's date and number formats.
     /// </summary>
     /// <seealso cref="FlexLucene.Queryparser.Classic.QueryParser" />
     public class LuceneQueryParser : QueryParser
@@ -118,7 +118,7 @@ namespace ExpandoDB.Search
             {
                 // Special case: searching for null value
                 var nullFieldName = fieldName.ToNullFieldName();
-                return IntPoint.NewExactQuery(nullFieldName, LuceneExtensions.INDEX_NULL_VALUE);
+                return IntPoint.NewExactQuery(nullFieldName, LuceneUtils.INDEX_NULL_VALUE);
             }
             else
             {
@@ -205,46 +205,5 @@ namespace ExpandoDB.Search
         }        
     }
 
-    internal static class LuceneQueryParserExtensions
-    {
-        public static double ToDouble(this string value)
-        {
-            double doubleValue;
-            if (!Double.TryParse(value, out doubleValue))
-                throw new LuceneQueryParserException($"Invalid number in query: '{value}'");
-
-            return doubleValue;
-        }
-
-        public static long ToDateTimeLongTicks(this string value)
-        {
-            var dateTimeValue = DateTime.MinValue;
-            if (!DynamicJsonSerializer.TryParseDateTime(value, ref dateTimeValue))
-                throw new LuceneQueryParserException($"Invalid DateTime in query: '{value}'");
-
-            var utcDateTime = dateTimeValue.ToUniversalTime();
-
-            return utcDateTime.Ticks;
-        }
-
-        public static int ToInteger(this string value)
-        {
-            bool boolValue;
-            if (!Boolean.TryParse(value, out boolValue))
-                throw new LuceneQueryParserException($"Invalid boolean in query: '{value}'");
-
-            var numericBool =  boolValue ? 1 : 0;
-            return numericBool;
-        }
-
-        public static string ToGuidString(this string value)
-        {            
-            Guid guid;
-            if (!Guid.TryParse(value, out guid))
-                throw new LuceneQueryParserException($"Invalid GUID in query: '{value}'");
-
-            return guid.ToString().ToLower();
-        }
-
-    }
+   
 }

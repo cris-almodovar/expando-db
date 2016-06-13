@@ -43,7 +43,7 @@ namespace ExpandoDB.Storage
                 Directory.CreateDirectory(DbPath);
 
             _log.Info($"DB Path: {DbPath}");
-            _log.Info($"Compression Option: {LightningExtensions._compressionOption}");
+            _log.Info($"Compression Option: {LightningStorageUtils._compressionOption}");
 
             var config = new EnvironmentConfiguration
             {
@@ -455,11 +455,11 @@ namespace ExpandoDB.Storage
         }        
 
         #region IDisposable Support
-        private bool _isDisposed = false; 
+        public bool IsDisposed { get; private set; }
 
         protected virtual void Dispose(bool disposing)
         {
-            if (!_isDisposed)
+            if (!IsDisposed)
             {
                 if (disposing)
                 {
@@ -478,7 +478,7 @@ namespace ExpandoDB.Storage
                     _cancellationTokenSource.Dispose();
                 }
 
-                _isDisposed = true;
+                IsDisposed = true;
             }
         }
 

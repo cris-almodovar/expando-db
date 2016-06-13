@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace ExpandoDB.Rest
 {
-    internal static class PatchOperationExtensions
+    internal static class PatchOperationUtils
     {
         /// <summary>
         /// Validates the specified list of PATCH operations.

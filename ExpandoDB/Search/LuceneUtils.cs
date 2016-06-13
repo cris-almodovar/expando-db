@@ -13,9 +13,9 @@ using JavaInteger = java.lang.Integer;
 namespace ExpandoDB.Search
 {
     /// <summary>
-    /// Implements extension methods for converting Document objects to Lucene documents.
+    /// Implements utility methods for converting Document objects to Lucene Documents.
     /// </summary>
-    public static class LuceneExtensions
+    public static class LuceneUtils
     {        
         public const string DEFAULT_NULL_TOKEN = "_null_";
         public const string QUERY_PARSER_ILLEGAL_CHARS = @"[\+&|!\(\)\{\}\[\]^""~\*\?:\\ ]";
@@ -31,7 +31,7 @@ namespace ExpandoDB.Search
         /// Converts a <see cref="Document"/> object to a <see cref="LuceneDocument"/> object.
         /// </summary>
         /// <param name="document">The Document object</param>
-        /// <param name="schema">The index schema.</param>
+        /// <param name="schema">The schema.</param>
         /// <returns></returns>
         /// <exception cref="System.ArgumentNullException"></exception>
         /// <exception cref="System.InvalidOperationException">Cannot index a Document that does not have an _id.</exception>
