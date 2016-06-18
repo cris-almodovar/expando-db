@@ -31,7 +31,7 @@ namespace ExpandoDB.Search
         public static Document ToDocument(this Schema schema)
         {            
             var document = new Document();
-            document._id = schema._id;            
+            document._id = schema._id ?? Guid.NewGuid();
 
             dynamic expando = document.AsExpando();
             expando.Name = schema.Name;            
@@ -54,7 +54,7 @@ namespace ExpandoDB.Search
         internal static IDictionary<string, object> ToDictionary(this Schema schema)
         {
             var dictionary = new Dictionary<string, object>();
-            dictionary[Schema.StandardField.ID] = schema._id;
+            dictionary[Schema.StandardField.ID] = schema._id ?? Guid.NewGuid();
             dictionary["Name"] = schema.Name;
 
             var fieldsList = schema.Fields.Values.Select(f => f.ToDictionary()).ToList();
@@ -146,6 +146,7 @@ namespace ExpandoDB.Search
         /// <summary>
         /// Searches (recursively) within the Schema object, to find the Schema Field with the specified name.
         /// </summary>
+        /// <param name="schema">The schema.</param>
         /// <param name="fieldName">Name of the Schema.Field.</param>
         /// <param name="recursive">if set to <c>true</c>, the FindField method will search child objects.</param>
         /// <returns></returns>

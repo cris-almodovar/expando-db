@@ -15,7 +15,7 @@ namespace ExpandoDB
     public class Schema
     {
         public const string COLLECTION_NAME = "_schemas";
-        public Guid _id { get; set; } = Guid.NewGuid();        
+        public Guid? _id { get; set; }     
         public string Name { get; set; }
         public ConcurrentDictionary<string, Field> Fields { get; set; } = new ConcurrentDictionary<string, Field>();
         public DateTime? _createdTimestamp { get; set; }

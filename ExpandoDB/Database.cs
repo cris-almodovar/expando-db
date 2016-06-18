@@ -157,7 +157,7 @@ namespace ExpandoDB
                 return false;
             
             isSuccessful = await collection.DropAsync().ConfigureAwait(false) &&
-                           await _documentStorage.DeleteAsync(Schema.COLLECTION_NAME, collection.Schema._id).ConfigureAwait(false) == 1;
+                           await this[Schema.COLLECTION_NAME].DeleteAsync(collection.Schema._id.Value).ConfigureAwait(false) == 1;
 
             return isSuccessful;
         }
@@ -207,7 +207,7 @@ namespace ExpandoDB
             {
                 var liveSchemaDocument = collection.Schema.ToDocument();
                 var savedSchemaDocument = ContainsCollection(Schema.COLLECTION_NAME) ?
-                                          await this[Schema.COLLECTION_NAME].GetAsync(collection.Schema._id) :
+                                          await this[Schema.COLLECTION_NAME].GetAsync(collection.Schema._id.Value) :
                                           null;
 
                 if (savedSchemaDocument == null)
