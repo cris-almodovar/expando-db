@@ -16,10 +16,9 @@ namespace ExpandoDB.Search
     /// <summary>
     /// Represents the Lucene full-text index for a Collection of Documents objects
     /// </summary>
+    /// <seealso cref="System.IDisposable" />
     public class LuceneIndex : IDisposable
-    {
-        public const int DEFAULT_SEARCH_TOP_N = 100000;
-        public const int DEFAULT_SEARCH_ITEMS_PER_PAGE = 10;
+    {        
         private const string ALL_DOCS_QUERY = "*:*";
         private readonly Directory _indexDirectory;
         private readonly Analyzer _compositeAnalyzer;
@@ -31,15 +30,23 @@ namespace ExpandoDB.Search
         private readonly ILog _log = LogManager.GetLogger(typeof(LuceneIndex).Name);    
         private readonly double _refreshIntervalSeconds;
         private readonly double _commitIntervalSeconds;        
-        private readonly double _ramBufferSizeMB;        
+        private readonly double _ramBufferSizeMB;
 
-        public Schema Schema { get { return _schema; } }       
+        /// <summary>
+        /// Gets the schema of the Documents in the Lucene index.
+        /// </summary>
+        /// <value>
+        /// The schema.
+        /// </value>
+        public Schema Schema { get { return _schema; } }
 
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="LuceneIndex"/> class.
+        /// Initializes a new instance of the <see cref="LuceneIndex" /> class.
         /// </summary>
         /// <param name="indexPath">The path to the directory that will contain the Lucene index files.</param>
+        /// <param name="schema">The schema.</param>
+        /// <exception cref="System.ArgumentNullException"></exception>
         public LuceneIndex(string indexPath, Schema schema = null)
         {
             if (String.IsNullOrWhiteSpace(indexPath))
@@ -162,21 +169,22 @@ namespace ExpandoDB.Search
             var idTerm = new Term(Schema.StandardField.ID, id);
 
             _writer.UpdateDocument(idTerm, luceneDocument);
-        }        
+        }
 
         /// <summary>
         /// Searches the Lucene index for Documents that match the specified search criteria.
         /// </summary>
         /// <param name="criteria">The search criteria.</param>
         /// <returns></returns>
+        /// <exception cref="System.ArgumentNullException"></exception>
         public SearchResult<Guid> Search(SearchCriteria criteria)
         {
             if (criteria == null)
                 throw new ArgumentNullException(nameof(criteria));
 
             criteria.Query = String.IsNullOrWhiteSpace(criteria.Query) ? ALL_DOCS_QUERY : criteria.Query;
-            criteria.TopN = criteria.TopN > 0 ? criteria.TopN : DEFAULT_SEARCH_TOP_N;
-            criteria.ItemsPerPage = criteria.ItemsPerPage > 0 ? criteria.ItemsPerPage : DEFAULT_SEARCH_ITEMS_PER_PAGE;
+            criteria.TopN = criteria.TopN > 0 ? criteria.TopN : SearchCriteria.DEFAULT_TOP_N;
+            criteria.ItemsPerPage = criteria.ItemsPerPage > 0 ? criteria.ItemsPerPage : SearchCriteria.DEFAULT_ITEMS_PER_PAGE;
             criteria.PageNumber = criteria.PageNumber > 0 ? criteria.PageNumber : 1;
             criteria.Validate();
 

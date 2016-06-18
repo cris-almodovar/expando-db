@@ -10,8 +10,11 @@ using System.Linq;
 namespace ExpandoDB.Serialization
 {
     /// <summary>
-    /// Provides methods for serializing/deserializing Document object to/from JSON strings.
+    /// Encapsulates serialization/deserialization of Document object to/from JSON strings.
     /// </summary>
+    /// <remarks>
+    /// DynamicJsonSerializer uses the excellent Jil library (https://github.com/kevin-montrose/Jil).
+    /// </remarks>
     public static class DynamicJsonSerializer
     {
         private const int GUID_STRING_LENGTH = 36;
@@ -67,7 +70,7 @@ namespace ExpandoDB.Serialization
         {
             if (typeof(T) == typeof(IDictionary<string, object>))
             {
-                var dictionary = JSON.Deserialize<T>(json) as IDictionary<string, object>;
+                var dictionary = JSON.Deserialize<T>(json, Options.ISO8601IncludeInherited) as IDictionary<string, object>;
                 return (T)dictionary.Unwrap();
             }
 
@@ -84,11 +87,11 @@ namespace ExpandoDB.Serialization
         {
             if (typeof(T) == typeof(IDictionary<string, object>))
             {
-                var dictionary = JSON.Deserialize<T>(reader) as IDictionary<string, object>;
+                var dictionary = JSON.Deserialize<T>(reader, Options.ISO8601IncludeInherited) as IDictionary<string, object>;
                 return (T)dictionary.Unwrap();
             }
 
-            return JSON.Deserialize<T>(reader);
+            return JSON.Deserialize<T>(reader, Options.ISO8601IncludeInherited);
         }       
 
         internal static IDictionary<string, object> Unwrap(this IDictionary<string, object> dictionary)
@@ -123,28 +126,30 @@ namespace ExpandoDB.Serialization
             if (value == null)
                 return null;
 
+            // NOTE: We only need to unwrap the value if the Type is JsonObject; 
+            // this is a Jil-specific internal wrapper class that holds the actual 
+            // JSON values. This class cannot be manipulated directly - we need
+            // to 'unwrap' the actual values using a TypeConverter object.
+
             if (value.GetType().Name != "JsonObject")
                 return value;
 
-            var converter = TypeDescriptor.GetConverter(value);
+            var typeConverter = TypeDescriptor.GetConverter(value);
+            var type = typeConverter.GetWrappedType(value);            
 
-            var destinationType = converter.GetDestinationType(value);
-            if (destinationType == null)
-                return null;
-
-            if (destinationType == typeof(IDictionary<string, object>))
+            if (type == typeof(IDictionary<string, object>))
             {
-                var dictionary = converter.ConvertTo(value, destinationType) as IDictionary<string, object>;
+                var dictionary = typeConverter.ConvertTo(value, type) as IDictionary<string, object>;
                 return dictionary.Unwrap();
             }
-            else if (destinationType == typeof(IEnumerable))
+            else if (type == typeof(IEnumerable))
             {
-                var enumerable = converter.ConvertTo(value, destinationType) as IEnumerable;
+                var enumerable = typeConverter.ConvertTo(value, type) as IEnumerable;
                 return enumerable.Unwrap();
             }
-            else if (destinationType == typeof(string))
+            else if (type == typeof(string))
             {
-                var stringValue = converter.ConvertTo(value, destinationType) as string;                
+                var stringValue = typeConverter.ConvertTo(value, type) as string;                
                 DateTime dateValue = DateTime.MinValue;
                 Guid guidValue = Guid.Empty;
 
@@ -156,11 +161,16 @@ namespace ExpandoDB.Serialization
                     return stringValue;
             }
 
-            return converter.ConvertTo(value, destinationType);
-        }        
-
-        private static Type GetDestinationType(this TypeConverter converter, object value)
+            return typeConverter.ConvertTo(value, type);
+        }  
+        
+        private static Type GetWrappedType(this TypeConverter converter, object value)
         {
+            if (converter == null)
+                throw new ArgumentNullException(nameof(converter));
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));            
+
             if (converter.CanConvertTo(typeof(bool)))
                 return typeof(bool);
             if (converter.CanConvertTo(typeof(int)))
@@ -172,7 +182,7 @@ namespace ExpandoDB.Serialization
             if (converter.CanConvertTo(typeof(DateTime)))
                 return typeof(DateTime);
             if (converter.CanConvertTo(typeof(IDictionary<string, object>)))
-                return typeof(IDictionary<string, object>);         
+                return typeof(IDictionary<string, object>);
             if (converter.CanConvertTo(typeof(IEnumerable)))
                 return typeof(IEnumerable);
             if (converter.CanConvertTo(typeof(string)))
@@ -180,11 +190,17 @@ namespace ExpandoDB.Serialization
 
             throw new SerializationException("Unsupported data type: " + value.GetType().Name);
         }
-        
 
+
+        /// <summary>
+        /// Tries to convert the given string value to DateTime.
+        /// </summary>
+        /// <param name="value">The string value.</param>
+        /// <param name="dateValue">The DateTime value.</param>
+        /// <returns>true if successful; othewise false.</returns>
         internal static bool TryParseDateTime(string value, ref DateTime dateValue)
         {
-            if (!IsDateTimeString(value))
+            if (!value.IsMaybeDateTime())
                 return false;
 
             var length = value.Length;            
@@ -258,15 +274,16 @@ namespace ExpandoDB.Serialization
             return false;
         }
 
-        internal static bool TryParseGuid(string value, ref Guid guid)
+        /// <summary>
+        /// Performs a quick check to determine if the given string value can be converted to DateTime.
+        /// </summary>
+        /// <param name="value">The string value.</param>
+        /// <returns></returns>
+        private static bool IsMaybeDateTime(this string value)
         {
-            return value.Length == GUID_STRING_LENGTH &&
-                   value.Count(c => c == '-') == 4 &&
-                   Guid.TryParse(value, out guid);
-        }        
+            if (String.IsNullOrWhiteSpace(value))
+                return false;
 
-        private static bool IsDateTimeString(string value)
-        {
             var length = value.Length;
 
             if (!(length >= DateTimeFormat.DATE_ONLY.Length &&
@@ -303,7 +320,20 @@ namespace ExpandoDB.Serialization
             }
 
             return true;
-        }    
-        
+        }
+
+        /// <summary>
+        /// Tries to convert the given string value to Guid.
+        /// </summary>
+        /// <param name="value">The string value.</param>
+        /// <param name="guidValue">The Guid value.</param>
+        /// <returns></returns>
+        internal static bool TryParseGuid(string value, ref Guid guidValue)
+        {
+            return value.Length == GUID_STRING_LENGTH &&
+                   value.Count(c => c == '-') == 4 &&
+                   Guid.TryParse(value, out guidValue);
+        }
+
     }
 }

@@ -19,29 +19,7 @@ namespace ExpandoDB.Search
         /// <returns></returns>
         public static Schema ToSchema(this Document document)
         {
-            var dictionary = document.AsDictionary();
-            var schema = new Schema();
-
-            schema._id = (Guid)dictionary[Schema.StandardField.ID];
-            schema.Name = dictionary["Name"] as string;            
-
-            var fields = dictionary["Fields"] as IList;
-            if (fields != null)
-            {
-                foreach (var field in fields)
-                {
-                    var fieldDictionary = field as IDictionary<string, object>;
-                    if (fieldDictionary != null)
-                    {
-                        var schemaField = new Schema.Field().PopulateWith(fieldDictionary);
-                        schema.Fields.TryAdd(schemaField.Name, schemaField);
-                    }
-                }
-            }
-
-            schema._createdTimestamp = (DateTime?)dictionary[Schema.StandardField.CREATED_TIMESTAMP];
-            schema._modifiedTimestamp = (DateTime?)dictionary[Schema.StandardField.MODIFIED_TIMESTAMP];
-
+            var schema = new Schema().PopulateWith(document.AsDictionary());    
             return schema;
         }
 

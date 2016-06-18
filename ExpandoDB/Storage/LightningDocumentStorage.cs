@@ -17,24 +17,30 @@ namespace ExpandoDB.Storage
     /// A Document Storage engine that persists data using the LightningDB key-value store.
     /// </summary>
     /// <seealso cref="ExpandoDB.Storage.IDocumentStorage" />
-    public class LightningDocumentStorage : IDocumentStorage
+    public class LightningDocumentStorage : IDocumentStorage, IDisposable
     {        
         private readonly LightningStorageEngine _storageEngine;
         private readonly HashSet<string> _initializedDatabases = new HashSet<string>();
-        public string DataPath { get;  }
+
+        /// <summary>
+        /// Gets the path to where the data files are stored.
+        /// </summary>
+        /// <value>
+        /// The data path.
+        /// </value>
+        public string DataPath { get { return _storageEngine.DataPath; } } 
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LightningDocumentStorage" /> class.
         /// </summary>
-        /// <param name="storageEngine">The storage engine.</param>
+        /// <param name="dataPath">The data path.</param>
         /// <exception cref="System.ArgumentNullException"></exception>
-        public LightningDocumentStorage(LightningStorageEngine storageEngine)
+        public LightningDocumentStorage(string dataPath)
         {
-            if (storageEngine == null)
-                throw new ArgumentNullException(nameof(storageEngine));
+            if (String.IsNullOrWhiteSpace(dataPath))
+                throw new ArgumentException(nameof(dataPath));            
 
-            _storageEngine = storageEngine;
-            DataPath = _storageEngine.DataPath;         
+            _storageEngine = new LightningStorageEngine(dataPath);    
         }
 
         private void EnsureCollectionIsInitialized(string collectionName)
@@ -281,6 +287,41 @@ namespace ExpandoDB.Storage
             EnsureCollectionIsInitialized(collectionName);
 
             await _storageEngine.DropAsync(collectionName);
-        }        
+        }
+
+        #region IDisposable Support
+        /// <summary>
+        /// Gets a value indicating whether this instance is disposed.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this instance is disposed; otherwise, <c>false</c>.
+        /// </value>
+        public bool IsDisposed { get; private set; }
+
+        /// <summary>
+        /// Releases unmanaged and - optionally - managed resources.
+        /// </summary>
+        /// <param name="disposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!IsDisposed)
+            {
+                if (disposing)
+                {
+                    _storageEngine.Dispose();
+                }                
+
+                IsDisposed = true;
+            }
+        }
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose()
+        {           
+            Dispose(true);            
+        }
+        #endregion
     }
 }

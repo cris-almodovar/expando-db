@@ -23,7 +23,7 @@ namespace ExpandoDB.Search
     /// </summary>
     public static class LuceneHighlighter
     {        
-        public const string HIGHLIGHT_FIELD_NAME = "_highlight";  // This field is added to each document.
+        internal const string HIGHLIGHT_FIELD_NAME = "_highlight";  // This field is added to each document.
         private const int FRAGMENT_SIZE = 150; // This is the length of each fragment.
         private const int FRAGMENT_COUNT = 3;  // This is the number of best-matching fragments to be retrieved. The fragments are concatenated and set as the value of the highlight field.
         private static readonly ILog _log = LogManager.GetLogger(typeof(LuceneHighlighter).Name);

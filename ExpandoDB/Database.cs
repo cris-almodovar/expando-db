@@ -26,12 +26,9 @@ namespace ExpandoDB
         internal const string INDEX_DIRECTORY_NAME = "index";
         private readonly string _dataPath;                
         private readonly string _indexPath;
-        private readonly IDictionary<string, Collection> _collections;
-        private readonly LightningStorageEngine _storageEngine;
-        private readonly LightningDocumentStorage _documentStorage;
-        private readonly Timer _schemaPersistenceTimer;
-        private readonly object _schemaPersistenceLock = new object();
-        private readonly double _schemaPersistenceIntervalSeconds;
+        private readonly IDictionary<string, Collection> _collections;       
+        private readonly IDocumentStorage _documentStorage;
+        private readonly Timer _schemaPersistenceTimer;          
         private readonly ILog _log = LogManager.GetLogger(typeof(Database).Name);
 
         /// <summary>
@@ -53,20 +50,19 @@ namespace ExpandoDB
             _indexPath = Path.Combine(_dataPath, INDEX_DIRECTORY_NAME);
             EnsureIndexDirectoryExists(_indexPath);
             _log.Info($"Index Path: {_indexPath}");
-
-            _storageEngine = new LightningStorageEngine(_dataPath);
-            _documentStorage = new LightningDocumentStorage(_storageEngine);
+           
+            _documentStorage = new LightningDocumentStorage(_dataPath);
             _collections = new Dictionary<string, Collection>();
 
-            var persistedSchemas = _documentStorage.GetAllAsync(Schema.COLLECTION_NAME).Result.Select(d => new Schema().PopulateWith(d.AsDictionary()));  
+            var persistedSchemas = _documentStorage.GetAllAsync(Schema.COLLECTION_NAME).Result.Select(d => d.ToSchema());
             foreach (var schema in persistedSchemas)
             {
                 var collection = new Collection(schema, _documentStorage);
                 _collections.Add(schema.Name, collection);
             }
 
-            _schemaPersistenceIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["Schema.PersistenceIntervalSeconds"] ?? "1");
-            _schemaPersistenceTimer = new Timer(_ => Task.Run(async () => await PersistSchemas().ConfigureAwait(false)), null, TimeSpan.FromSeconds(_schemaPersistenceIntervalSeconds), TimeSpan.FromSeconds(_schemaPersistenceIntervalSeconds));
+            var schemaPersistenceIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["Schema.PersistenceIntervalSeconds"] ?? "1");
+            _schemaPersistenceTimer = new Timer(_ => Task.Run(async () => await PersistSchemas().ConfigureAwait(false)), null, TimeSpan.FromSeconds(schemaPersistenceIntervalSeconds), TimeSpan.FromSeconds(schemaPersistenceIntervalSeconds));
         }       
 
         /// <summary>
@@ -176,6 +172,7 @@ namespace ExpandoDB
             return _collections.ContainsKey(collectionName);
         }
 
+        private readonly object _schemaPersistenceLock = new object();
         private async Task PersistSchemas()
         {
             var isLockTaken = false;
@@ -209,19 +206,21 @@ namespace ExpandoDB
             try
             {
                 var liveSchemaDocument = collection.Schema.ToDocument();
-                var savedSchemaDocument = await _documentStorage.GetAsync(Schema.COLLECTION_NAME, collection.Schema._id);
+                var savedSchemaDocument = ContainsCollection(Schema.COLLECTION_NAME) ?
+                                          await this[Schema.COLLECTION_NAME].GetAsync(collection.Schema._id) :
+                                          null;
 
                 if (savedSchemaDocument == null)
                 {
-                    await _documentStorage.InsertAsync(Schema.COLLECTION_NAME, liveSchemaDocument);
-                    savedSchemaDocument = await _documentStorage.GetAsync(Schema.COLLECTION_NAME, liveSchemaDocument._id.Value);
+                    await this[Schema.COLLECTION_NAME].InsertAsync(liveSchemaDocument);
+                    savedSchemaDocument = await this[Schema.COLLECTION_NAME].GetAsync(liveSchemaDocument._id.Value);
                     collection.Schema._createdTimestamp = savedSchemaDocument._createdTimestamp;
                     collection.Schema._modifiedTimestamp = savedSchemaDocument._modifiedTimestamp;
                 }
                 else
                 {
                     if (liveSchemaDocument != savedSchemaDocument)
-                        await _documentStorage.UpdateAsync(Schema.COLLECTION_NAME, liveSchemaDocument);
+                        await this[Schema.COLLECTION_NAME].UpdateAsync(liveSchemaDocument);
                 }
             }
             catch (Exception ex)
@@ -232,6 +231,12 @@ namespace ExpandoDB
 
         #region IDisposable Support
 
+        /// <summary>
+        /// Gets a value indicating whether this instance is disposed.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this instance is disposed; otherwise, <c>false</c>.
+        /// </value>
         public bool IsDisposed { get; private set; }
 
         /// <summary>
@@ -246,10 +251,11 @@ namespace ExpandoDB
                 {
                     _schemaPersistenceTimer.Dispose();
 
-                    foreach (var collection in _collections.Values)
+                    var collections = _collections.Values.ToList();
+                    foreach (var collection in collections)
                         collection.Dispose();
 
-                    _storageEngine.Dispose();
+                    _documentStorage.Dispose();
                 }
 
                 IsDisposed = true;

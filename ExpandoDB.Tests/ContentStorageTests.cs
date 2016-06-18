@@ -13,8 +13,7 @@ namespace ExpandoDB.Tests
     public class ContentStorageTests
     {
         private string _appPath;
-        private string _dataPath;        
-        private LightningStorageEngine _storageEngine;     
+        private string _dataPath;                  
         private IDocumentStorage _documentStorage;
         const string COLLECTION_NAME = "books";
 
@@ -26,16 +25,14 @@ namespace ExpandoDB.Tests
             _dataPath = Path.Combine(_appPath, "data");
             if (!Directory.Exists(_dataPath))
                 Directory.CreateDirectory(_dataPath);
-
-
-            _storageEngine = new LightningStorageEngine(_dataPath);
-            _documentStorage = new LightningDocumentStorage(_storageEngine);
+            
+            _documentStorage = new LightningDocumentStorage(_dataPath);
         }
 
         [TestCleanup]
         public void Cleanup()
         {
-            _storageEngine.Dispose();
+            _documentStorage.Dispose();
 
             Thread.Sleep(TimeSpan.FromSeconds(2));            
             Directory.Delete(_dataPath, true);

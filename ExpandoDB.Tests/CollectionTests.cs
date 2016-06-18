@@ -15,8 +15,7 @@ namespace ExpandoDB.Tests
     {
         private string _appPath;
         private string _dataPath;        
-        private Collection _collection;
-        private LightningStorageEngine _storageEngine;
+        private Collection _collection;        
         private LightningDocumentStorage _documentStorage;
 
         [TestInitialize]
@@ -27,10 +26,8 @@ namespace ExpandoDB.Tests
             _dataPath = Path.Combine(_appPath, $"{Guid.NewGuid()}");
             if (Directory.Exists(_dataPath))
                 Directory.Delete(_dataPath, true);
-
-            _storageEngine = new LightningStorageEngine(_dataPath);
-            _documentStorage = new LightningDocumentStorage(_storageEngine);
-
+           
+            _documentStorage = new LightningDocumentStorage(_dataPath);
            _collection = new Collection("books", _documentStorage);
         }
 
@@ -38,7 +35,7 @@ namespace ExpandoDB.Tests
         public void Cleanup()
         {
             _collection.DropAsync().Wait();
-            _storageEngine.Dispose();
+            _documentStorage.Dispose();
             
             Thread.Sleep(TimeSpan.FromSeconds(2));
             Directory.Delete(_dataPath, true);            

@@ -2,6 +2,7 @@
 using ExpandoDB.Search;
 using ExpandoDB.Storage;
 using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
 using System.Linq;
@@ -157,6 +158,17 @@ namespace ExpandoDB
 
             var document = await _documentStorage.GetAsync(Name, guid).ConfigureAwait(false); 
             return document;
+        }
+
+        /// <summary>
+        /// Gets all Documents from the collection.
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="System.ArgumentException"></exception>
+        public async Task<IEnumerable<Document>> GetAllAsync()
+        {
+            var allDocuments = await _documentStorage.GetAllAsync(Name);
+            return allDocuments;            
         }
 
         /// <summary>

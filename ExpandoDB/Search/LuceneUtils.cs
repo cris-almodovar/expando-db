@@ -17,14 +17,14 @@ namespace ExpandoDB.Search
     /// </summary>
     public static class LuceneUtils
     {        
-        public const string DEFAULT_NULL_TOKEN = "_null_";
-        public const string QUERY_PARSER_ILLEGAL_CHARS = @"[\+&|!\(\)\{\}\[\]^""~\*\?:\\ ]";
-        public const int INDEX_NULL_VALUE = 1; // This is a marker value for NULL in the Lucene index.
-        public const int SORT_FIELD_MAX_TEXT_LENGTH = 20;
-        public static readonly JavaDouble DOUBLE_MIN_VALUE = new JavaDouble(Double.MinValue);
-        public static readonly JavaDouble DOUBLE_MAX_VALUE = new JavaDouble(Double.MaxValue);
-        public static readonly JavaLong LONG_MIN_VALUE = new JavaLong(Int64.MinValue);
-        public static readonly JavaLong LONG_MAX_VALUE = new JavaLong(Int64.MaxValue);
+        internal const string DEFAULT_NULL_TOKEN = "_null_";
+        internal const string QUERY_PARSER_ILLEGAL_CHARS = @"[\+&|!\(\)\{\}\[\]^""~\*\?:\\ ]";
+        internal const int INDEX_NULL_VALUE = 1; // This is a marker value for NULL in the Lucene index.
+        internal const int SORT_FIELD_MAX_TEXT_LENGTH = 20;
+        internal static readonly JavaDouble DOUBLE_MIN_VALUE = new JavaDouble(Double.MinValue);
+        internal static readonly JavaDouble DOUBLE_MAX_VALUE = new JavaDouble(Double.MaxValue);
+        internal static readonly JavaLong LONG_MIN_VALUE = new JavaLong(Int64.MinValue);
+        internal static readonly JavaLong LONG_MAX_VALUE = new JavaLong(Int64.MaxValue);
         private static readonly System.Text.RegularExpressions.Regex _queryParserIllegalCharsRegex = new System.Text.RegularExpressions.Regex(QUERY_PARSER_ILLEGAL_CHARS);
 
         /// <summary>

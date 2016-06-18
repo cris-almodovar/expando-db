@@ -7,7 +7,7 @@ namespace ExpandoDB.Storage
     /// <summary>
     /// Defines the operations that must be implemented by a Document Storage engine.
     /// </summary>
-    public interface IDocumentStorage
+    public interface IDocumentStorage : IDisposable
     {
         /// <summary>
         /// Gets the path to the data files.
