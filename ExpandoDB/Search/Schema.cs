@@ -14,7 +14,7 @@ namespace ExpandoDB
     [Serializable]
     public class Schema
     {
-        public const string COLLECTION_NAME = "_schemas";
+        internal const string COLLECTION_NAME = "_schemas";
         public Guid? _id { get; set; }     
         public string Name { get; set; }
         public ConcurrentDictionary<string, Field> Fields { get; set; } = new ConcurrentDictionary<string, Field>();
@@ -31,7 +31,7 @@ namespace ExpandoDB
             if (String.IsNullOrWhiteSpace(name))
                 name = "Default";
 
-            var defaultSchema = new Schema();
+            var defaultSchema = new Schema();            
             defaultSchema.Name = name;      
             defaultSchema.Fields[StandardField.ID] = new Field { Name = StandardField.ID, DataType = DataType.Guid };
             defaultSchema.Fields[StandardField.CREATED_TIMESTAMP] = new Field { Name = StandardField.CREATED_TIMESTAMP, DataType = DataType.DateTime };

@@ -390,8 +390,14 @@ namespace ExpandoDB
             if (_id != other._id)
                 return false;
 
-            var thisHash = ComputeMd5Hash();
-            var otherHash = other.ComputeMd5Hash();
+            var thisJson = DynamicJsonSerializer.Serialize(this);
+            var otherJson = DynamicJsonSerializer.Serialize(other);
+
+            if (thisJson.Length != otherJson.Length)
+                return false;
+
+            var thisHash = ComputeMd5Hash(thisJson);
+            var otherHash = other.ComputeMd5Hash(otherJson);
 
             return string.Compare(thisHash, otherHash, StringComparison.Ordinal) == 0;
         }
@@ -459,14 +465,17 @@ namespace ExpandoDB
         }
 
         /// <summary>
-        /// Computes the MD5 hash for this Document
+        /// Computes the MD5 hash of the JSON representation of this Document
         /// </summary>
+        /// <param name="json">The json.</param>
         /// <returns></returns>
-        public string ComputeMd5Hash()
+        internal string ComputeMd5Hash(string json = null)
         {
             using (var md5 = System.Security.Cryptography.MD5.Create())
             {
-                var json = DynamicJsonSerializer.Serialize(this);
+                if (String.IsNullOrWhiteSpace(json))
+                    json = DynamicJsonSerializer.Serialize(this);
+
                 var data = Encoding.UTF8.GetBytes(json);
                 byte[] hash = md5.ComputeHash(data);
 

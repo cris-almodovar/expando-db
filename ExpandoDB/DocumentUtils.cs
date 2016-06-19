@@ -11,7 +11,7 @@ namespace ExpandoDB
     /// <summary>
     /// Provides utility methods for Document objects.
     /// </summary>
-    public static class DocumentExtensions
+    public static class DocumentUtils
     {
         /// <summary>
         /// Converts all date values inside the Document object to UTC format.

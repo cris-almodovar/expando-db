@@ -54,7 +54,7 @@ namespace ExpandoDB.Search
         internal static IDictionary<string, object> ToDictionary(this Schema schema)
         {
             var dictionary = new Dictionary<string, object>();
-            dictionary[Schema.StandardField.ID] = schema._id ?? Guid.NewGuid();
+            dictionary[Schema.StandardField.ID] = schema._id;
             dictionary["Name"] = schema.Name;
 
             var fieldsList = schema.Fields.Values.Select(f => f.ToDictionary()).ToList();

@@ -128,7 +128,7 @@ namespace ExpandoDB
         /// </value>
         public IEnumerable<string> GetCollectionNames()
         {
-            return _collections.Keys;
+            return _collections.Keys.ToList();
         }
 
         /// <summary>
@@ -140,6 +140,9 @@ namespace ExpandoDB
         {
             if (!_collections.ContainsKey(collectionName))
                 return false;
+
+            if (collectionName == Schema.COLLECTION_NAME)
+                throw new InvalidOperationException($"Cannot drop the {Schema.COLLECTION_NAME} collection.");
 
             var isSuccessful = false;
             Collection collection = null;
@@ -173,17 +176,23 @@ namespace ExpandoDB
         }
 
         private readonly object _schemaPersistenceLock = new object();
+
+        /// <summary>
+        /// Persists Schema objects to a special _schemas collection.
+        /// </summary>
+        /// <returns></returns>
         private async Task PersistSchemas()
         {
             var isLockTaken = false;
             try
             {
-                isLockTaken = Monitor.TryEnter(_schemaPersistenceLock, 500);
+                isLockTaken = Monitor.TryEnter(_schemaPersistenceLock);
                 if (!isLockTaken)
                     return;
 
-                foreach (var collection in _collections.Values)
+                foreach (var collectionName in GetCollectionNames())
                 {
+                    var collection = this[collectionName];
                     if (collection.IsDropped || collection.IsDisposed)
                         continue;
 
@@ -201,27 +210,41 @@ namespace ExpandoDB
             }
         }
 
+        /// <summary>
+        /// Persists the Schema of the specified Collection to a special _schemas Collection.
+        /// </summary>
+        /// <param name="collection">The collection.</param>
+        /// <returns></returns>
         private async Task PersistSchema(Collection collection)
         {
             try
-            {
-                var liveSchemaDocument = collection.Schema.ToDocument();
-                var savedSchemaDocument = ContainsCollection(Schema.COLLECTION_NAME) ?
-                                          await this[Schema.COLLECTION_NAME].GetAsync(collection.Schema._id.Value) :
-                                          null;
+            {                
+                var liveSchemaDocument = collection.Schema.ToDocument();                
+                var savedSchemaDocument = await this[Schema.COLLECTION_NAME].GetAsync(liveSchemaDocument._id.Value);
 
+                var isSchemaUpdated = false;
                 if (savedSchemaDocument == null)
                 {
                     await this[Schema.COLLECTION_NAME].InsertAsync(liveSchemaDocument);
-                    savedSchemaDocument = await this[Schema.COLLECTION_NAME].GetAsync(liveSchemaDocument._id.Value);
-                    collection.Schema._createdTimestamp = savedSchemaDocument._createdTimestamp;
-                    collection.Schema._modifiedTimestamp = savedSchemaDocument._modifiedTimestamp;
+                    isSchemaUpdated = true;         
                 }
                 else
                 {
                     if (liveSchemaDocument != savedSchemaDocument)
+                    {
                         await this[Schema.COLLECTION_NAME].UpdateAsync(liveSchemaDocument);
+                        isSchemaUpdated = true;
+                    }
                 }
+
+                if (isSchemaUpdated)
+                {
+                    savedSchemaDocument = await this[Schema.COLLECTION_NAME].GetAsync(liveSchemaDocument._id.Value);
+                    collection.Schema._id = savedSchemaDocument._id;
+                    collection.Schema._createdTimestamp = savedSchemaDocument._createdTimestamp;
+                    collection.Schema._modifiedTimestamp = savedSchemaDocument._modifiedTimestamp;
+                }
+
             }
             catch (Exception ex)
             {

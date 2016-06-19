@@ -230,7 +230,7 @@ namespace ExpandoDB
         /// </summary>
         /// <returns></returns>
         /// <remarks>Dropping a Document Collection means dropping the underlying storage table Lucene index.</remarks>
-        public async Task<bool> DropAsync()
+        internal async Task<bool> DropAsync()
         {
             EnsureCollectionIsNotDropped();
 
@@ -270,6 +270,12 @@ namespace ExpandoDB
 
         #region IDisposable Support
 
+        /// <summary>
+        /// Gets a value indicating whether this instance is disposed.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this instance is disposed; otherwise, <c>false</c>.
+        /// </value>
         public bool IsDisposed { get; private set; }
 
         /// <summary>

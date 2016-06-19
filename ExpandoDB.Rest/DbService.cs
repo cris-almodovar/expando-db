@@ -36,13 +36,13 @@ namespace ExpandoDB.Rest
             // Here we define the routes and their corresponding handlers.
             // Note that all handlers except OnGetCount() and OnGetCollectionSchema() are async.
 
-            Get["/_schemas"] = OnGetDatabaseSchema;
-            Get["/_schemas/{collection}"] = OnGetCollectionSchema;
+            //Get["/_schemas"] = OnGetDatabaseSchema;
+            //Get["/_schemas/{collection}"] = OnGetCollectionSchema;
             Post["/{collection}", true] = OnInsertDocumentAsync;            
             Get["/{collection}", true] = OnSearchDocumentsAsync;            
             Get["/{collection}/count"] = OnGetCount;
             Get["/{collection}/{id:guid}", true] = OnGetDocumentAsync;
-            Put["/{collection}/{id:guid}", true] = OnUpdateDocumentAsync;                       
+            Put["/{collection}/{id:guid}", true] = OnReplaceDocumentAsync;                       
             Patch["/{collection}/{id:guid}", true] = OnPatchDocumentAsync;
             Delete["/{collection}/{id:guid}", true] = OnDeleteDocumentAsync;
             Delete["/{collection}", true] = OnDropCollectionAsync;
@@ -261,7 +261,7 @@ namespace ExpandoDB.Rest
         /// <param name="token">The cancellation token.</param>
         /// <returns></returns>       
         /// <exception cref="System.InvalidOperationException">There is no data for this operation</exception>
-        private async Task<object> OnUpdateDocumentAsync(dynamic req, CancellationToken token)
+        private async Task<object> OnReplaceDocumentAsync(dynamic req, CancellationToken token)
         {
             var stopwatch = new Stopwatch();
             stopwatch.Start();
