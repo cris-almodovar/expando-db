@@ -73,7 +73,7 @@ namespace ExpandoDB
         }
 
         /// <summary>
-        /// Defines the fields that all Documents must have.
+        /// Defines the standard metadata fields that all Documents must have.
         /// </summary>
         [Serializable]
         public static class StandardField

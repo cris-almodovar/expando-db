@@ -103,6 +103,9 @@ namespace ExpandoDB.Rest
             if (String.IsNullOrWhiteSpace(collectionName))
                 throw new ArgumentException("collection cannot be null or blank");
 
+            if (collectionName == Schema.COLLECTION_NAME)
+                throw new InvalidOperationException($"Cannot get the Schema of the '{Schema.COLLECTION_NAME}' collection.");
+
             if (!_database.ContainsCollection(collectionName))
                 return HttpStatusCode.NotFound;
 
@@ -131,7 +134,7 @@ namespace ExpandoDB.Rest
             var stopwatch = new Stopwatch();
             stopwatch.Start(); 
 
-            var schemaDocuments = (from collectionName in _database.GetCollectionNames().OrderBy(n=> n)
+            var schemaDocuments = (from collectionName in _database.GetCollectionNames().Except(new[] { Schema.COLLECTION_NAME }).OrderBy(n=> n)
                                   let schema = _database[collectionName]?.Schema
                                   where schema != null
                                   select schema.ToDocument().AsExpando()).ToList();                        
