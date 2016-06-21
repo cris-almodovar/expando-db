@@ -43,7 +43,7 @@ namespace ExpandoDB.Tests
         public void Cleanup()
         {
             _db.Dispose();
-            Thread.Sleep(TimeSpan.FromSeconds(5));
+            Thread.Sleep(5000);
             Directory.Delete(_dataPath, true);
         }
 
@@ -76,7 +76,10 @@ namespace ExpandoDB.Tests
         public void Can_dispose_and_reload()
         {
             _db.Dispose();
-            _db = new Database(_dataPath);            
+            Thread.Sleep(1000);
+
+            _db = new Database(_dataPath);
+            Thread.Sleep(1000);
 
             var criteria = new SearchCriteria { Query = "Author:Douglas", SortByField = "-Title", TopN = 1 };
             var result = _db["books"].SearchAsync(criteria).Result;

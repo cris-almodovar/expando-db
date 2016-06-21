@@ -16,6 +16,15 @@ namespace ExpandoDB.Rest
     /// <seealso cref="Nancy.ModelBinding.IModelBinder" />
     public class DynamicModelBinder : IModelBinder
     {
+        /// <summary>
+        /// Extracts data from the Nancy Request Context and binds it to a DynamicDictionary object.
+        /// </summary>
+        /// <param name="context">The context.</param>
+        /// <param name="modelType">Type of the model.</param>
+        /// <param name="instance">The instance.</param>
+        /// <param name="configuration">The configuration.</param>
+        /// <param name="blackListedProperties">The black listed properties.</param>
+        /// <returns></returns>
         public object Bind(NancyContext context, Type modelType, object instance, BindingConfig configuration, params string[] blackListedProperties)
         {
             object model = null;
@@ -109,6 +118,13 @@ namespace ExpandoDB.Rest
             return operations;
         }
 
+        /// <summary>
+        /// Whether the binder can bind to the given model type
+        /// </summary>
+        /// <param name="modelType">Required model type</param>
+        /// <returns>
+        /// True if binding is possible, false otherwise
+        /// </returns>
         public bool CanBind(Type modelType)
         {
             return (modelType == typeof(DynamicDictionary) || modelType == typeof(IList<PatchOperationDto>));

@@ -10,6 +10,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using ExpandoDB.Serialization;
+using Nancy.Metrics;
+using Metrics;
 
 namespace ExpandoDB.Rest
 {
@@ -21,7 +23,7 @@ namespace ExpandoDB.Rest
     public class DbService : NancyModule
     {
         private readonly Database _database;
-        private readonly ILog _log = LogManager.GetLogger(typeof(DbService).Name);
+        private readonly ILog _log = LogManager.GetLogger(typeof(DbService).Name);        
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DbService"/> class.
@@ -29,7 +31,7 @@ namespace ExpandoDB.Rest
         /// <param name="database">The Database instance; this is auto-injected by NancyFX's IOC container.</param>
         public DbService(Database database) : base("/db")
         {
-            _database = database;
+            _database = database;            
 
             // Here we define the routes and their corresponding handlers.
             // Note that all handlers except OnGetCount() and OnGetCollectionSchema() are async.
@@ -40,16 +42,14 @@ namespace ExpandoDB.Rest
             Get["/{collection}", true] = OnSearchDocumentsAsync;            
             Get["/{collection}/count"] = OnGetCount;
             Get["/{collection}/{id:guid}", true] = OnGetDocumentAsync;
-            Put["/{collection}/{id:guid}", true] = OnUpdateDocumentAsync;                       
+            Put["/{collection}/{id:guid}", true] = OnReplaceDocumentAsync;                       
             Patch["/{collection}/{id:guid}", true] = OnPatchDocumentAsync;
             Delete["/{collection}/{id:guid}", true] = OnDeleteDocumentAsync;
-            Delete["/{collection}", true] = OnDeleteCollectionAsync;
-        }
-
-        
+            Delete["/{collection}", true] = OnDropCollectionAsync;
+        }        
 
         /// <summary>
-        /// Inserts a new Document object into a DocumentCollection.
+        /// Inserts a new Document object into a Document Collection.
         /// </summary>
         /// <param name="req">The request object.</param>
         /// <param name="token">The cancellation token.</param>
@@ -69,13 +69,13 @@ namespace ExpandoDB.Rest
             var dictionary = this.Bind<DynamicDictionary>(excludedFields).ToDictionary();
             var document = new Document(dictionary);
 
-            // Get the target DocumentCollection; it will be auto-created if it doesn't exist.
+            // Get the target Document Collection; it will be auto-created if it doesn't exist.
             var collection = _database[collectionName];
 
-            // Insert the Document object into the target DocumentCollection.
+            // Insert the Document object into the target Document Collection.
             var guid = await collection.InsertAsync(document).ConfigureAwait(false);
 
-            stopwatch.Stop();
+            stopwatch.Stop();            
 
             var responseDto = new InsertResponseDto
             {
@@ -89,7 +89,7 @@ namespace ExpandoDB.Rest
         }
 
         /// <summary>
-        /// Returns the schema of a DocumentCollection; a schema is simply a set of fields and their corresponding data types.
+        /// Returns the schema of a Document Collection; a schema is simply a set of fields and their corresponding data types.
         /// </summary>
         /// <param name="req">The request object.</param>
         /// <returns></returns>
@@ -103,11 +103,14 @@ namespace ExpandoDB.Rest
             if (String.IsNullOrWhiteSpace(collectionName))
                 throw new ArgumentException("collection cannot be null or blank");
 
+            if (collectionName == Schema.COLLECTION_NAME)
+                throw new InvalidOperationException($"Cannot get the Schema of the '{Schema.COLLECTION_NAME}' collection.");
+
             if (!_database.ContainsCollection(collectionName))
                 return HttpStatusCode.NotFound;
 
             var collection = _database[collectionName];
-            var schema = collection.GetSchema();
+            var schemaDocument = collection.Schema.ToDocument().AsExpando();
 
             stopwatch.Stop();
 
@@ -115,26 +118,26 @@ namespace ExpandoDB.Rest
             {
                 timestamp = DateTime.UtcNow,
                 elapsed = stopwatch.Elapsed.ToString(),
-                schema = schema
+                schema = schemaDocument
             };
 
             return Response.AsJson(responseDto);
         }
 
         /// <summary>
-        /// Returns the schemas of all DocumentCollections in the database; a schema is simply a set of fields and their corresponding data types.
+        /// Returns the schemas of all Document Collections in the database; a schema is simply a set of fields and their corresponding data types.
         /// </summary>
         /// <param name="req">The request object.</param>
         /// <returns></returns>        
         private object OnGetDatabaseSchema(dynamic req)
         {
             var stopwatch = new Stopwatch();
-            stopwatch.Start();
+            stopwatch.Start(); 
 
-            var schemas = (from collectionName in _database.GetCollectionNames().OrderBy(n=> n)
-                          let schema = _database[collectionName]?.GetSchema()
-                          where schema != null
-                          select schema).ToList();                        
+            var schemaDocuments = (from collectionName in _database.GetCollectionNames().Except(new[] { Schema.COLLECTION_NAME }).OrderBy(n=> n)
+                                  let schema = _database[collectionName]?.Schema
+                                  where schema != null
+                                  select schema.ToDocument().AsExpando()).ToList();                        
 
             stopwatch.Stop();
 
@@ -142,14 +145,14 @@ namespace ExpandoDB.Rest
             {
                 timestamp = DateTime.UtcNow,
                 elapsed = stopwatch.Elapsed.ToString(),
-                schemas = schemas
+                schemas = schemaDocuments
             };
 
             return Response.AsJson(responseDto);
         }
 
         /// <summary>
-        /// Searches a DocumentCollection for Documents that match a query expression.
+        /// Searches a Document Collection for Documents that match a query expression.
         /// </summary>
         /// <param name="req">The request object.</param>
         /// <param name="token">The cancellation token.</param>
@@ -178,7 +181,7 @@ namespace ExpandoDB.Rest
         }
 
         /// <summary>
-        /// Returns the number of Document objects in a DocumentCollection that match a query expression.
+        /// Returns the number of Document objects in a Document Collection that match a query expression.
         /// </summary>
         /// <param name="req">The request object.</param>
         /// <returns></returns>
@@ -215,7 +218,7 @@ namespace ExpandoDB.Rest
         }
 
         /// <summary>
-        /// Gets a Document object identified by its id, from a DocumentCollection.
+        /// Gets a Document object identified by its id, from a Document Collection.
         /// </summary>
         /// <param name="req">The request object.</param>
         /// <param name="token">The cancellation token.</param>
@@ -255,13 +258,13 @@ namespace ExpandoDB.Rest
         }
 
         /// <summary>
-        /// Replaces a Document object identified by its _id, in a DocumentCollection.
+        /// Replaces a Document object identified by its _id, in a Document Collection.
         /// </summary>
         /// <param name="req">The request object.</param>
         /// <param name="token">The cancellation token.</param>
         /// <returns></returns>       
         /// <exception cref="System.InvalidOperationException">There is no data for this operation</exception>
-        private async Task<object> OnUpdateDocumentAsync(dynamic req, CancellationToken token)
+        private async Task<object> OnReplaceDocumentAsync(dynamic req, CancellationToken token)
         {
             var stopwatch = new Stopwatch();
             stopwatch.Start();
@@ -309,7 +312,7 @@ namespace ExpandoDB.Rest
         }
 
         /// <summary>
-        /// Updates specific fields of a Document object identified by its _id, in a DocumentCollection.
+        /// Updates specific fields of a Document object identified by its _id, in a Document Collection.
         /// </summary>
         /// <param name="req">The request object.</param>
         /// <param name="token">The cancellation token.</param>
@@ -339,7 +342,7 @@ namespace ExpandoDB.Rest
             // Retrieve the Document to be PATCHed.
             var collection = _database[collectionName];
 
-            var count = collection.Count(new SearchCriteria { Query = $"{Document.ID_FIELD_NAME}: {guid}" });
+            var count = collection.Count(new SearchCriteria { Query = $"{Schema.StandardField.ID}: {guid}" });
             if (count == 0)
                 return HttpStatusCode.NotFound;
 
@@ -368,7 +371,7 @@ namespace ExpandoDB.Rest
         }
 
         /// <summary>
-        /// Deletes a Document object identified by its _id, in a DocumentCollection.
+        /// Deletes a Document object identified by its _id, in a Document Collection.
         /// </summary>
         /// <param name="req">The request object.</param>
         /// <param name="token">The cancellation token.</param>
@@ -391,7 +394,7 @@ namespace ExpandoDB.Rest
 
             var collection = _database[collectionName];
 
-            var count = collection.Count(new SearchCriteria { Query = $"{Document.ID_FIELD_NAME}: {guid}" });
+            var count = collection.Count(new SearchCriteria { Query = $"{Schema.StandardField.ID}: {guid}" });
             if (count == 0)
                 return HttpStatusCode.NotFound;
 
@@ -411,13 +414,13 @@ namespace ExpandoDB.Rest
         }
 
         /// <summary>
-        /// Deletes the entire DocumentCollection.
+        /// Deletes the entire Document Collection.
         /// </summary>
         /// <param name="req">The req.</param>
         /// <param name="token">The token.</param>
         /// <returns></returns>
         /// <exception cref="System.ArgumentException">collection cannot be null or blank</exception>
-        private async Task<object> OnDeleteCollectionAsync(dynamic req, CancellationToken token)
+        private async Task<object> OnDropCollectionAsync(dynamic req, CancellationToken token)
         {
             var stopwatch = new Stopwatch();
             stopwatch.Start();
@@ -425,6 +428,9 @@ namespace ExpandoDB.Rest
             var collectionName = (string)req["collection"];
             if (String.IsNullOrWhiteSpace(collectionName))
                 throw new ArgumentException("collection cannot be null or blank");
+
+            if (collectionName == Schema.COLLECTION_NAME)
+                throw new InvalidOperationException($"Cannot drop the {Schema.COLLECTION_NAME} collection.");
 
             if (!_database.ContainsCollection(collectionName))
                 return HttpStatusCode.NotFound;

@@ -4,7 +4,7 @@ using System;
 namespace ExpandoDB.Rest.DTO
 {
     /// <summary>
-    /// Represents the JSON data returned when an error occurs in a REST endpoint.
+    /// Represents the JSON response returned when an error occurs.
     /// </summary>
     public class ErrorResponseDto
     {

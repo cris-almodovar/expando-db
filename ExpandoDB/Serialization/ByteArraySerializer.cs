@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace ExpandoDB.Serialization
 {
     /// <summary>
-    /// Serializes/deserialize documents and schemas to byte arrays, with the option to compress/decompress the data.
+    /// Serializes/deserialize Documents to and from byte arrays, with an option to compress/decompress the data.
     /// </summary>
     public class ByteArraySerializer
     {        
@@ -81,10 +81,11 @@ namespace ExpandoDB.Serialization
                 typeof(Dictionary<string, object>[]),
                 typeof(IDictionary<string, object>[]),
 
-                typeof(DocumentCollectionSchema),
-                typeof(DocumentCollectionSchemaField),
-                typeof(List<DocumentCollectionSchemaField>),
-                typeof(FieldDataType)
+                typeof(Schema),
+                typeof(Schema.Field),
+                typeof(List<Schema.Field>),
+                typeof(IList<Schema.Field>),
+                typeof(Schema.DataType)
             };
 
             _serializer = new NetSerializer.Serializer(supportedTypes);
@@ -98,16 +99,7 @@ namespace ExpandoDB.Serialization
         public ByteArraySerializer(CompressionOption compressionOption)
         {
             _compressionOption = compressionOption;
-
-            switch (_compressionOption)
-            {
-                case CompressionOption.LZ4:
-                    _streamCompressor = new LZ4Compressor();
-                    break;
-                case CompressionOption.Deflate:
-                    _streamCompressor = new DeflateCompressor();
-                    break;                
-            }
+            _streamCompressor = GetCompressor(compressionOption);
         }
 
         private IStreamCompressor GetCompressor(CompressionOption compressionOption)
@@ -123,6 +115,12 @@ namespace ExpandoDB.Serialization
             }
         }
 
+        /// <summary>
+        /// Serializes the specified Document to a byte array.
+        /// </summary>
+        /// <param name="document">The Document.</param>
+        /// <returns></returns>
+        /// <exception cref="System.ArgumentNullException"></exception>
         public byte[] Serialize(Document document)
         {
             if (document == null)
@@ -143,28 +141,13 @@ namespace ExpandoDB.Serialization
             }
             return value;
         }
-        
 
-        public byte[] Serialize(DocumentCollectionSchema collectionSchema)
-        {
-            if (collectionSchema == null)
-                throw new ArgumentNullException(nameof(collectionSchema));
-
-            byte[] value = null;
-            using (var memoryStream = _memoryManager.GetStream())
-            {
-                if (_compressionOption == CompressionOption.None)
-                    _serializer.Serialize(memoryStream, collectionSchema);
-                else
-                    using (var compressedStream = _streamCompressor.Compress(memoryStream))                                        
-                        _serializer.Serialize(compressedStream, collectionSchema);                    
-                    
-                value = memoryStream.ToArray();
-            }
-            return value;
-        }
-
-        public Document DeserializeToDocument(byte[] value)
+        /// <summary>
+        /// Deserializes the specified byte array to a Document.
+        /// </summary>
+        /// <param name="value">The byte array.</param>
+        /// <returns></returns>
+        public Document Deserialize(byte[] value)
         {
             if (value == null)
                 return null;
@@ -183,25 +166,6 @@ namespace ExpandoDB.Serialization
             }
 
             return document;
-        }
-
-        public DocumentCollectionSchema DeserializeToDocumentCollectionSchema(byte[] value)
-        {
-            if (value == null)
-                return null;
-
-            DocumentCollectionSchema documentCollectionSchema = null;
-            using (var memoryStream = _memoryManager.GetStream(null, value, 0, value.Length))
-            {
-                if (_compressionOption == CompressionOption.None)
-                    documentCollectionSchema = _serializer.Deserialize(memoryStream) as DocumentCollectionSchema;
-                else
-                    using (var decompressedStream = _streamCompressor.Decompress(memoryStream))                                        
-                        documentCollectionSchema = _serializer.Deserialize(decompressedStream) as DocumentCollectionSchema;           
-                                 
-            }
-
-            return documentCollectionSchema;
-        }
+        }        
     }
 }

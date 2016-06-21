@@ -23,7 +23,7 @@ namespace ExpandoDB.Search
     /// </summary>
     public static class LuceneHighlighter
     {        
-        public const string HIGHLIGHT_FIELD_NAME = "_highlight";  // This field is added to each document.
+        internal const string HIGHLIGHT_FIELD_NAME = "_highlight";  // This field is added to each document.
         private const int FRAGMENT_SIZE = 150; // This is the length of each fragment.
         private const int FRAGMENT_COUNT = 3;  // This is the number of best-matching fragments to be retrieved. The fragments are concatenated and set as the value of the highlight field.
         private static readonly ILog _log = LogManager.GetLogger(typeof(LuceneHighlighter).Name);
@@ -101,9 +101,9 @@ namespace ExpandoDB.Search
 
             foreach (var sd in scoreDocs)
             {
-                var bestFragments = highlighter.GetBestFragments(fieldQuery, reader, sd.Doc, LuceneExtensions.FULL_TEXT_FIELD_NAME, FRAGMENT_SIZE, FRAGMENT_COUNT);
+                var bestFragments = highlighter.GetBestFragments(fieldQuery, reader, sd.Doc, Schema.StandardField.FULL_TEXT, FRAGMENT_SIZE, FRAGMENT_COUNT);
                 var document = searcher.Doc(sd.Doc);
-                var docId = document.Get(Document.ID_FIELD_NAME);
+                var docId = document.Get(Schema.StandardField.ID);
 
                 if (documentHightlightMap.ContainsKey(docId) && bestFragments.Length > 0)
                 {
@@ -120,10 +120,10 @@ namespace ExpandoDB.Search
             {
                 var doc = new FlexLucene.Document.Document();
 
-                var idField = new StringField(Document.ID_FIELD_NAME, document._id.ToString(), FieldStore.YES);
+                var idField = new StringField(Schema.StandardField.ID, document._id.ToString(), FieldStore.YES);
                 doc.Add(idField);
 
-                var fullTextField = new Field(LuceneExtensions.FULL_TEXT_FIELD_NAME, document.ToLuceneFullTextString(), ExtendedTextFieldType);
+                var fullTextField = new Field(Schema.StandardField.FULL_TEXT, document.ToLuceneFullTextString(), ExtendedTextFieldType);
                 doc.Add(fullTextField);
 
                 writer.AddDocument(doc);
@@ -141,13 +141,13 @@ namespace ExpandoDB.Search
         class HighlighterQueryParser : QueryParser
         {
             public HighlighterQueryParser(Analyzer analyzer)
-                : base(LuceneExtensions.FULL_TEXT_FIELD_NAME, analyzer)
+                : base(Schema.StandardField.FULL_TEXT, analyzer)
             {
             }
 
             protected override Query GetFieldQuery(string fieldName, string queryText, bool quoted)
             {
-                if (fieldName != LuceneExtensions.FULL_TEXT_FIELD_NAME)
+                if (fieldName != Schema.StandardField.FULL_TEXT)
                     return null;
 
                 return base.GetFieldQuery(fieldName, queryText, quoted);
@@ -155,7 +155,7 @@ namespace ExpandoDB.Search
 
             protected override Query GetFieldQuery(string fieldName, string queryText, int slop)
             {
-                if (fieldName != LuceneExtensions.FULL_TEXT_FIELD_NAME)
+                if (fieldName != Schema.StandardField.FULL_TEXT)
                     return null;
 
                 return base.GetFieldQuery(fieldName, queryText, slop);
@@ -163,7 +163,7 @@ namespace ExpandoDB.Search
 
             protected override Query GetRangeQuery(string fieldName, string part1, string part2, bool startInclusive, bool endInclusive)
             {
-                if (fieldName != LuceneExtensions.FULL_TEXT_FIELD_NAME)
+                if (fieldName != Schema.StandardField.FULL_TEXT)
                     return null;
 
                 return base.GetRangeQuery(fieldName, part1, part2, startInclusive, endInclusive);
@@ -171,7 +171,7 @@ namespace ExpandoDB.Search
 
             protected override Query GetFuzzyQuery(string fieldName, string termString, float minSimilarity)
             {
-                if (fieldName != LuceneExtensions.FULL_TEXT_FIELD_NAME)
+                if (fieldName != Schema.StandardField.FULL_TEXT)
                     return null;
 
                 return base.GetFuzzyQuery(fieldName, termString, minSimilarity);
@@ -179,7 +179,7 @@ namespace ExpandoDB.Search
 
             protected override Query GetPrefixQuery(string fieldName, string termString)
             {
-                if (fieldName != LuceneExtensions.FULL_TEXT_FIELD_NAME)
+                if (fieldName != Schema.StandardField.FULL_TEXT)
                     return null;
 
                 return base.GetPrefixQuery(fieldName, termString);
@@ -187,7 +187,7 @@ namespace ExpandoDB.Search
 
             protected override Query GetRegexpQuery(string fieldName, string termString)
             {
-                if (fieldName != LuceneExtensions.FULL_TEXT_FIELD_NAME)
+                if (fieldName != Schema.StandardField.FULL_TEXT)
                     return null;
 
                 return base.GetRegexpQuery(fieldName, termString);
@@ -195,7 +195,7 @@ namespace ExpandoDB.Search
 
             protected override Query GetWildcardQuery(string fieldName, string termString)
             {
-                if (fieldName != LuceneExtensions.FULL_TEXT_FIELD_NAME)
+                if (fieldName != Schema.StandardField.FULL_TEXT)
                     return null;
 
                 return base.GetWildcardQuery(fieldName, termString);

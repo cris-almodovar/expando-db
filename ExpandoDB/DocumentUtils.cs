@@ -11,7 +11,7 @@ namespace ExpandoDB
     /// <summary>
     /// Provides utility methods for Document objects.
     /// </summary>
-    public static class DocumentExtensions
+    public static class DocumentUtils
     {
         /// <summary>
         /// Converts all date values inside the Document object to UTC format.
@@ -142,17 +142,7 @@ namespace ExpandoDB
             }
 
             return parsedItems;
-        }
-
-        /// <summary>
-        /// Deserializes the JSON string into a Document object.
-        /// </summary>
-        /// <param name="json">The JSON string to deserialize.</param>
-        /// <returns></returns>
-        public static Document ToDocument(this string json)
-        {
-            return new Document(json.ToDictionary().ToExpando());
-        }
+        }       
         
 
         /// <summary>
@@ -173,18 +163,7 @@ namespace ExpandoDB
         internal static EnumerableDocuments ToEnumerableDocuments(this IEnumerable<LightningKeyValuePair> keyValuePairs)
         {
             return new EnumerableDocuments(keyValuePairs);
-        }
-
-        /// <summary>
-        /// Serializes the Document object to a JSON string.
-        /// </summary>
-        /// <param name="document">The document object to serialize.</param>
-        /// <returns></returns>
-        public static string ToJson(this Document document)
-        {
-            var json = DynamicJsonSerializer.Serialize(document);
-            return json;
-        }
+        }        
 
         /// <summary>
         /// Clones the Document object to a Dictionary object.

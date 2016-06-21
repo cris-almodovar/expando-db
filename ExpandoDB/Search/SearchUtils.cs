@@ -10,7 +10,7 @@ namespace ExpandoDB.Search
     /// <summary>
     /// Implements utility methods for Lucene search.
     /// </summary>
-    public static class SearchExtensions
+    public static class SearchUtils
     {
         /// <summary>
         /// Validates the specified search criteria.
@@ -62,7 +62,7 @@ namespace ExpandoDB.Search
                     if (doc == null)
                         continue;
 
-                    var idField = doc.GetField(Document.ID_FIELD_NAME);
+                    var idField = doc.GetField(Schema.StandardField.ID);
                     var idValue = idField.StringValue();
 
                     documentIds.Add(Guid.Parse(idValue));

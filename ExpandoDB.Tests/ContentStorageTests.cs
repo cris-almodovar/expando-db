@@ -13,9 +13,9 @@ namespace ExpandoDB.Tests
     public class ContentStorageTests
     {
         private string _appPath;
-        private string _dataPath;        
-        private LightningStorageEngine _storageEngine;     
+        private string _dataPath;                  
         private IDocumentStorage _documentStorage;
+        const string COLLECTION_NAME = "books";
 
         [TestInitialize]
         public void Initialize()
@@ -25,16 +25,14 @@ namespace ExpandoDB.Tests
             _dataPath = Path.Combine(_appPath, "data");
             if (!Directory.Exists(_dataPath))
                 Directory.CreateDirectory(_dataPath);
-
-
-            _storageEngine = new LightningStorageEngine(_dataPath);
-            _documentStorage = new LightningDocumentStorage("books", _storageEngine);
+            
+            _documentStorage = new LightningDocumentStorage(_dataPath);
         }
 
         [TestCleanup]
         public void Cleanup()
         {
-            _storageEngine.Dispose();
+            _documentStorage.Dispose();
 
             Thread.Sleep(TimeSpan.FromSeconds(2));            
             Directory.Delete(_dataPath, true);
@@ -44,7 +42,7 @@ namespace ExpandoDB.Tests
         [TestCategory("Document Storage tests")]
         public void Database_file_is_auto_created()        
         {            
-            var dbFilePath = Path.Combine(_dataPath, "db", "data.mdb");  
+            var dbFilePath = Path.Combine(_dataPath, "data.mdb");  
             Assert.IsTrue(File.Exists(dbFilePath));
         }
 
@@ -62,10 +60,10 @@ namespace ExpandoDB.Tests
             inserted.Characters = new Dictionary<string, object> { { "Simon Jones", "Arthur Dent" }, { "Geoffrey McGivern", "Ford Prefect" } };
             inserted.X = null;
 
-            var guid = _documentStorage.InsertAsync(inserted).Result;
+            var guid = _documentStorage.InsertAsync(COLLECTION_NAME, inserted).Result;
             Assert.AreNotEqual<Guid>(guid, Guid.Empty);
             
-            dynamic retrieved = _documentStorage.GetAsync(guid).Result;
+            dynamic retrieved = _documentStorage.GetAsync(COLLECTION_NAME, guid).Result;
 
             Assert.AreEqual<Guid>(inserted._id, retrieved._id);
             Assert.AreEqual<string>(inserted.Title, retrieved.Title);
@@ -97,12 +95,12 @@ namespace ExpandoDB.Tests
             inserted.RelatedTitles = new List<string> { "The Restaurant at the End of the Universe", "Life, the Universe and Everything" };
             inserted.Characters = new Dictionary<string, object> { { "Simon Jones", "Arthur Dent" }, { "Geoffrey McGivern", "Ford Prefect" } };
                        
-            var guid = _documentStorage.InsertAsync(inserted).Result;
+            var guid = _documentStorage.InsertAsync(COLLECTION_NAME, inserted).Result;
             Assert.AreNotEqual<Guid>(guid, Guid.Empty);
 
-            _documentStorage.DeleteAsync(guid).Wait();
+            _documentStorage.DeleteAsync(COLLECTION_NAME, guid).Wait();
 
-            dynamic retrieved = _documentStorage.GetAsync(guid).Result;
+            dynamic retrieved = _documentStorage.GetAsync(COLLECTION_NAME, guid).Result;
             Assert.IsNull(retrieved);            
         }
 
@@ -117,14 +115,14 @@ namespace ExpandoDB.Tests
             inserted.Rating = 10;
             inserted.Description = "The Hitchhiker's Guide to the Galaxy is a comedy science fiction series created by Douglas Adams. Originally a radio comedy broadcast on BBC Radio 4 in 1978, it was later adapted to other formats, and over several years it gradually became an international multi-media phenomenon.";
             
-            var guid = _documentStorage.InsertAsync(inserted).Result;
+            var guid = _documentStorage.InsertAsync(COLLECTION_NAME, inserted).Result;
             Assert.AreNotEqual<Guid>(guid, Guid.Empty);       
 
-            dynamic retrieved = _documentStorage.GetAsync(guid).Result;
+            dynamic retrieved = _documentStorage.GetAsync(COLLECTION_NAME, guid).Result;
             retrieved.Rating = 12;
-            _documentStorage.UpdateAsync(retrieved).Wait();
+            _documentStorage.UpdateAsync(COLLECTION_NAME, retrieved).Wait();
 
-            retrieved = _documentStorage.GetAsync(retrieved._id).Result;
+            retrieved = _documentStorage.GetAsync(COLLECTION_NAME, retrieved._id).Result;
 
             Assert.AreEqual<int>(retrieved.Rating, 12);            
         }

@@ -16,8 +16,14 @@ namespace ExpandoDB.Rest
     /// <seealso cref="Nancy.ErrorHandling.IStatusCodeHandler" />
     public class StatusCodeHandler : IStatusCodeHandler
     {
+        /// <summary>
+        /// Handle the error code
+        /// </summary>
+        /// <param name="statusCode">Status code</param>
+        /// <param name="context">Current context</param>
         public void Handle(HttpStatusCode statusCode, NancyContext context)
         {
+            // Special handling for 404 Not Found
             if (statusCode == HttpStatusCode.NotFound)
             {
                 var dto = new ErrorResponseDto { timestamp = DateTime.UtcNow, errorMessage = "The resource you have requested cannot be found.", statusCode = HttpStatusCode.NotFound };

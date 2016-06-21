@@ -10,19 +10,15 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Threading;
 using System.Threading.Tasks;
-using JavaDouble = java.lang.Double;
-using JavaLong = java.lang.Long;
-using JavaInteger = java.lang.Integer;
 
 namespace ExpandoDB.Search
 {
     /// <summary>
-    /// Represents the Lucene full-text index for a Collection of dynamic Documents objects
+    /// Represents the Lucene full-text index for a Collection of Documents objects
     /// </summary>
+    /// <seealso cref="System.IDisposable" />
     public class LuceneIndex : IDisposable
-    {
-        public const int DEFAULT_SEARCH_TOP_N = 100000;
-        public const int DEFAULT_SEARCH_ITEMS_PER_PAGE = 10;
+    {        
         private const string ALL_DOCS_QUERY = "*:*";
         private readonly Directory _indexDirectory;
         private readonly Analyzer _compositeAnalyzer;
@@ -30,25 +26,33 @@ namespace ExpandoDB.Search
         private readonly SearcherManager _searcherManager;        
         private readonly Timer _refreshTimer;
         private readonly Timer _commitTimer;
-        private readonly IndexSchema _indexSchema;
+        private readonly Schema _schema;
         private readonly ILog _log = LogManager.GetLogger(typeof(LuceneIndex).Name);    
         private readonly double _refreshIntervalSeconds;
         private readonly double _commitIntervalSeconds;        
         private readonly double _ramBufferSizeMB;
 
-        public IndexSchema Schema { get { return _indexSchema; } }       
+        /// <summary>
+        /// Gets the schema of the Documents in the Lucene index.
+        /// </summary>
+        /// <value>
+        /// The schema.
+        /// </value>
+        public Schema Schema { get { return _schema; } }
 
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="LuceneIndex"/> class.
+        /// Initializes a new instance of the <see cref="LuceneIndex" /> class.
         /// </summary>
         /// <param name="indexPath">The path to the directory that will contain the Lucene index files.</param>
-        public LuceneIndex(string indexPath, IndexSchema indexSchema = null)
+        /// <param name="schema">The schema.</param>
+        /// <exception cref="System.ArgumentNullException"></exception>
+        public LuceneIndex(string indexPath, Schema schema = null)
         {
             if (String.IsNullOrWhiteSpace(indexPath))
                 throw new ArgumentNullException(nameof(indexPath)); 
-            if (indexSchema == null)
-                indexSchema = IndexSchema.CreateDefault();
+            if (schema == null)
+                schema = Schema.CreateDefault();
 
             if (!System.IO.Directory.Exists(indexPath))
                 System.IO.Directory.CreateDirectory(indexPath);
@@ -56,8 +60,8 @@ namespace ExpandoDB.Search
             var path = Paths.get(indexPath);
             _indexDirectory = new MMapDirectory(path);            
 
-            _indexSchema = indexSchema ?? IndexSchema.CreateDefault();
-            _compositeAnalyzer = new CompositeAnalyzer(_indexSchema);            
+            _schema = schema ?? Schema.CreateDefault();
+            _compositeAnalyzer = new CompositeAnalyzer(_schema);            
 
             _ramBufferSizeMB = Double.Parse(ConfigurationManager.AppSettings["IndexWriter.RAMBufferSizeMB"] ?? "128");            
 
@@ -68,7 +72,7 @@ namespace ExpandoDB.Search
             
             _writer = new IndexWriter(_indexDirectory, config);            
 
-            _searcherManager = new SearcherManager(_writer, true, false, null);    // TODO: Add to config - applyAllDeletes        
+            _searcherManager = new SearcherManager(_writer, true, false, null);         
 
             _refreshIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["IndexSearcher.RefreshIntervalSeconds"] ?? "0.5");    
             _commitIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["IndexWriter.CommitIntervalSeconds"] ?? "60");
@@ -130,7 +134,7 @@ namespace ExpandoDB.Search
             if (document._id == null || document._id.Value == Guid.Empty)
                 document._id = Guid.NewGuid();
 
-            var luceneDocument = document.ToLuceneDocument(_indexSchema);            
+            var luceneDocument = document.ToLuceneDocument(_schema);            
             _writer.AddDocument(luceneDocument);            
         }
 
@@ -143,7 +147,7 @@ namespace ExpandoDB.Search
             if (guid == Guid.Empty)
                 throw new ArgumentException(nameof(guid) + " cannot be empty");
 
-            var idTerm = new Term(Document.ID_FIELD_NAME, guid.ToString());
+            var idTerm = new Term(Schema.StandardField.ID, guid.ToString().ToLower());
             _writer.DeleteDocuments(idTerm);
         }
 
@@ -160,31 +164,32 @@ namespace ExpandoDB.Search
             if (document._id == null || document._id == Guid.Empty)
                 throw new InvalidOperationException("Cannot update Document that does not have an _id");
 
-            var luceneDocument = document.ToLuceneDocument(_indexSchema);
-            var id = document._id.ToString();
-            var idTerm = new Term(Document.ID_FIELD_NAME, id);
+            var luceneDocument = document.ToLuceneDocument(_schema);
+            var id = document._id.ToString().ToLower();
+            var idTerm = new Term(Schema.StandardField.ID, id);
 
             _writer.UpdateDocument(idTerm, luceneDocument);
-        }        
+        }
 
         /// <summary>
         /// Searches the Lucene index for Documents that match the specified search criteria.
         /// </summary>
         /// <param name="criteria">The search criteria.</param>
         /// <returns></returns>
+        /// <exception cref="System.ArgumentNullException"></exception>
         public SearchResult<Guid> Search(SearchCriteria criteria)
         {
             if (criteria == null)
                 throw new ArgumentNullException(nameof(criteria));
 
             criteria.Query = String.IsNullOrWhiteSpace(criteria.Query) ? ALL_DOCS_QUERY : criteria.Query;
-            criteria.TopN = criteria.TopN > 0 ? criteria.TopN : DEFAULT_SEARCH_TOP_N;
-            criteria.ItemsPerPage = criteria.ItemsPerPage > 0 ? criteria.ItemsPerPage : DEFAULT_SEARCH_ITEMS_PER_PAGE;
+            criteria.TopN = criteria.TopN > 0 ? criteria.TopN : SearchCriteria.DEFAULT_TOP_N;
+            criteria.ItemsPerPage = criteria.ItemsPerPage > 0 ? criteria.ItemsPerPage : SearchCriteria.DEFAULT_ITEMS_PER_PAGE;
             criteria.PageNumber = criteria.PageNumber > 0 ? criteria.PageNumber : 1;
             criteria.Validate();
 
             var result = new SearchResult<Guid>(criteria);
-            var queryParser = new LuceneQueryParser(LuceneExtensions.FULL_TEXT_FIELD_NAME, _compositeAnalyzer, _indexSchema);
+            var queryParser = new LuceneQueryParser(Schema.StandardField.FULL_TEXT, _compositeAnalyzer, _schema);
             var query = queryParser.Parse(criteria.Query);
 
             var searcher = _searcherManager.Acquire() as IndexSearcher;
@@ -216,9 +221,9 @@ namespace ExpandoDB.Search
             if (isDescending)
                 fieldName = fieldName.TrimStart('-');
 
-            var indexedField = _indexSchema.FindField(fieldName, false);
-            if (indexedField == null)
-                throw new QueryParserException($"Invalid sortBy field: '{fieldName}'.");
+            var sortBySchemaField = _schema.FindField(fieldName, false);
+            if (sortBySchemaField == null)
+                throw new LuceneQueryParserException($"Invalid sortBy field: '{fieldName}'.");
 
             // Notes: 
             // 1. The actual sort fieldname is different, e.g. 'fieldName' ==> '__fieldName_sort__'
@@ -228,50 +233,78 @@ namespace ExpandoDB.Search
             var sortFieldName = fieldName.ToSortFieldName();
             SortField sortField = null;
 
-            switch (indexedField.DataType)
+            switch (sortBySchemaField.DataType)
             {
-                case FieldDataType.Number:
+                case Schema.DataType.Number:
                     sortField = new SortField(sortFieldName, SortFieldType.DOUBLE, isDescending);
-                    sortField.SetMissingValue(isDescending ? LuceneExtensions.DOUBLE_MIN_VALUE : LuceneExtensions.DOUBLE_MAX_VALUE);
+                    sortField.SetMissingValue(isDescending ? LuceneUtils.DOUBLE_MIN_VALUE : LuceneUtils.DOUBLE_MAX_VALUE);
                     break;
 
-                case FieldDataType.DateTime:
-                case FieldDataType.Boolean:
+                case Schema.DataType.DateTime:
+                case Schema.DataType.Boolean:
                     sortField = new SortField(sortFieldName, SortFieldType.LONG, isDescending);
-                    sortField.SetMissingValue(isDescending ? LuceneExtensions.LONG_MIN_VALUE : LuceneExtensions.LONG_MAX_VALUE);
+                    sortField.SetMissingValue(isDescending ? LuceneUtils.LONG_MIN_VALUE : LuceneUtils.LONG_MAX_VALUE);
                     break;
 
-                case FieldDataType.Text:
-                case FieldDataType.Guid:
+                case Schema.DataType.Text:
+                case Schema.DataType.Guid:
                     sortField = new SortField(sortFieldName, SortFieldType.STRING, isDescending);
                     sortField.SetMissingValue(isDescending ?  SortField.STRING_FIRST : SortField.STRING_LAST );
                     break;
 
                 default:
-                    throw new QueryParserException($"Invalid sortBy field: '{fieldName}'. Only Number, DateTime, Boolean, Text, and GUID fields can be used for sorting.");
+                    throw new LuceneQueryParserException($"Invalid sortBy field: '{fieldName}'. Only Number, DateTime, Boolean, Text, and GUID fields can be used for sorting.");
             }
 
             if (sortField == null)
                 return Sort.RELEVANCE;
             else   
                 return new Sort(new[] { sortField });
-        }       
+        }
+
+
+        #region IDisposable Support
+        /// <summary>
+        /// Gets a value indicating whether this instance is disposed.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this instance is disposed; otherwise, <c>false</c>.
+        /// </value>
+        public bool IsDisposed { get; private set; }
+
+        /// <summary>
+        /// Releases unmanaged and - optionally - managed resources.
+        /// </summary>
+        /// <param name="disposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!IsDisposed)
+            {
+                if (disposing)
+                {
+                    _refreshTimer.Dispose();
+                    _commitTimer.Dispose();
+
+                    _searcherManager.Close();
+
+                    if (_writer.HasUncommittedChanges())
+                        _writer.Commit();
+
+                    _writer.Close();
+                }               
+
+                IsDisposed = true;
+            }
+        }
+
 
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>
         public void Dispose()
-        {
-            _refreshTimer.Dispose();
-            _commitTimer.Dispose();
-
-            _searcherManager.Close();
-
-            if (_writer.HasUncommittedChanges())
-                _writer.Commit();
-
-            _writer.Close();
-                  
+        {           
+            Dispose(true);            
         }
+        #endregion
     }
 }

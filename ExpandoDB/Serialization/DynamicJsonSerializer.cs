@@ -10,53 +10,14 @@ using System.Linq;
 namespace ExpandoDB.Serialization
 {
     /// <summary>
-    /// Provides methods for serializing/deserializing dynamic Document object to/from JSON.
+    /// Encapsulates serialization/deserialization of Document object to/from JSON strings.
     /// </summary>
+    /// <remarks>
+    /// DynamicJsonSerializer uses the excellent Jil library (https://github.com/kevin-montrose/Jil).
+    /// </remarks>
     public static class DynamicJsonSerializer
     {
-        #region Date Format constants
-                
-        const string DATE_TIME_FORMAT_DATE_ONLY = "yyyy-MM-dd";
-
-        const string DATE_TIME_FORMAT_DATE_HHMM = "yyyy-MM-ddTHH:mm";
-        const string DATE_TIME_FORMAT_DATE_HHMM_UTC = "yyyy-MM-ddTHH:mmZ";
-        const string DATE_TIME_FORMAT_DATE_HHMM_TIMEZONE = "yyyy-MM-ddTHH:mmzzz";
-
-        const string DATE_TIME_FORMAT_DATE_HHMMSS = "yyyy-MM-ddTHH:mm:ss";
-        const string DATE_TIME_FORMAT_DATE_HHMMSS_UTC = "yyyy-MM-ddTHH:mm:ssZ";
-        const string DATE_TIME_FORMAT_DATE_HHMMSS_TIMEZONE = "yyyy-MM-ddTHH:mm:sszzz";
-
-        const string DATE_TIME_FORMAT_DATE_HHMMSSF = "yyyy-MM-ddTHH:mm:ss.f";
-        const string DATE_TIME_FORMAT_DATE_HHMMSSF_UTC = "yyyy-MM-ddTHH:mm:ss.fZ";
-        const string DATE_TIME_FORMAT_DATE_HHMMSSF_TIMEZONE = "yyyy-MM-ddTHH:mm:ss.fzzz";
-
-        const string DATE_TIME_FORMAT_DATE_HHMMSSFF = "yyyy-MM-ddTHH:mm:ss.ff";
-        const string DATE_TIME_FORMAT_DATE_HHMMSSFF_UTC = "yyyy-MM-ddTHH:mm:ss.ffZ";
-        const string DATE_TIME_FORMAT_DATE_HHMMSSFF_TIMEZONE = "yyyy-MM-ddTHH:mm:ss.ffzzz";
-
-        const string DATE_TIME_FORMAT_DATE_HHMMSSFFF = "yyyy-MM-ddTHH:mm:ss.fff";
-        const string DATE_TIME_FORMAT_DATE_HHMMSSFFF_UTC = "yyyy-MM-ddTHH:mm:ss.fffZ";
-        const string DATE_TIME_FORMAT_DATE_HHMMSSFFF_TIMEZONE = "yyyy-MM-ddTHH:mm:ss.fffzzz";
-
-        const string DATE_TIME_FORMAT_DATE_HHMMSSFFFF = "yyyy-MM-ddTHH:mm:ss.ffff";
-        const string DATE_TIME_FORMAT_DATE_HHMMSSFFFF_UTC = "yyyy-MM-ddTHH:mm:ss.ffffZ";
-        const string DATE_TIME_FORMAT_DATE_HHMMSSFFFF_TIMEZONE = "yyyy-MM-ddTHH:mm:ss.ffffzzz";
-
-        const string DATE_TIME_FORMAT_DATE_HHMMSSFFFFF = "yyyy-MM-ddTHH:mm:ss.fffff";
-        const string DATE_TIME_FORMAT_DATE_HHMMSSFFFFF_UTC = "yyyy-MM-ddTHH:mm:ss.fffffZ";
-        const string DATE_TIME_FORMAT_DATE_HHMMSSFFFFF_TIMEZONE = "yyyy-MM-ddTHH:mm:ss.fffffzzz";
-
-        const string DATE_TIME_FORMAT_DATE_HHMMSSFFFFFF = "yyyy-MM-ddTHH:mm:ss.ffffff";
-        const string DATE_TIME_FORMAT_DATE_HHMMSSFFFFFF_UTC = "yyyy-MM-ddTHH:mm:ss.ffffffZ";
-        const string DATE_TIME_FORMAT_DATE_HHMMSSFFFFFF_TIMEZONE = "yyyy-MM-ddTHH:mm:ss.ffffffzzz";
-
-        const string DATE_TIME_FORMAT_DATE_HHMMSSFFFFFFF = "yyyy-MM-ddTHH:mm:ss.fffffff";
-        const string DATE_TIME_FORMAT_DATE_HHMMSSFFFFFFF_UTC = "yyyy-MM-ddTHH:mm:ss.fffffffZ";
-        const string DATE_TIME_FORMAT_DATE_HHMMSSFFFFFFF_TIMEZONE = "yyyy-MM-ddTHH:mm:ss.fffffffzzz";
-
-        #endregion
-
-        const int GUID_STRING_LENGTH = 36;
+        private const int GUID_STRING_LENGTH = 36;
 
         /// <summary>
         /// Serializes the specified Document object to JSON.
@@ -109,7 +70,7 @@ namespace ExpandoDB.Serialization
         {
             if (typeof(T) == typeof(IDictionary<string, object>))
             {
-                var dictionary = JSON.Deserialize<T>(json) as IDictionary<string, object>;
+                var dictionary = JSON.Deserialize<T>(json, Options.ISO8601IncludeInherited) as IDictionary<string, object>;
                 return (T)dictionary.Unwrap();
             }
 
@@ -126,14 +87,14 @@ namespace ExpandoDB.Serialization
         {
             if (typeof(T) == typeof(IDictionary<string, object>))
             {
-                var dictionary = JSON.Deserialize<T>(reader) as IDictionary<string, object>;
+                var dictionary = JSON.Deserialize<T>(reader, Options.ISO8601IncludeInherited) as IDictionary<string, object>;
                 return (T)dictionary.Unwrap();
             }
 
-            return JSON.Deserialize<T>(reader);
+            return JSON.Deserialize<T>(reader, Options.ISO8601IncludeInherited);
         }       
 
-        public static IDictionary<string, object> Unwrap(this IDictionary<string, object> dictionary)
+        internal static IDictionary<string, object> Unwrap(this IDictionary<string, object> dictionary)
         {
             if (dictionary == null)
                 throw new ArgumentNullException(nameof(dictionary));
@@ -150,7 +111,7 @@ namespace ExpandoDB.Serialization
             return unwrappedDictionary;
         }
 
-        public static IList<object> Unwrap(this IEnumerable enumerable)
+        internal static IList<object> Unwrap(this IEnumerable enumerable)
         {
             var list = new List<object>();
             foreach (var item in enumerable)
@@ -160,33 +121,35 @@ namespace ExpandoDB.Serialization
             return list;
         }
 
-        public static object Unwrap(this object value)
+        internal static object Unwrap(this object value)
         {
             if (value == null)
                 return null;
 
+            // NOTE: We only need to unwrap the value if the Type is JsonObject; 
+            // this type is a Jil-specific internal wrapper class that holds the actual 
+            // JSON values. This class cannot be manipulated directly - we need
+            // to 'unwrap' the actual values using a TypeConverter object.
+
             if (value.GetType().Name != "JsonObject")
                 return value;
 
-            var converter = TypeDescriptor.GetConverter(value);
+            var typeConverter = TypeDescriptor.GetConverter(value);
+            var type = typeConverter.GetWrappedType(value);            
 
-            var destinationType = converter.GetDestinationType(value);
-            if (destinationType == null)
-                return null;
-
-            if (destinationType == typeof(IDictionary<string, object>))
+            if (type == typeof(IDictionary<string, object>))
             {
-                var dictionary = converter.ConvertTo(value, destinationType) as IDictionary<string, object>;
+                var dictionary = typeConverter.ConvertTo(value, type) as IDictionary<string, object>;
                 return dictionary.Unwrap();
             }
-            else if (destinationType == typeof(IEnumerable))
+            else if (type == typeof(IEnumerable))
             {
-                var enumerable = converter.ConvertTo(value, destinationType) as IEnumerable;
+                var enumerable = typeConverter.ConvertTo(value, type) as IEnumerable;
                 return enumerable.Unwrap();
             }
-            else if (destinationType == typeof(string))
+            else if (type == typeof(string))
             {
-                var stringValue = converter.ConvertTo(value, destinationType) as string;                
+                var stringValue = typeConverter.ConvertTo(value, type) as string;                
                 DateTime dateValue = DateTime.MinValue;
                 Guid guidValue = Guid.Empty;
 
@@ -198,11 +161,16 @@ namespace ExpandoDB.Serialization
                     return stringValue;
             }
 
-            return converter.ConvertTo(value, destinationType);
-        }        
-
-        private static Type GetDestinationType(this TypeConverter converter, object value)
+            return typeConverter.ConvertTo(value, type);
+        }  
+        
+        private static Type GetWrappedType(this TypeConverter converter, object value)
         {
+            if (converter == null)
+                throw new ArgumentNullException(nameof(converter));
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));            
+
             if (converter.CanConvertTo(typeof(bool)))
                 return typeof(bool);
             if (converter.CanConvertTo(typeof(int)))
@@ -214,7 +182,7 @@ namespace ExpandoDB.Serialization
             if (converter.CanConvertTo(typeof(DateTime)))
                 return typeof(DateTime);
             if (converter.CanConvertTo(typeof(IDictionary<string, object>)))
-                return typeof(IDictionary<string, object>);         
+                return typeof(IDictionary<string, object>);
             if (converter.CanConvertTo(typeof(IEnumerable)))
                 return typeof(IEnumerable);
             if (converter.CanConvertTo(typeof(string)))
@@ -222,97 +190,104 @@ namespace ExpandoDB.Serialization
 
             throw new SerializationException("Unsupported data type: " + value.GetType().Name);
         }
-        
 
-        public static bool TryParseDateTime(string value, ref DateTime dateValue)
+
+        /// <summary>
+        /// Tries to convert the given string value to DateTime.
+        /// </summary>
+        /// <param name="value">The string value.</param>
+        /// <param name="dateValue">The DateTime value.</param>
+        /// <returns>true if successful; othewise false.</returns>
+        internal static bool TryParseDateTime(string value, ref DateTime dateValue)
         {
-            if (!IsDateTimeString(value))
+            if (!value.IsMaybeDateTime())
                 return false;
 
             var length = value.Length;            
 
-            if (length == DATE_TIME_FORMAT_DATE_ONLY.Length &&
-                DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_ONLY, null, DateTimeStyles.AssumeLocal, out dateValue)) return true;
+            if (length == DateTimeFormat.DATE_ONLY.Length &&
+                DateTime.TryParseExact(value, DateTimeFormat.DATE_ONLY, null, DateTimeStyles.AssumeLocal, out dateValue)) return true;
 
-            if (length == DATE_TIME_FORMAT_DATE_HHMM.Length && 
-                DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMM, null, DateTimeStyles.AssumeLocal, out dateValue)) return true;
-            if (length == DATE_TIME_FORMAT_DATE_HHMM_UTC.Length && 
-                DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMM_UTC, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
-            if (length == DATE_TIME_FORMAT_DATE_HHMM_UTC.Length + 5 &&
-                DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMM_TIMEZONE, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
+            if (length == DateTimeFormat.DATE_HHMM.Length && 
+                DateTime.TryParseExact(value, DateTimeFormat.DATE_HHMM, null, DateTimeStyles.AssumeLocal, out dateValue)) return true;
+            if (length == DateTimeFormat.DATE_HHMM_UTC.Length && 
+                DateTime.TryParseExact(value, DateTimeFormat.DATE_HHMM_UTC, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
+            if (length == DateTimeFormat.DATE_HHMM_UTC.Length + 5 &&
+                DateTime.TryParseExact(value, DateTimeFormat.DATE_HHMM_TIMEZONE, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
 
-            if (length == DATE_TIME_FORMAT_DATE_HHMMSS.Length && 
-                DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMMSS, null, DateTimeStyles.AssumeLocal, out dateValue)) return true;
-            if (length == DATE_TIME_FORMAT_DATE_HHMMSS_UTC.Length && 
-                DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMMSS_UTC, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
-            if (length == DATE_TIME_FORMAT_DATE_HHMMSS_UTC.Length + 5 &&
-                DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMMSS_TIMEZONE, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
+            if (length == DateTimeFormat.DATE_HHMMSS.Length && 
+                DateTime.TryParseExact(value, DateTimeFormat.DATE_HHMMSS, null, DateTimeStyles.AssumeLocal, out dateValue)) return true;
+            if (length == DateTimeFormat.DATE_HHMMSS_UTC.Length && 
+                DateTime.TryParseExact(value, DateTimeFormat.DATE_HHMMSS_UTC, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
+            if (length == DateTimeFormat.DATE_HHMMSS_UTC.Length + 5 &&
+                DateTime.TryParseExact(value, DateTimeFormat.DATE_HHMMSS_TIMEZONE, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
 
-            if (length == DATE_TIME_FORMAT_DATE_HHMMSSF.Length && 
-                DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMMSSF, null, DateTimeStyles.AssumeLocal, out dateValue)) return true;
-            if (length == DATE_TIME_FORMAT_DATE_HHMMSSF_UTC.Length && 
-                DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMMSSF_UTC, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
-            if (length == DATE_TIME_FORMAT_DATE_HHMMSSF_UTC.Length + 5 &&
-                DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMMSSF_TIMEZONE, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
+            if (length == DateTimeFormat.DATE_HHMMSSF.Length && 
+                DateTime.TryParseExact(value, DateTimeFormat.DATE_HHMMSSF, null, DateTimeStyles.AssumeLocal, out dateValue)) return true;
+            if (length == DateTimeFormat.DATE_HHMMSSF_UTC.Length && 
+                DateTime.TryParseExact(value, DateTimeFormat.DATE_HHMMSSF_UTC, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
+            if (length == DateTimeFormat.DATE_HHMMSSF_UTC.Length + 5 &&
+                DateTime.TryParseExact(value, DateTimeFormat.DATE_HHMMSSF_TIMEZONE, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
 
-            if (length == DATE_TIME_FORMAT_DATE_HHMMSSFF.Length && 
-                DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMMSSFF, null, DateTimeStyles.AssumeLocal, out dateValue)) return true;
-            if (length == DATE_TIME_FORMAT_DATE_HHMMSSFF_UTC.Length && 
-                DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMMSSFF_UTC, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
-            if (length == DATE_TIME_FORMAT_DATE_HHMMSSFF_UTC.Length + 5 &&
-                DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMMSSFF_TIMEZONE, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
+            if (length == DateTimeFormat.DATE_HHMMSSFF.Length && 
+                DateTime.TryParseExact(value, DateTimeFormat.DATE_HHMMSSFF, null, DateTimeStyles.AssumeLocal, out dateValue)) return true;
+            if (length == DateTimeFormat.DATE_HHMMSSFF_UTC.Length && 
+                DateTime.TryParseExact(value, DateTimeFormat.DATE_HHMMSSFF_UTC, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
+            if (length == DateTimeFormat.DATE_HHMMSSFF_UTC.Length + 5 &&
+                DateTime.TryParseExact(value, DateTimeFormat.DATE_HHMMSSFF_TIMEZONE, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
 
-            if (length == DATE_TIME_FORMAT_DATE_HHMMSSFFF.Length && 
-                DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMMSSFFF, null, DateTimeStyles.AssumeLocal, out dateValue)) return true;
-            if (length == DATE_TIME_FORMAT_DATE_HHMMSSFFF_UTC.Length && 
-                DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMMSSFFF_UTC, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
-            if (length == DATE_TIME_FORMAT_DATE_HHMMSSFFF_UTC.Length + 5 &&
-                DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMMSSFFF_TIMEZONE, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
+            if (length == DateTimeFormat.DATE_HHMMSSFFF.Length && 
+                DateTime.TryParseExact(value, DateTimeFormat.DATE_HHMMSSFFF, null, DateTimeStyles.AssumeLocal, out dateValue)) return true;
+            if (length == DateTimeFormat.DATE_HHMMSSFFF_UTC.Length && 
+                DateTime.TryParseExact(value, DateTimeFormat.DATE_HHMMSSFFF_UTC, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
+            if (length == DateTimeFormat.DATE_HHMMSSFFF_UTC.Length + 5 &&
+                DateTime.TryParseExact(value, DateTimeFormat.DATE_HHMMSSFFF_TIMEZONE, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
 
-            if (length == DATE_TIME_FORMAT_DATE_HHMMSSFFFF.Length && 
-                DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMMSSFFFF, null, DateTimeStyles.AssumeLocal, out dateValue)) return true;
-            if (length == DATE_TIME_FORMAT_DATE_HHMMSSFFFF_UTC.Length && 
-                DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMMSSFFFF_UTC, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
-            if (length == DATE_TIME_FORMAT_DATE_HHMMSSFFFF_UTC.Length + 5 &&
-                DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMMSSFFFF_TIMEZONE, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
+            if (length == DateTimeFormat.DATE_HHMMSSFFFF.Length && 
+                DateTime.TryParseExact(value, DateTimeFormat.DATE_HHMMSSFFFF, null, DateTimeStyles.AssumeLocal, out dateValue)) return true;
+            if (length == DateTimeFormat.DATE_HHMMSSFFFF_UTC.Length && 
+                DateTime.TryParseExact(value, DateTimeFormat.DATE_HHMMSSFFFF_UTC, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
+            if (length == DateTimeFormat.DATE_HHMMSSFFFF_UTC.Length + 5 &&
+                DateTime.TryParseExact(value, DateTimeFormat.DATE_HHMMSSFFFF_TIMEZONE, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
 
-            if (length == DATE_TIME_FORMAT_DATE_HHMMSSFFFFF.Length && 
-                DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMMSSFFFFF, null, DateTimeStyles.AssumeLocal, out dateValue)) return true;
-            if (length == DATE_TIME_FORMAT_DATE_HHMMSSFFFFF_UTC.Length && 
-                DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMMSSFFFFF_UTC, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
-            if (length == DATE_TIME_FORMAT_DATE_HHMMSSFFFFF_UTC.Length + 5 &&
-                DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMMSSFFFFF_TIMEZONE, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
+            if (length == DateTimeFormat.DATE_HHMMSSFFFFF.Length && 
+                DateTime.TryParseExact(value, DateTimeFormat.DATE_HHMMSSFFFFF, null, DateTimeStyles.AssumeLocal, out dateValue)) return true;
+            if (length == DateTimeFormat.DATE_HHMMSSFFFFF_UTC.Length && 
+                DateTime.TryParseExact(value, DateTimeFormat.DATE_HHMMSSFFFFF_UTC, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
+            if (length == DateTimeFormat.DATE_HHMMSSFFFFF_UTC.Length + 5 &&
+                DateTime.TryParseExact(value, DateTimeFormat.DATE_HHMMSSFFFFF_TIMEZONE, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
 
-            if (length == DATE_TIME_FORMAT_DATE_HHMMSSFFFFFF.Length && 
-                DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMMSSFFFFFF, null, DateTimeStyles.AssumeLocal, out dateValue)) return true;
-            if (length == DATE_TIME_FORMAT_DATE_HHMMSSFFFFFF_UTC.Length && 
-                DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMMSSFFFFFF_UTC, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
-            if (length == DATE_TIME_FORMAT_DATE_HHMMSSFFFFFF_UTC.Length + 5 &&
-                DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMMSSFFFFFF_TIMEZONE, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
+            if (length == DateTimeFormat.DATE_HHMMSSFFFFFF.Length && 
+                DateTime.TryParseExact(value, DateTimeFormat.DATE_HHMMSSFFFFFF, null, DateTimeStyles.AssumeLocal, out dateValue)) return true;
+            if (length == DateTimeFormat.DATE_HHMMSSFFFFFF_UTC.Length && 
+                DateTime.TryParseExact(value, DateTimeFormat.DATE_HHMMSSFFFFFF_UTC, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
+            if (length == DateTimeFormat.DATE_HHMMSSFFFFFF_UTC.Length + 5 &&
+                DateTime.TryParseExact(value, DateTimeFormat.DATE_HHMMSSFFFFFF_TIMEZONE, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
 
-            if (length == DATE_TIME_FORMAT_DATE_HHMMSSFFFFFFF.Length && 
-                DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMMSSFFFFFFF, null, DateTimeStyles.AssumeLocal, out dateValue)) return true;
-            if (length == DATE_TIME_FORMAT_DATE_HHMMSSFFFFFFF_UTC.Length && 
-                DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMMSSFFFFFFF_UTC, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
-            if (length == DATE_TIME_FORMAT_DATE_HHMMSSFFFFFFF_UTC.Length + 5 &&
-                DateTime.TryParseExact(value, DATE_TIME_FORMAT_DATE_HHMMSSFFFFFFF_TIMEZONE, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
+            if (length == DateTimeFormat.DATE_HHMMSSFFFFFFF.Length && 
+                DateTime.TryParseExact(value, DateTimeFormat.DATE_HHMMSSFFFFFFF, null, DateTimeStyles.AssumeLocal, out dateValue)) return true;
+            if (length == DateTimeFormat.DATE_HHMMSSFFFFFFF_UTC.Length && 
+                DateTime.TryParseExact(value, DateTimeFormat.DATE_HHMMSSFFFFFFF_UTC, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
+            if (length == DateTimeFormat.DATE_HHMMSSFFFFFFF_UTC.Length + 5 &&
+                DateTime.TryParseExact(value, DateTimeFormat.DATE_HHMMSSFFFFFFF_TIMEZONE, null, DateTimeStyles.AdjustToUniversal, out dateValue)) return true;
 
             return false;
         }
 
-        public static bool TryParseGuid(string value, ref Guid guid)
+        /// <summary>
+        /// Performs a quick check to determine if the given string value can be converted to DateTime.
+        /// </summary>
+        /// <param name="value">The string value.</param>
+        /// <returns></returns>
+        private static bool IsMaybeDateTime(this string value)
         {
-            return value.Length == GUID_STRING_LENGTH &&
-                   value.Count(c => c == '-') == 4 &&
-                   Guid.TryParse(value, out guid);
-        }        
+            if (String.IsNullOrWhiteSpace(value))
+                return false;
 
-        private static bool IsDateTimeString(string value)
-        {
             var length = value.Length;
 
-            if (!(length >= DATE_TIME_FORMAT_DATE_ONLY.Length &&
-                  length <= DATE_TIME_FORMAT_DATE_HHMMSSFFFFFFF_UTC.Length + 5
+            if (!(length >= DateTimeFormat.DATE_ONLY.Length &&
+                  length <= DateTimeFormat.DATE_HHMMSSFFFFFFF_UTC.Length + 5
                ))
                 return false;
 
@@ -324,20 +299,20 @@ namespace ExpandoDB.Serialization
                ))
                 return false;
 
-            if (length > DATE_TIME_FORMAT_DATE_ONLY.Length &&
+            if (length > DateTimeFormat.DATE_ONLY.Length &&
                   value[10] != 'T'
                )
                 return false;
 
-            if (length == DATE_TIME_FORMAT_DATE_HHMM_UTC.Length ||
-                length == DATE_TIME_FORMAT_DATE_HHMMSS_UTC.Length ||
-                length == DATE_TIME_FORMAT_DATE_HHMMSSF_UTC.Length ||
-                length == DATE_TIME_FORMAT_DATE_HHMMSSFF_UTC.Length ||
-                length == DATE_TIME_FORMAT_DATE_HHMMSSFFF_UTC.Length ||
-                length == DATE_TIME_FORMAT_DATE_HHMMSSFFFF_UTC.Length ||
-                length == DATE_TIME_FORMAT_DATE_HHMMSSFFFFF_UTC.Length ||
-                length == DATE_TIME_FORMAT_DATE_HHMMSSFFFFFF_UTC.Length ||
-                length == DATE_TIME_FORMAT_DATE_HHMMSSFFFFFFF_UTC.Length
+            if (length == DateTimeFormat.DATE_HHMM_UTC.Length ||
+                length == DateTimeFormat.DATE_HHMMSS_UTC.Length ||
+                length == DateTimeFormat.DATE_HHMMSSF_UTC.Length ||
+                length == DateTimeFormat.DATE_HHMMSSFF_UTC.Length ||
+                length == DateTimeFormat.DATE_HHMMSSFFF_UTC.Length ||
+                length == DateTimeFormat.DATE_HHMMSSFFFF_UTC.Length ||
+                length == DateTimeFormat.DATE_HHMMSSFFFFF_UTC.Length ||
+                length == DateTimeFormat.DATE_HHMMSSFFFFFF_UTC.Length ||
+                length == DateTimeFormat.DATE_HHMMSSFFFFFFF_UTC.Length
                )
             {
                 if (!value.EndsWith("Z", StringComparison.InvariantCulture))
@@ -345,7 +320,20 @@ namespace ExpandoDB.Serialization
             }
 
             return true;
-        }    
-        
+        }
+
+        /// <summary>
+        /// Tries to convert the given string value to Guid.
+        /// </summary>
+        /// <param name="value">The string value.</param>
+        /// <param name="guidValue">The Guid value.</param>
+        /// <returns></returns>
+        internal static bool TryParseGuid(string value, ref Guid guidValue)
+        {
+            return value.Length == GUID_STRING_LENGTH &&
+                   value.Count(c => c == '-') == 4 &&
+                   Guid.TryParse(value, out guidValue);
+        }
+
     }
 }
