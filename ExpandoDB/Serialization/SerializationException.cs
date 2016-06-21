@@ -9,6 +9,10 @@ namespace ExpandoDB.Serialization
     [Serializable]
     public class SerializationException : Exception
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SerializationException"/> class.
+        /// </summary>
+        /// <param name="message">The message that describes the error.</param>
         public SerializationException(string message) : base(message)
         {
         }

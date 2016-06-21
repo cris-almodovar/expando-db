@@ -24,7 +24,8 @@
         public string Query { get; set; }
 
         /// <summary>
-        /// Gets or sets the Document field to be used for sorting
+        /// Gets or sets the Document field to be used for sorting. By default, the sort order is ascending; 
+        /// to sort in descending order, prefix the field with '-' (minus sign).
         /// </summary>
         /// <value>
         /// The field to be used for sorting

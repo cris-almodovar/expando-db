@@ -4,7 +4,7 @@ using System.Dynamic;
 namespace ExpandoDB.Rest.DTO
 {
     /// <summary>
-    /// Represents the JSON data returned by the GET /db/{collection} API.
+    /// Represents the JSON response returned by the GET /db/{collection} API.
     /// </summary>
     /// <seealso cref="ExpandoDB.Rest.DTO.ResponseDto" />
     public class SearchResponseDto : ResponseDto

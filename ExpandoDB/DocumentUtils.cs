@@ -163,18 +163,7 @@ namespace ExpandoDB
         internal static EnumerableDocuments ToEnumerableDocuments(this IEnumerable<LightningKeyValuePair> keyValuePairs)
         {
             return new EnumerableDocuments(keyValuePairs);
-        }
-
-        /// <summary>
-        /// Serializes the Document object to a JSON string.
-        /// </summary>
-        /// <param name="document">The document object to serialize.</param>
-        /// <returns></returns>
-        public static string ToJson(this Document document)
-        {
-            var json = DynamicJsonSerializer.Serialize(document);
-            return json;
-        }
+        }        
 
         /// <summary>
         /// Clones the Document object to a Dictionary object.

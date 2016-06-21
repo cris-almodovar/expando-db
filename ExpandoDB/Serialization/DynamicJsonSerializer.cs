@@ -127,7 +127,7 @@ namespace ExpandoDB.Serialization
                 return null;
 
             // NOTE: We only need to unwrap the value if the Type is JsonObject; 
-            // this is a Jil-specific internal wrapper class that holds the actual 
+            // this type is a Jil-specific internal wrapper class that holds the actual 
             // JSON values. This class cannot be manipulated directly - we need
             // to 'unwrap' the actual values using a TypeConverter object.
 

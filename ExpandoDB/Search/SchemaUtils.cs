@@ -93,7 +93,7 @@ namespace ExpandoDB.Search
         /// <returns></returns>
         internal static Schema PopulateWith(this Schema schema, IDictionary<string, object> dictionary)
         {
-            schema._id = (Guid)dictionary[Schema.StandardField.ID];
+            schema._id = dictionary.ContainsKey(Schema.StandardField.ID) ? (Guid?)dictionary[Schema.StandardField.ID] : null;
             schema.Name = dictionary["Name"] as string;
 
             var fields = dictionary["Fields"] as IList;

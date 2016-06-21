@@ -42,7 +42,7 @@ namespace ExpandoDB.Tests
         [TestCategory("Document Storage tests")]
         public void Database_file_is_auto_created()        
         {            
-            var dbFilePath = Path.Combine(_dataPath, "db", "data.mdb");  
+            var dbFilePath = Path.Combine(_dataPath, "data.mdb");  
             Assert.IsTrue(File.Exists(dbFilePath));
         }
 

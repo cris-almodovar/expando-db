@@ -78,7 +78,8 @@ namespace ExpandoDB.Tests
             _db.Dispose();
             Thread.Sleep(1000);
 
-            _db = new Database(_dataPath);            
+            _db = new Database(_dataPath);
+            Thread.Sleep(1000);
 
             var criteria = new SearchCriteria { Query = "Author:Douglas", SortByField = "-Title", TopN = 1 };
             var result = _db["books"].SearchAsync(criteria).Result;

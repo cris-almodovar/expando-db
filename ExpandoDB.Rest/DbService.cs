@@ -36,8 +36,8 @@ namespace ExpandoDB.Rest
             // Here we define the routes and their corresponding handlers.
             // Note that all handlers except OnGetCount() and OnGetCollectionSchema() are async.
 
-            //Get["/_schemas"] = OnGetDatabaseSchema;
-            //Get["/_schemas/{collection}"] = OnGetCollectionSchema;
+            Get["/_schemas"] = OnGetDatabaseSchema;
+            Get["/_schemas/{collection}"] = OnGetCollectionSchema;
             Post["/{collection}", true] = OnInsertDocumentAsync;            
             Get["/{collection}", true] = OnSearchDocumentsAsync;            
             Get["/{collection}/count"] = OnGetCount;
@@ -129,7 +129,7 @@ namespace ExpandoDB.Rest
         private object OnGetDatabaseSchema(dynamic req)
         {
             var stopwatch = new Stopwatch();
-            stopwatch.Start();
+            stopwatch.Start(); 
 
             var schemaDocuments = (from collectionName in _database.GetCollectionNames().OrderBy(n=> n)
                                   let schema = _database[collectionName]?.Schema
@@ -425,6 +425,9 @@ namespace ExpandoDB.Rest
             var collectionName = (string)req["collection"];
             if (String.IsNullOrWhiteSpace(collectionName))
                 throw new ArgumentException("collection cannot be null or blank");
+
+            if (collectionName == Schema.COLLECTION_NAME)
+                throw new InvalidOperationException($"Cannot drop the {Schema.COLLECTION_NAME} collection.");
 
             if (!_database.ContainsCollection(collectionName))
                 return HttpStatusCode.NotFound;

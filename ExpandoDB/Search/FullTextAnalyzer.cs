@@ -15,7 +15,7 @@ namespace ExpandoDB.Search
     /// </summary>
     public class FullTextAnalyzer : Analyzer
     {
-        public const string DEFAULT_SEPARATOR_CHARS = @"[\s,:;.()?!@#%^&*|/\\+÷°±{}\[\]<>\-`~'""$£€¢¥©®™•§†‡–—¶]"; 
+        internal const string DEFAULT_SEPARATOR_CHARS = @"[\s,:;.()?!@#%^&*|/\\+÷°±{}\[\]<>\-`~'""$£€¢¥©®™•§†‡–—¶]"; 
         private readonly string _separatorChars;
         private readonly bool _enableStemming;
         private readonly bool _ignoreCase;

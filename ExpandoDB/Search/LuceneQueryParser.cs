@@ -16,8 +16,17 @@ namespace ExpandoDB.Search
     /// <seealso cref="FlexLucene.Queryparser.Classic.QueryParser" />
     public class LuceneQueryParser : QueryParser
     {
-        private readonly Schema _schema;        
+        private readonly Schema _schema;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LuceneQueryParser"/> class.
+        /// </summary>
+        /// <param name="defaultFieldName">Default name of the field.</param>
+        /// <param name="analyzer">The analyzer.</param>
+        /// <param name="schema">The schema.</param>
+        /// <exception cref="System.ArgumentException"></exception>
+        /// <exception cref="System.ArgumentNullException">
+        /// </exception>
         public LuceneQueryParser(string defaultFieldName, Analyzer analyzer, Schema schema) 
             : base (defaultFieldName, analyzer)
         {
@@ -31,7 +40,9 @@ namespace ExpandoDB.Search
             _schema = schema;
         }       
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         protected override Query GetRangeQuery(string fieldName, string part1, string part2, bool startInclusive, bool endInclusive)
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
         {
             var schemaField = _schema.FindField(fieldName);
             if (schemaField == null)
@@ -108,7 +119,9 @@ namespace ExpandoDB.Search
             return query ?? base.GetRangeQuery(fieldName, part1, part2, startInclusive, endInclusive);
         } 
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         protected override Query GetFieldQuery(string fieldName, string queryText, bool quoted)
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
         {
             var schemaField = _schema.FindField(fieldName);
             if (schemaField == null)
@@ -149,7 +162,9 @@ namespace ExpandoDB.Search
             }
         }        
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         protected override Query GetFuzzyQuery(string fieldName, string termString, float minSimilarity)
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
         {
             var schemaField = _schema.FindField(fieldName);
             if (schemaField == null)
@@ -162,7 +177,9 @@ namespace ExpandoDB.Search
             return base.GetFuzzyQuery(fieldName, termString, minSimilarity);
         }
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         protected override Query GetPrefixQuery(string fieldName, string termString)
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
         {
             var schemaField = _schema.FindField(fieldName);
             if (schemaField == null)
@@ -175,7 +192,9 @@ namespace ExpandoDB.Search
             return base.GetPrefixQuery(fieldName, termString);
         }
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         protected override Query GetRegexpQuery(string fieldName, string termString)
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
         {
             var schemaField = _schema.FindField(fieldName);
             if (schemaField == null)
@@ -188,7 +207,9 @@ namespace ExpandoDB.Search
             return base.GetRegexpQuery(fieldName, termString);
         }
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         protected override Query GetWildcardQuery(string fieldName, string termString)
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
         {
             if (fieldName != "*")
             {
