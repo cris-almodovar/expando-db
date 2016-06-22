@@ -26,7 +26,7 @@ namespace ExpandoDB
         /// Converts all date values inside the dictionary to UTC format.
         /// </summary>
         /// <param name="dictionary">The dictionary.</param>
-        private static void ConvertDatesToUtc(this IDictionary<string, object> dictionary)
+        internal static void ConvertDatesToUtc(this IDictionary<string, object> dictionary)
         {
             var keysToProcess =
                     dictionary.Where(kvp => kvp.Value is DateTime || kvp.Value is IDictionary<string, object> || kvp.Value is IList)
@@ -50,7 +50,16 @@ namespace ExpandoDB
                     var dateValue = (DateTime)value;
                     if (dateValue.Kind != DateTimeKind.Utc)
                     {
-                        dateValue = dateValue.ToUniversalTime();
+                        switch (dateValue.Kind)
+                        {
+                            case DateTimeKind.Unspecified:
+                                dateValue = DateTime.SpecifyKind(dateValue, DateTimeKind.Utc);
+                                break;
+                            case DateTimeKind.Local:
+                                dateValue = dateValue.ToUniversalTime();
+                                break;
+                        }
+
                         dictionary[key] = dateValue;
                     }
                 }
@@ -79,7 +88,16 @@ namespace ExpandoDB
                     var dateValue = (DateTime)item;
                     if (dateValue.Kind != DateTimeKind.Utc)
                     {
-                        dateValue = dateValue.ToUniversalTime();
+                        switch (dateValue.Kind)
+                        {
+                            case DateTimeKind.Unspecified:
+                                dateValue = DateTime.SpecifyKind(dateValue, DateTimeKind.Utc);
+                                break;
+                            case DateTimeKind.Local:
+                                dateValue = dateValue.ToUniversalTime();
+                                break;
+                        }
+
                         list[i] = dateValue;
                     }
                 }
@@ -166,7 +184,7 @@ namespace ExpandoDB
         }        
 
         /// <summary>
-        /// Clones the Document object to a Dictionary object.
+        /// Copies the Document object to a new Dictionary object.
         /// </summary>
         /// <param name="document">The document.</param>
         /// <returns></returns>        

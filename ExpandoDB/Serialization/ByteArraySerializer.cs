@@ -9,6 +9,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Wire;
 
 namespace ExpandoDB.Serialization
 {
@@ -16,88 +17,21 @@ namespace ExpandoDB.Serialization
     /// Serializes/deserialize Documents to and from byte arrays, with an option to compress/decompress the data.
     /// </summary>
     public class ByteArraySerializer
-    {        
-        private static readonly NetSerializer.Serializer _serializer;
-        private static readonly RecyclableMemoryStreamManager _memoryManager;        
+    {
+        private readonly Serializer _serializer;
+        private readonly RecyclableMemoryStreamManager _memoryManager;
         private readonly CompressionOption _compressionOption;
-        private readonly IStreamCompressor _streamCompressor;
-
-        /// <summary>
-        /// Initializes the <see cref="ByteArraySerializer"/> class.
-        /// </summary>
-        static ByteArraySerializer()
-        {
-            var supportedTypes = new[]
-            {
-                typeof(object),
-                typeof(string),
-                typeof(double),
-                typeof(float),
-                typeof(int),
-                typeof(long),
-                typeof(decimal),
-                typeof(Guid),
-                typeof(DateTime),
-                typeof(bool),
-                typeof(Dictionary<string, object>),
-                typeof(IDictionary<string, object>),
-
-                typeof(List<object>),
-                typeof(List<string>),
-                typeof(List<double>),
-                typeof(List<float>),
-                typeof(List<int>),
-                typeof(List<long>),
-                typeof(List<decimal>),
-                typeof(List<Guid>),
-                typeof(List<DateTime>),
-                typeof(List<bool>),
-                typeof(List<Dictionary<string, object>>),
-                typeof(List<IDictionary<string, object>>),
-
-                typeof(IList<object>),
-                typeof(IList<string>),
-                typeof(IList<double>),
-                typeof(IList<float>),
-                typeof(IList<int>),
-                typeof(IList<long>),
-                typeof(IList<decimal>),
-                typeof(IList<Guid>),
-                typeof(IList<DateTime>),
-                typeof(IList<bool>),
-                typeof(IList<Dictionary<string, object>>),
-                typeof(IList<IDictionary<string, object>>),
-
-                typeof(object[]),
-                typeof(string[]),
-                typeof(double[]),
-                typeof(float[]),
-                typeof(int[]),
-                typeof(long[]),
-                typeof(decimal[]),
-                typeof(Guid[]),
-                typeof(DateTime[]),
-                typeof(bool[]),
-                typeof(Dictionary<string, object>[]),
-                typeof(IDictionary<string, object>[]),
-
-                typeof(Schema),
-                typeof(Schema.Field),
-                typeof(List<Schema.Field>),
-                typeof(IList<Schema.Field>),
-                typeof(Schema.DataType)
-            };
-
-            _serializer = new NetSerializer.Serializer(supportedTypes);
-            _memoryManager = new RecyclableMemoryStreamManager();
-        }
+        private readonly IStreamCompressor _streamCompressor;       
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ByteArraySerializer"/> class.
         /// </summary>
         /// <param name="compressionOption">The compression option.</param>
         public ByteArraySerializer(CompressionOption compressionOption)
-        {
+        {            
+            _serializer = new Serializer();
+            _memoryManager = new RecyclableMemoryStreamManager();
+
             _compressionOption = compressionOption;
             _streamCompressor = GetCompressor(compressionOption);
         }
@@ -132,11 +66,11 @@ namespace ExpandoDB.Serialization
                 var dictionary = document.ToDictionary();
 
                 if (_compressionOption == CompressionOption.None)
-                    _serializer.Serialize(memoryStream, dictionary);
+                    _serializer.Serialize(dictionary, memoryStream);                    
                 else
-                    using (var compressedStream = _streamCompressor.Compress(memoryStream)) 
-                        _serializer.Serialize(compressedStream, dictionary);
-                
+                    using (var compressedStream = _streamCompressor.Compress(memoryStream))
+                        _serializer.Serialize(dictionary, compressedStream);                        
+
                 value = memoryStream.ToArray();
             }
             return value;
@@ -157,12 +91,13 @@ namespace ExpandoDB.Serialization
             {
                 IDictionary<string, object> dictionary = null;
                 if (_compressionOption == CompressionOption.None)
-                    dictionary = _serializer.Deserialize(memoryStream) as IDictionary<string, object>;
+                    dictionary = _serializer.Deserialize<Dictionary<string, object>>(memoryStream);
                 else
-                    using (var decompressedStream = _streamCompressor.Decompress(memoryStream))                                        
-                        dictionary = _serializer.Deserialize(decompressedStream) as IDictionary<string, object>;                   
-                
-                document = new Document(dictionary);
+                    using (var decompressedStream = _streamCompressor.Decompress(memoryStream))
+                        dictionary = _serializer.Deserialize<Dictionary<string, object>>(decompressedStream);
+
+                dictionary.ConvertDatesToUtc();
+                document = new Document(dictionary);                
             }
 
             return document;

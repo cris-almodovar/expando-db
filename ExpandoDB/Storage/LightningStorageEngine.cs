@@ -75,7 +75,7 @@ namespace ExpandoDB.Storage
         }
 
         /// <summary>
-        /// Initializes the specified database.
+        /// Initializes the specified database. NOTE: A LightningDB 'database' acts like an RDBMS 'table'.
         /// </summary>
         /// <param name="database">The database.</param>
         public void InitializeDatabase(string database)
@@ -333,8 +333,10 @@ namespace ExpandoDB.Storage
             }
         }
 
+        
         private ThreadLocal<LightningTransaction> _readonlyTransaction = new ThreadLocal<LightningTransaction>(true);
-
+        
+        // Optimization - readonly transactions can remain open; we just need to reset and then renew it.
         private LightningTransaction GetReadonlyTransaction()
         {
             if (_readonlyTransaction.IsValueCreated)
