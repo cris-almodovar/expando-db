@@ -54,21 +54,30 @@ namespace ExpandoDB.Search
         /// <param name="indexPath">The path to the directory that will contain the Lucene index files.</param>
         /// <param name="schema">The schema.</param>
         /// <exception cref="System.ArgumentNullException"></exception>
-        public LuceneIndex(string indexPath, Schema schema = null)
+        public LuceneIndex(string indexPath, Schema schema)
         {
             if (String.IsNullOrWhiteSpace(indexPath))
                 throw new ArgumentNullException(nameof(indexPath)); 
             if (schema == null)
-                schema = Schema.CreateDefault();
+                throw new ArgumentNullException(nameof(schema));
 
             IndexPath = indexPath;
-            if (!System.IO.Directory.Exists(IndexPath))
+            Schema = schema;
+
+            if (System.IO.Directory.Exists(IndexPath))
+            {
+                if (Schema.IsDefault())
+                    throw new InvalidOperationException($"There is an existing index on '{IndexPath}'.");
+            }                
+            else
+            {
                 System.IO.Directory.CreateDirectory(IndexPath);
+            }
+            
 
             var path = Paths.get(IndexPath);
-            _indexDirectory = new MMapDirectory(path);            
-
-            Schema = schema ?? Schema.CreateDefault();
+            _indexDirectory = new MMapDirectory(path);  
+            
             _compositeAnalyzer = new CompositeAnalyzer(Schema);            
 
             _ramBufferSizeMB = Double.Parse(ConfigurationManager.AppSettings["IndexWriter.RAMBufferSizeMB"] ?? "128");            
@@ -274,7 +283,7 @@ namespace ExpandoDB.Search
         /// <summary>
         /// Drops this Lucene index
         /// </summary>
-        internal async Task Drop()
+        internal async Task DropAsync()
         {
             Dispose();
 
@@ -284,7 +293,7 @@ namespace ExpandoDB.Search
                 tryCount += 1;
 
                 // Wait half a second before deleting the Lucene index
-                await Task.Delay(TimeSpan.FromSeconds(0.5)).ConfigureAwait(false);
+                await Task.Delay(500).ConfigureAwait(false);
                 if (!System.IO.Directory.Exists(IndexPath))
                     break;
 

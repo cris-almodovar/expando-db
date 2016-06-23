@@ -81,13 +81,11 @@ namespace ExpandoDB
                 throw new ArgumentNullException(nameof(database));
 
             Name = name;
+            Schema = schema ?? Schema.CreateDefault(name);
+
             _documentStorage = database.DocumentStorage;            
 
             var indexPath = Path.Combine(database.IndexBasePath, name);
-            if (!Directory.Exists(indexPath))
-                Directory.CreateDirectory(indexPath);            
-
-            Schema = schema ?? Schema.CreateDefault(name);
             _luceneIndex = new LuceneIndex(indexPath, Schema);            
         }        
 
@@ -244,7 +242,7 @@ namespace ExpandoDB
             IsDropped = true;
 
             await _documentStorage.DropAsync(Name).ConfigureAwait(false);
-            await _luceneIndex.Drop().ConfigureAwait(false);
+            await _luceneIndex.DropAsync().ConfigureAwait(false);
             
             return IsDropped;
         }       

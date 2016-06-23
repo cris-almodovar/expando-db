@@ -175,5 +175,22 @@ namespace ExpandoDB.Search
 
             return foundField;
         }
+
+        /// <summary>
+        /// Determines whether this instance is a default schema
+        /// </summary>
+        /// <param name="schema">The schema.</param>
+        /// <returns></returns>
+        internal static bool IsDefault(this Schema schema)
+        {
+            if (schema.Name == "Default")
+                return true;
+
+            return (schema.Fields.Count == 4 &&
+                    schema.Fields.ContainsKey(Schema.StandardField.ID) &&
+                    schema.Fields.ContainsKey(Schema.StandardField.CREATED_TIMESTAMP) &&
+                    schema.Fields.ContainsKey(Schema.StandardField.MODIFIED_TIMESTAMP) &&
+                    schema.Fields.ContainsKey(Schema.StandardField.FULL_TEXT));
+        }
     }
 }
