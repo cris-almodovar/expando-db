@@ -12,6 +12,9 @@ using System.Linq;
 
 namespace Loader
 {
+    /// <summary>
+    /// This sample program loads the reuters-21578 dataset into ExpandoDB; this dataset contains Reuters news articles from the 80's.
+    /// </summary>
     class Program
     {
         static void Main()

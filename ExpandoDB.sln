@@ -26,6 +26,8 @@ Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "ExpandoDB.Installer", "Expa
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileIndexer", "FileIndexer\FileIndexer.csproj", "{9D1F7830-B042-410F-9F9E-DB3F12DECDCA}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{610D4D00-BB21-4AC5-9707-C499DACCF5D1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -65,5 +67,9 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{EC726B39-15E1-4558-80A7-814B61E3613D} = {610D4D00-BB21-4AC5-9707-C499DACCF5D1}
+		{9D1F7830-B042-410F-9F9E-DB3F12DECDCA} = {610D4D00-BB21-4AC5-9707-C499DACCF5D1}
 	EndGlobalSection
 EndGlobal

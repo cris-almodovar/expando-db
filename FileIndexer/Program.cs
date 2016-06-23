@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -11,8 +12,26 @@ using Toxy;
 
 namespace FileIndexer
 {
+    /// <summary>
+    /// This sample program reads the contents of your "My Documents" folder and looks for doc, docx, and pdf files
+    /// that are less than 100 MB in size; it then extracts the text and metadata from the files using the toxy library 
+    /// (https://github.com/tonyqus/toxy), and then sends all these data (as JSON) to a running ExpandoDB server instance.
+    /// <para>
+    /// The toxy library supports lots of other file types - it would be easy to modify this sample to implement 
+    /// a file crawler that periodically scans your "My Documents" folder to index its contents.
+    /// </para>
+    /// <para>
+    /// Once the documents are indexed, you can go to http://localhost:9000/db/documents and query the documents collection
+    /// like so: 
+    /// <![CDATA[
+    /// http://localhost:9000/db/documents?select=FileName,LastWriteTimeUtc&where="machine learning" AND "logistic regression"&highlight=true
+    /// ]]>  
+    /// </para>
+    /// </summary>
     static class Program
     {
+        const string EXPANDO_DB_URL = "http://localhost:9000/db";
+
         static void Main(string[] args)
         {
             var startFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
@@ -22,10 +41,10 @@ namespace FileIndexer
             if (!Directory.Exists(startFolder))
                 throw new InvalidOperationException($"Start folder does not exist: {startFolder}");
 
-            var restClient = new RestClient("http://localhost:9000/db");
+            var restClient = new RestClient(EXPANDO_DB_URL);
             
             var filterMasks = new[] { "*.doc", "*.docx", "*.pdf"};
-            Func<FileInfo, bool> isFileSizeLessThan20MB = fi => fi.Length <= 20 * 1024 * 1024;  // File size less than 20 MB
+            Func<FileInfo, bool> isFileSizeLessThan20MB = fi => fi.Length <= 100 * 1024 * 1024;  // File size less than 100 MB
 
             Console.WriteLine("-----------------------------------------------------------------------------------");
             Console.WriteLine($"FileIndexer starting at: {startFolder}");
@@ -40,28 +59,39 @@ namespace FileIndexer
             {
                 try
                 {
-                    var context = new ParserContext(file.FullName);
-                    var metadataParser = ParserFactory.CreateMetadata(context) as IMetadataParser;
-                    var metadata = metadataParser.Parse();
+                    // Lets create our document object
+                    dynamic document = new ExpandoObject();                     
+                    document.FileName = file.FullName;
+                    document.Size = file.Length;
+                    document.CreationTimeUtc = file.CreationTimeUtc;
+                    document.LastAccessTimeUtc = file.LastAccessTimeUtc;
+                    document.LastWriteTimeUtc = file.LastWriteTimeUtc;
 
+                    // Now let's extract the text from the file.
+                    // WARNING - the toxy library doesn't handle multi-column pdf files correctly.
+
+                    var context = new ParserContext(file.FullName);
                     var textParser = ParserFactory.CreateText(context) as ITextParser;
                     var text = textParser.Parse();
 
-                    var dictionary = new Dictionary<string, object>();
-                    dictionary["Text"] = text;
-                    dictionary["FileName"] = file.FullName;
-                    dictionary["Size"] = file.Length;
-                    dictionary["CreationTimeUtc"] = file.CreationTimeUtc;
-                    dictionary["LastAccessTimeUtc"] = file.LastAccessTimeUtc;
-                    dictionary["LastWriteTimeUtc"] = file.LastWriteTimeUtc;
+                    document.Text = text;
 
-                    foreach (var fieldName in metadata.GetNames())
+                    if (file.Extension.ToLower().StartsWith(".doc", StringComparison.InvariantCulture))
                     {
-                        dictionary[fieldName] = metadata.Get(fieldName).Value;
+                        // Lets's extract metadata from doc, docx files
+
+                        var metadataParser = ParserFactory.CreateMetadata(context) as IMetadataParser;
+                        var metadata = metadataParser.Parse();
+
+                        var dictionary = document as IDictionary<string, object>;
+                        foreach (var fieldName in metadata.GetNames())                        
+                            dictionary[fieldName] = metadata.Get(fieldName).Value;                        
                     }
 
+
+                    // Now lets submit the document to ExpandoDB via the REST API
                     var request = new RestRequest("/documents", Method.POST) { DateFormat = DateFormat.ISO_8601 };
-                    request.AddJsonBody(dictionary);
+                    request.AddJsonBody(document);
 
                     var response = restClient.Post(request);
                     response.Validate();
@@ -69,7 +99,10 @@ namespace FileIndexer
                     processedCount += 1;
 
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"There was an error processing '{file.FullName}' - {ex.Message}");
+                }
             }
 
             stopwatch.Stop();
