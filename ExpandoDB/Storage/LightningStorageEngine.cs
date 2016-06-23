@@ -239,8 +239,26 @@ namespace ExpandoDB.Storage
                 _writeOperationsQueue.Add(operation);
             else
                 operation.TaskCompletionSource.TrySetCanceled();
-
+            
             var result = await operation.TaskCompletionSource.Task.ConfigureAwait(false);
+
+            var tryCount = 0;
+            while (tryCount < 3)
+            {
+                tryCount += 1;
+                
+                LightningDatabase db = null;
+                _openDatabases.TryRemove(database, out db);
+
+                await Task.Delay(TimeSpan.FromSeconds(0.5)).ConfigureAwait(false);
+
+                if (!_openDatabases.ContainsKey(database))
+                    break; // We are successful
+            }
+
+            if (_openDatabases.ContainsKey(database))
+                throw new Exception($"Unable to remove the LightningDB database: {database}");
+
             return result;
         }
 

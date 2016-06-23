@@ -10,14 +10,6 @@ namespace ExpandoDB.Storage
     public interface IDocumentStorage : IDisposable
     {
         /// <summary>
-        /// Gets the path to the data files.
-        /// </summary>
-        /// <value>
-        /// The data path.
-        /// </value>
-        string DataPath { get;  }
-
-        /// <summary>
         /// Inserts a Document into the collection.
         /// </summary>
         /// <param name="collectionName">Name of the collection.</param>

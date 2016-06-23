@@ -20,15 +20,7 @@ namespace ExpandoDB.Storage
     public class LightningDocumentStorage : IDocumentStorage, IDisposable
     {        
         private readonly LightningStorageEngine _storageEngine;
-        private readonly HashSet<string> _initializedDatabases = new HashSet<string>();
-
-        /// <summary>
-        /// Gets the path to where the data files are stored.
-        /// </summary>
-        /// <value>
-        /// The data path.
-        /// </value>
-        public string DataPath { get { return _storageEngine.DataPath; } } 
+        private readonly HashSet<string> _initializedDatabases = new HashSet<string>();        
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LightningDocumentStorage" /> class.
@@ -282,9 +274,12 @@ namespace ExpandoDB.Storage
         public async Task DropAsync(string collectionName)
         {
             if (String.IsNullOrWhiteSpace(collectionName))
-                throw new ArgumentException($"{nameof(collectionName)} cannot be null or empty");
+                throw new ArgumentException($"{nameof(collectionName)} cannot be null or empty");            
 
-            EnsureCollectionIsInitialized(collectionName);
+            lock (_initializedDatabases)
+            {                
+                _initializedDatabases.Remove(collectionName);                
+            }            
 
             await _storageEngine.DropAsync(collectionName);
         }

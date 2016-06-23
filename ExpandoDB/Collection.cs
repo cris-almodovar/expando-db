@@ -18,8 +18,7 @@ namespace ExpandoDB
     /// This class is analogous to an MongoDB collection.
     /// </remarks>
     public class Collection : IDisposable
-    {        
-        private readonly string _indexPath;
+    {   
         private readonly IDocumentStorage _documentStorage;        
         private readonly LuceneIndex _luceneIndex;
         private readonly ILog _log = LogManager.GetLogger(typeof(Collection).Name);
@@ -48,13 +47,21 @@ namespace ExpandoDB
         /// </value>
         public bool IsDropped { get; private set; }
 
+
+        /// <summary>
+        /// Prevents a default instance of the <see cref="Collection"/> class from being created.
+        /// </summary>
+        private Collection()
+        {
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="Collection" /> class based on a Schema.
         /// </summary>
         /// <param name="schema">The Schema.</param>
-        /// <param name="documentStorage">The document storage.</param>
-        public Collection(Schema schema, IDocumentStorage documentStorage)
-            : this(schema.Name, documentStorage, schema)
+        /// <param name="database">The database.</param>
+        internal Collection(Schema schema, Database database)
+            : this(schema.Name, database, schema)
         {
         }
 
@@ -62,26 +69,26 @@ namespace ExpandoDB
         /// Initializes a new instance of the <see cref="Collection" /> class.
         /// </summary>
         /// <param name="name">The name of the Document Collection.</param>
-        /// <param name="documentStorage">The Document storage.</param>
+        /// <param name="database">The database.</param>
         /// <param name="schema">The schema.</param>
         /// <exception cref="System.ArgumentException"></exception>
         /// <exception cref="System.ArgumentNullException"></exception>
-        public Collection(string name, IDocumentStorage documentStorage, Schema schema = null)
+        internal Collection(string name, Database database, Schema schema = null)
         {
             if (String.IsNullOrWhiteSpace(name))
                 throw new ArgumentException($"{nameof(name)} cannot be null or blank");
-            if (documentStorage == null)
-                throw new ArgumentNullException(nameof(documentStorage));
+            if (database == null)
+                throw new ArgumentNullException(nameof(database));
 
             Name = name;
-            _documentStorage = documentStorage;            
+            _documentStorage = database.DocumentStorage;            
 
-            _indexPath = Path.Combine(_documentStorage.DataPath, Database.INDEX_DIRECTORY_NAME, name);
-            if (!Directory.Exists(_indexPath))
-                Directory.CreateDirectory(_indexPath);            
+            var indexPath = Path.Combine(database.IndexBasePath, name);
+            if (!Directory.Exists(indexPath))
+                Directory.CreateDirectory(indexPath);            
 
             Schema = schema ?? Schema.CreateDefault(name);
-            _luceneIndex = new LuceneIndex(_indexPath, Schema);            
+            _luceneIndex = new LuceneIndex(indexPath, Schema);            
         }        
 
         /// <summary>
@@ -236,24 +243,8 @@ namespace ExpandoDB
 
             IsDropped = true;
 
-            await _documentStorage.DropAsync(Name).ConfigureAwait(false);            
-
-            _luceneIndex.Dispose();
-            
-            var tryCount = 0;
-            while (tryCount < 3)
-            {
-                tryCount += 1;
-                // Wait half a second before deleting the Lucene index
-                await Task.Delay(TimeSpan.FromSeconds(0.5)).ConfigureAwait(false);
-                if (!Directory.Exists(_indexPath))
-                    break;
-
-                Directory.Delete(_indexPath, true);                
-            }
-
-            if (Directory.Exists(_indexPath))
-                throw new Exception($"Unable to delete Lucene index directory: {_indexPath}");
+            await _documentStorage.DropAsync(Name).ConfigureAwait(false);
+            await _luceneIndex.Drop().ConfigureAwait(false);
             
             return IsDropped;
         }       
