@@ -44,7 +44,7 @@ namespace FileIndexer
             var restClient = new RestClient(EXPANDO_DB_URL);
             
             var filterMasks = new[] { "*.doc", "*.docx", "*.pdf"};
-            Func<FileInfo, bool> isFileSizeLessThan20MB = fi => fi.Length <= 100 * 1024 * 1024;  // File size less than 100 MB
+            Func<FileInfo, bool> fileCheck = fi => fi.Length <= 100 * 1024 * 1024;  // File size less than 100 MB
 
             Console.WriteLine("-----------------------------------------------------------------------------------");
             Console.WriteLine($"FileIndexer starting at: {startFolder}");
@@ -52,7 +52,7 @@ namespace FileIndexer
             var stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            var allDocumentFiles = GetFiles(startFolder, filterMasks, isFileSizeLessThan20MB);            
+            var allDocumentFiles = GetFiles(startFolder, filterMasks, fileCheck);            
             var processedCount = 0;
 
             foreach (var file in allDocumentFiles)
