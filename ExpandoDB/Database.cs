@@ -21,8 +21,7 @@ namespace ExpandoDB
     /// </remarks>
     public class Database : IDisposable
     {
-        internal const string DATA_DIRECTORY_NAME = "data";
-        internal const string DB_DIRECTORY_NAME = "db";
+        internal const string DATA_DIRECTORY_NAME = "data";        
         internal const string INDEX_DIRECTORY_NAME = "index";    
         private readonly ConcurrentDictionary<string, Collection> _collections;
         private readonly Timer _schemaPersistenceTimer;          
