@@ -96,7 +96,7 @@ namespace ExpandoDB.Serialization
                     using (var decompressedStream = _streamCompressor.Decompress(memoryStream))
                         dictionary = _serializer.Deserialize<Dictionary<string, object>>(decompressedStream);
 
-                dictionary.ConvertDatesToUtc();
+                dictionary.ConvertDatesToUtc(); // NOTE: Remove this once the fix to this issue is released: https://github.com/akkadotnet/Wire/issues/23 
                 document = new Document(dictionary);                
             }
 

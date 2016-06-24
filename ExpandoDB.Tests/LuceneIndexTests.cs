@@ -25,7 +25,7 @@ namespace ExpandoDB.Tests
             if (Directory.Exists(_indexPath))
                 Directory.Delete(_indexPath, true);            
             
-            _luceneIndex = new LuceneIndex(_indexPath);
+            _luceneIndex = new LuceneIndex(_indexPath, Schema.CreateDefault());
         }
 
         [TestCleanup]

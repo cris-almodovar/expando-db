@@ -84,8 +84,14 @@ namespace FileIndexer
                         var metadata = metadataParser.Parse();
 
                         var dictionary = document as IDictionary<string, object>;
-                        foreach (var fieldName in metadata.GetNames())                        
-                            dictionary[fieldName] = metadata.Get(fieldName).Value;                        
+                        var fieldNames = metadata.GetNames().ToList();
+
+                        foreach (var fieldName in fieldNames)
+                            try
+                            {
+                                dictionary[fieldName] = metadata.Get(fieldName).Value;
+                            }
+                            catch { }
                     }
 
 
@@ -146,20 +152,21 @@ namespace FileIndexer
                 }
 
                 foreach (var fileName in fileNames)
-                {   
-                    var fileInfo = new FileInfo(fileName);
+                {                    
                     bool include = true;
+                    FileInfo fileInfo = null;
 
                     if (predicate != null)
                     {
                         try
                         {
+                            fileInfo = new FileInfo(fileName);
                             include = predicate(fileInfo);
                         }
                         catch { }
                     }
 
-                    if (include)
+                    if (include && fileInfo != null)
                         yield return fileInfo;
                 }
 

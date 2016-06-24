@@ -23,13 +23,34 @@ namespace ExpandoDB
     {
         internal const string DATA_DIRECTORY_NAME = "data";
         internal const string DB_DIRECTORY_NAME = "db";
-        internal const string INDEX_DIRECTORY_NAME = "index";
-        private readonly string _dataPath;                
-        private readonly string _indexPath;
-        private readonly IDictionary<string, Collection> _collections;       
-        private readonly IDocumentStorage _documentStorage;
+        internal const string INDEX_DIRECTORY_NAME = "index";    
+        private readonly ConcurrentDictionary<string, Collection> _collections;
         private readonly Timer _schemaPersistenceTimer;          
         private readonly ILog _log = LogManager.GetLogger(typeof(Database).Name);
+
+        /// <summary>
+        /// Gets the path to the data files.
+        /// </summary>
+        /// <value>
+        /// The data path.
+        /// </value>
+        public string DataPath { get; private set; }
+
+        /// <summary>
+        /// Gets the index base path; Collection-specific indexes are created as sub-directories under this path.
+        /// </summary>
+        /// <value>
+        /// The index base path.
+        /// </value>
+        public string IndexBasePath { get; private set; }
+
+        /// <summary>
+        /// Gets the IDocumentStorage used by this instance.
+        /// </summary>
+        /// <value>
+        /// The document storage.
+        /// </value>
+        public IDocumentStorage DocumentStorage { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Database" /> class.
@@ -43,22 +64,22 @@ namespace ExpandoDB
                 dataPath = Path.Combine(appPath, DATA_DIRECTORY_NAME);
             }
 
-            _dataPath = dataPath;            
-            EnsureDataDirectoryExists(_dataPath);
-            _log.Info($"Data Path: {_dataPath}");
+            DataPath = dataPath;            
+            EnsureDataDirectoryExists(DataPath);
+            _log.Info($"Data Path: {DataPath}");
 
-            _indexPath = Path.Combine(_dataPath, INDEX_DIRECTORY_NAME);
-            EnsureIndexDirectoryExists(_indexPath);
-            _log.Info($"Index Path: {_indexPath}");
+            IndexBasePath = Path.Combine(DataPath, INDEX_DIRECTORY_NAME);
+            EnsureIndexDirectoryExists(IndexBasePath);
+            _log.Info($"Index Base Path: {IndexBasePath}");
            
-            _documentStorage = new LightningDocumentStorage(_dataPath);
-            _collections = new Dictionary<string, Collection>();
+            DocumentStorage = new LightningDocumentStorage(DataPath);
+            _collections = new ConcurrentDictionary<string, Collection>();
 
-            var persistedSchemas = _documentStorage.GetAllAsync(Schema.COLLECTION_NAME).Result.Select(d => d.ToSchema());
+            var persistedSchemas = DocumentStorage.GetAllAsync(Schema.COLLECTION_NAME).Result.Select(d => d.ToSchema());
             foreach (var schema in persistedSchemas)
             {
-                var collection = new Collection(schema, _documentStorage);
-                _collections.Add(schema.Name, collection);
+                var collection = new Collection(schema, this);
+                _collections.TryAdd(schema.Name, collection);
             }
 
             var schemaPersistenceIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["Schema.PersistenceIntervalSeconds"] ?? "1");
@@ -106,13 +127,13 @@ namespace ExpandoDB
                     {
                         if (!_collections.ContainsKey(name))
                         {
-                            collection = new Collection(name, _documentStorage);
-                            _collections.Add(name, collection);
+                            collection = new Collection(name, this);
+                            _collections.TryAdd(name, collection);
                         }
                     }
                 }
 
-                collection = _collections[name];
+                _collections.TryGetValue(name, out collection);
                 if (collection == null || collection.IsDropped)
                     throw new InvalidOperationException($"The Document Collection '{name}' does not exist.");
 
@@ -149,18 +170,20 @@ namespace ExpandoDB
             
             lock (_collections)
             {
-                if (_collections.ContainsKey(collectionName))
-                {
-                    collection = _collections[collectionName];
-                    _collections.Remove(collectionName);                   
-                }                    
+                if (_collections.ContainsKey(collectionName))             
+                    _collections.TryRemove(collectionName, out collection); 
             }
 
             if (collection == null)
-                return false;
-            
-            isSuccessful = await collection.DropAsync().ConfigureAwait(false) &&
-                           await this[Schema.COLLECTION_NAME].DeleteAsync(collection.Schema._id.Value).ConfigureAwait(false) == 1;
+                return false;            
+
+            isSuccessful = await collection.DropAsync().ConfigureAwait(false);
+            if (isSuccessful)
+            {
+                var schemaId = collection.Schema._id ?? Guid.Empty;
+                if (schemaId != Guid.Empty)
+                    isSuccessful = await this[Schema.COLLECTION_NAME].DeleteAsync(schemaId).ConfigureAwait(false) == 1;
+            }
 
             return isSuccessful;
         }
@@ -186,17 +209,17 @@ namespace ExpandoDB
             var isLockTaken = false;
             try
             {
-                isLockTaken = Monitor.TryEnter(_schemaPersistenceLock);
-                if (!isLockTaken)
-                    return;
-
-                foreach (var collectionName in GetCollectionNames())
+                Monitor.TryEnter(_schemaPersistenceLock, ref isLockTaken);
+                if (isLockTaken)
                 {
-                    var collection = this[collectionName];
-                    if (collection.IsDropped || collection.IsDisposed)
-                        continue;
+                    foreach (var collectionName in GetCollectionNames())
+                    {
+                        var collection = this[collectionName];
+                        if (collection.IsDropped || collection.IsDisposed)
+                            continue;
 
-                    await PersistSchema(collection).ConfigureAwait(false);
+                        await PersistSchema(collection).ConfigureAwait(false);
+                    }
                 }
             }
             catch (Exception ex)
@@ -278,7 +301,7 @@ namespace ExpandoDB
                     foreach (var collection in collections)
                         collection.Dispose();
 
-                    _documentStorage.Dispose();
+                    DocumentStorage.Dispose();
                 }
 
                 IsDisposed = true;

@@ -19,14 +19,13 @@ namespace ExpandoDB.Search
     /// <seealso cref="System.IDisposable" />
     public class LuceneIndex : IDisposable
     {        
-        private const string ALL_DOCS_QUERY = "*:*";
+        private const string ALL_DOCS_QUERY = "*:*";        
         private readonly Directory _indexDirectory;
         private readonly Analyzer _compositeAnalyzer;
         private readonly IndexWriter _writer;                
         private readonly SearcherManager _searcherManager;        
         private readonly Timer _refreshTimer;
-        private readonly Timer _commitTimer;
-        private readonly Schema _schema;
+        private readonly Timer _commitTimer;        
         private readonly ILog _log = LogManager.GetLogger(typeof(LuceneIndex).Name);    
         private readonly double _refreshIntervalSeconds;
         private readonly double _commitIntervalSeconds;        
@@ -38,7 +37,15 @@ namespace ExpandoDB.Search
         /// <value>
         /// The schema.
         /// </value>
-        public Schema Schema { get { return _schema; } }
+        public Schema Schema { get; private set; }
+
+        /// <summary>
+        /// Gets the Lucene index path.
+        /// </summary>
+        /// <value>
+        /// The index path.
+        /// </value>
+        public string IndexPath { get; private set; }
 
 
         /// <summary>
@@ -47,21 +54,31 @@ namespace ExpandoDB.Search
         /// <param name="indexPath">The path to the directory that will contain the Lucene index files.</param>
         /// <param name="schema">The schema.</param>
         /// <exception cref="System.ArgumentNullException"></exception>
-        public LuceneIndex(string indexPath, Schema schema = null)
+        public LuceneIndex(string indexPath, Schema schema)
         {
             if (String.IsNullOrWhiteSpace(indexPath))
                 throw new ArgumentNullException(nameof(indexPath)); 
             if (schema == null)
-                schema = Schema.CreateDefault();
+                throw new ArgumentNullException(nameof(schema));
 
-            if (!System.IO.Directory.Exists(indexPath))
-                System.IO.Directory.CreateDirectory(indexPath);
+            IndexPath = indexPath;
+            Schema = schema;
 
-            var path = Paths.get(indexPath);
-            _indexDirectory = new MMapDirectory(path);            
+            if (System.IO.Directory.Exists(IndexPath))
+            {
+                if (Schema.IsDefault())
+                    throw new InvalidOperationException($"There is an existing index on '{IndexPath}'.");
+            }                
+            else
+            {
+                System.IO.Directory.CreateDirectory(IndexPath);
+            }
+            
 
-            _schema = schema ?? Schema.CreateDefault();
-            _compositeAnalyzer = new CompositeAnalyzer(_schema);            
+            var path = Paths.get(IndexPath);
+            _indexDirectory = new MMapDirectory(path);  
+            
+            _compositeAnalyzer = new CompositeAnalyzer(Schema);            
 
             _ramBufferSizeMB = Double.Parse(ConfigurationManager.AppSettings["IndexWriter.RAMBufferSizeMB"] ?? "128");            
 
@@ -134,7 +151,7 @@ namespace ExpandoDB.Search
             if (document._id == null || document._id.Value == Guid.Empty)
                 document._id = Guid.NewGuid();
 
-            var luceneDocument = document.ToLuceneDocument(_schema);            
+            var luceneDocument = document.ToLuceneDocument(Schema);            
             _writer.AddDocument(luceneDocument);            
         }
 
@@ -164,7 +181,7 @@ namespace ExpandoDB.Search
             if (document._id == null || document._id == Guid.Empty)
                 throw new InvalidOperationException("Cannot update Document that does not have an _id");
 
-            var luceneDocument = document.ToLuceneDocument(_schema);
+            var luceneDocument = document.ToLuceneDocument(Schema);
             var id = document._id.ToString().ToLower();
             var idTerm = new Term(Schema.StandardField.ID, id);
 
@@ -189,7 +206,7 @@ namespace ExpandoDB.Search
             criteria.Validate();
 
             var result = new SearchResult<Guid>(criteria);
-            var queryParser = new LuceneQueryParser(Schema.StandardField.FULL_TEXT, _compositeAnalyzer, _schema);
+            var queryParser = new LuceneQueryParser(Schema.StandardField.FULL_TEXT, _compositeAnalyzer, Schema);
             var query = queryParser.Parse(criteria.Query);
 
             var searcher = _searcherManager.Acquire() as IndexSearcher;
@@ -221,7 +238,7 @@ namespace ExpandoDB.Search
             if (isDescending)
                 fieldName = fieldName.TrimStart('-');
 
-            var sortBySchemaField = _schema.FindField(fieldName, false);
+            var sortBySchemaField = Schema.FindField(fieldName, false);
             if (sortBySchemaField == null)
                 throw new LuceneQueryParserException($"Invalid sortBy field: '{fieldName}'.");
 
@@ -260,6 +277,32 @@ namespace ExpandoDB.Search
                 return Sort.RELEVANCE;
             else   
                 return new Sort(new[] { sortField });
+        }
+
+
+        /// <summary>
+        /// Drops this Lucene index
+        /// </summary>
+        internal async Task DropAsync()
+        {
+            Dispose();
+
+            var tryCount = 0;
+            while (tryCount < 3)
+            {
+                tryCount += 1;
+
+                // Wait half a second before deleting the Lucene index
+                await Task.Delay(500).ConfigureAwait(false);
+                if (!System.IO.Directory.Exists(IndexPath))
+                    break;
+
+                System.IO.Directory.Delete(IndexPath, true);
+            }
+
+            if (System.IO.Directory.Exists(IndexPath))
+                throw new Exception($"Unable to delete Lucene index directory: {IndexPath}");
+
         }
 
 
