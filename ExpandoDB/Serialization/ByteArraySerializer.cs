@@ -14,7 +14,7 @@ using Wire;
 namespace ExpandoDB.Serialization
 {
     /// <summary>
-    /// Serializes/deserialize Documents to and from byte arrays, with an option to compress/decompress the data.
+    /// Serializes/deserialize Documents to and from byte arrays, with an option to apply compression to the data.
     /// </summary>
     public class ByteArraySerializer
     {

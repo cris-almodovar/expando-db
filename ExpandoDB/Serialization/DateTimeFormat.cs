@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace ExpandoDB.Serialization
 {
     /// <summary>
-    /// Defines the DateTime formats supported by the JSON serializer/deserializer.
+    /// Defines the DateTime formats supported by the ExpandoDB JSON serializer/deserializer.
     /// </summary>
     public static class DateTimeFormat
     {

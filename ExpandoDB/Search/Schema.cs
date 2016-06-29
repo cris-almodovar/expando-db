@@ -9,7 +9,7 @@ using ExpandoDB.Storage;
 namespace ExpandoDB
 {
     /// <summary>
-    /// Defines the fields of a Document; these fields are auto-indexed using Lucene.
+    /// Defines the schema of a Document, as it is indexed in Lucene.
     /// </summary>    
     [Serializable]
     public class Schema
@@ -97,7 +97,7 @@ namespace ExpandoDB
         }
 
         /// <summary>
-        /// Represents the definition of a Document field.
+        /// Defines a Document field, as stored in the Lucene index.
         /// </summary>
         [Serializable]
         public class Field
