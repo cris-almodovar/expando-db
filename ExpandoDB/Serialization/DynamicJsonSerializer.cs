@@ -10,7 +10,7 @@ using System.Linq;
 namespace ExpandoDB.Serialization
 {
     /// <summary>
-    /// Encapsulates serialization/deserialization of Document object to/from JSON strings.
+    /// Serializes/deserializes Document object to/from JSON strings.
     /// </summary>
     /// <remarks>
     /// DynamicJsonSerializer uses the excellent Jil library (https://github.com/kevin-montrose/Jil).
