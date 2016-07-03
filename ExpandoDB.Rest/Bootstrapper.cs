@@ -41,11 +41,12 @@ namespace ExpandoDB.Rest
             JsonSettings.MaxJsonLength = Int32.MaxValue;
 
             // Configure Metrics.NET             
-            Metric.Config
-                  .WithAppCounters()
-                  .WithNancy(pipelines);            
+            Metric.Config 
+                  .WithAppCounters()                                    
+                  .WithNancy(pipelines, nancy => nancy.WithNancyMetrics(ngm => ngm.WithAllMetrics(), "ExpandoDB")
+                                                      .WithMetricsModule());            
 
-            ConfigureExceptionHandling(pipelines);
+            ConfigureExceptionHandling(pipelines);            
         }
 
         /// <summary>
