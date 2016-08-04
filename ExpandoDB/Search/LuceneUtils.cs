@@ -374,36 +374,36 @@ namespace ExpandoDB.Search
                 case TypeCode.Decimal:
                 case TypeCode.Double:
                 case TypeCode.Single:
-                    buffer.AppendFormat("{0}\r\n", value.ToString());
+                    buffer.Append($"{value.ToString()}{Environment.NewLine}");
                     break;
 
                 case TypeCode.Boolean:
-                    buffer.AppendFormat("{0}\r\n", value.ToString().ToLower());
+                    buffer.Append($"{value.ToString().ToLower()}{Environment.NewLine}");
                     break;
 
                 case TypeCode.DateTime:
-                    buffer.AppendFormat("{0}\r\n", ((DateTime)value).ToString("yyyy-MM-dd"));
+                    buffer.Append($"{((DateTime)value).ToString("yyyy-MM-dd")}");
                     break;
 
                 case TypeCode.String:
-                    buffer.AppendFormat("{0}\r\n", value as string);
+                    buffer.Append($"{value as string}{Environment.NewLine}");
                     break;
 
                 case TypeCode.Object:
                     if (type == typeof(Guid) || type == typeof(Guid?))
                     {
-                        buffer.AppendFormat("{0}\r\n", ((Guid)value));
+                        buffer.Append($"{((Guid)value)}{Environment.NewLine}");
                     }
                     else if (value is IList)
                     {
                         var list2 = value as IList;
-                        buffer.AppendFormat("{0}\r\n", list2.ToLuceneFullTextString());
+                        buffer.Append($"{list2.ToLuceneFullTextString()}{Environment.NewLine}");
 
                     }
                     else if (value is IDictionary<string, object>)
                     {
                         var dictionary2 = value as IDictionary<string, object>;
-                        buffer.AppendFormat("{0}\r\n", dictionary2.ToLuceneFullTextString());
+                        buffer.Append($"{dictionary2.ToLuceneFullTextString()}{Environment.NewLine}");
                     }
                     break;
 
