@@ -112,9 +112,18 @@ namespace ExpandoDB
                 document._id = Guid.NewGuid();            
 
             _luceneIndex.Insert(document);
-            var guid = await _documentStorage.InsertAsync(Name, document).ConfigureAwait(false);             
+            
+            try
+            {
+                await _documentStorage.InsertAsync(Name, document).ConfigureAwait(false);
+            }
+            catch
+            {
+                _luceneIndex.Delete(document._id.Value);
+                throw;
+            }
 
-            return guid;
+            return document._id.Value;
         }
 
         /// <summary>
