@@ -1,10 +1,13 @@
-﻿using ExpandoDB.Serialization;
+﻿using ExpandoDB.Search;
+using ExpandoDB.Serialization;
 using ExpandoDB.Storage;
+using FlexLucene.Facet;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
+using LuceneDocument = FlexLucene.Document.Document;
 
 namespace ExpandoDB
 {
@@ -196,5 +199,21 @@ namespace ExpandoDB
             var dictionary = new Dictionary<string, object>(document.AsDictionary());
             return dictionary;
         }
+
+        /// <summary>
+        /// Determines whether the Document object contains the special _categories field, which is used for faceted search.
+        /// </summary>
+        /// <param name="document">The document.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified Document object contains the special _categories field.; otherwise, <c>false</c>.
+        /// </returns>
+        public static bool HasCategories(this Document document)
+        {
+            if (document == null)
+                throw new ArgumentNullException(nameof(document));
+
+            return document.AsDictionary().ContainsKey(Schema.StandardField.CATEGORIES);
+        }       
+
     }
 }

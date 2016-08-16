@@ -1,5 +1,8 @@
 ﻿using Common.Logging;
 using FlexLucene.Analysis;
+using FlexLucene.Facet;
+using FlexLucene.Facet.Taxonomy;
+using FlexLucene.Facet.Taxonomy.Directory;
 using FlexLucene.Index;
 using FlexLucene.Search;
 using FlexLucene.Store;
@@ -21,9 +24,12 @@ namespace ExpandoDB.Search
     {        
         private const string ALL_DOCS_QUERY = "*:*";        
         private readonly Directory _indexDirectory;
+        private readonly Directory _taxonomyDirectory;
         private readonly Analyzer _compositeAnalyzer;
-        private readonly IndexWriter _writer;                
-        private readonly SearcherManager _searcherManager;        
+        private readonly IndexWriter _writer;
+        private readonly DirectoryTaxonomyWriter _taxonomyWriter;        
+        private readonly LuceneFacetBuilder _facetBuilder;
+        private readonly SearcherTaxonomyManager _searcherTaxonomyManager;        
         private readonly Timer _refreshTimer;
         private readonly Timer _commitTimer;        
         private readonly ILog _log = LogManager.GetLogger(typeof(LuceneIndex).Name);    
@@ -72,12 +78,16 @@ namespace ExpandoDB.Search
             else
             {
                 System.IO.Directory.CreateDirectory(IndexPath);
-            }
-            
+            }                        
 
-            var path = Paths.get(IndexPath);
-            _indexDirectory = new MMapDirectory(path);  
-            
+            _indexDirectory = new MMapDirectory(Paths.get(IndexPath));
+
+            var taxonomyIndexPath = System.IO.Path.Combine(IndexPath, "taxonomy");
+            if (!System.IO.Directory.Exists(taxonomyIndexPath))            
+                System.IO.Directory.CreateDirectory(taxonomyIndexPath);
+
+            _taxonomyDirectory = new MMapDirectory(Paths.get(taxonomyIndexPath));         
+                           
             _compositeAnalyzer = new CompositeAnalyzer(Schema);            
 
             _ramBufferSizeMB = Double.Parse(ConfigurationManager.AppSettings["IndexWriter.RAMBufferSizeMB"] ?? "128");            
@@ -87,9 +97,11 @@ namespace ExpandoDB.Search
                             .SetRAMBufferSizeMB(_ramBufferSizeMB)                            
                             .SetCommitOnClose(true);
             
-            _writer = new IndexWriter(_indexDirectory, config);            
+            _writer = new IndexWriter(_indexDirectory, config);
+            _taxonomyWriter = new DirectoryTaxonomyWriter(_taxonomyDirectory, IndexWriterConfigOpenMode.CREATE_OR_APPEND);
 
-            _searcherManager = new SearcherManager(_writer, true, false, null);         
+            _searcherTaxonomyManager = new SearcherTaxonomyManager(_writer, true, null, _taxonomyWriter);            
+            _facetBuilder = new LuceneFacetBuilder(_taxonomyWriter);                        
 
             _refreshIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["IndexSearcher.RefreshIntervalSeconds"] ?? "0.5");    
             _commitIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["IndexWriter.CommitIntervalSeconds"] ?? "60");
@@ -110,9 +122,11 @@ namespace ExpandoDB.Search
         public void Commit()
         {
             try
-            {
-                if (_writer.HasUncommittedChanges())
-                    _writer.Commit();
+            {                
+                _taxonomyWriter.Commit();
+                // TODO: Use a WaitHandle to prevent writer.Add|Update|Delete in between the statement above, and the statement below. 
+                if (_writer.HasUncommittedChanges()) 
+                    _writer.Commit();                
             }
             catch (Exception ex)
             {
@@ -130,8 +144,8 @@ namespace ExpandoDB.Search
         public void Refresh()
         {
             try
-            {  
-                _searcherManager.MaybeRefresh();
+            {
+                _searcherTaxonomyManager.MaybeRefresh();                    
             }
             catch (Exception ex)
             {
@@ -151,7 +165,7 @@ namespace ExpandoDB.Search
             if (document._id == null || document._id.Value == Guid.Empty)
                 document._id = Guid.NewGuid();
 
-            var luceneDocument = document.ToLuceneDocument(Schema);            
+            var luceneDocument = document.ToLuceneDocument(Schema, _facetBuilder);
             _writer.AddDocument(luceneDocument);            
         }
 
@@ -181,7 +195,7 @@ namespace ExpandoDB.Search
             if (document._id == null || document._id == Guid.Empty)
                 throw new InvalidOperationException("Cannot update Document that does not have an _id");
 
-            var luceneDocument = document.ToLuceneDocument(Schema);
+            var luceneDocument = document.ToLuceneDocument(Schema, _facetBuilder);
             var id = document._id.ToString().ToLower();
             var idTerm = new Term(Schema.StandardField.ID, id);
 
@@ -209,18 +223,19 @@ namespace ExpandoDB.Search
             var queryParser = new LuceneQueryParser(Schema.StandardField.FULL_TEXT, _compositeAnalyzer, Schema);
             var query = queryParser.Parse(criteria.Query);
 
-            var searcher = _searcherManager.Acquire() as IndexSearcher;
-            if (searcher != null)
+            var instance = _searcherTaxonomyManager.Acquire() as SearcherTaxonomyManagerSearcherAndTaxonomy;
+            if (instance != null)
             {
+                var searcher = instance.Searcher;
                 try
                 {
                     var sort = GetSortCriteria(criteria.SortByField);
-                    var topFieldDocs = searcher.Search(query, criteria.TopN, sort);
-                    result.PopulateWith(topFieldDocs, id => searcher.Doc(id));
+                    var topDocs = searcher.Search(query, criteria.TopN, sort);
+                    result.PopulateWith(topDocs, id => searcher.Doc(id));
                 }
                 finally
                 {
-                    _searcherManager.Release(searcher); 
+                    _searcherTaxonomyManager.Release(instance); 
                     searcher = null;
                 }
             }
@@ -328,12 +343,15 @@ namespace ExpandoDB.Search
                     _refreshTimer.Dispose();
                     _commitTimer.Dispose();
 
-                    _searcherManager.Close();
+                    _searcherTaxonomyManager.Close();
+
+                    _taxonomyWriter.Commit();
+                    _taxonomyWriter.Close();
 
                     if (_writer.HasUncommittedChanges())
                         _writer.Commit();
 
-                    _writer.Close();
+                    _writer.Close();                    
                 }               
 
                 IsDisposed = true;

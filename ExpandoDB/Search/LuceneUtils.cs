@@ -9,6 +9,7 @@ using LuceneDocument = FlexLucene.Document.Document;
 using JavaDouble = java.lang.Double;
 using JavaLong = java.lang.Long;
 using JavaInteger = java.lang.Integer;
+using FlexLucene.Facet;
 
 namespace ExpandoDB.Search
 {
@@ -28,20 +29,23 @@ namespace ExpandoDB.Search
         private static readonly System.Text.RegularExpressions.Regex _queryParserIllegalCharsRegex = new System.Text.RegularExpressions.Regex(QUERY_PARSER_ILLEGAL_CHARS);
 
         /// <summary>
-        /// Converts a <see cref="Document"/> object to a <see cref="LuceneDocument"/> object.
+        /// Converts a <see cref="Document" /> object to a <see cref="LuceneDocument" /> object.
         /// </summary>
         /// <param name="document">The Document object</param>
         /// <param name="schema">The schema.</param>
+        /// <param name="facetBuilder">The Lucene facet builder.</param>
         /// <returns></returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="InvalidOperationException">Cannot index a Document that does not have an _id.</exception>
+        /// <exception cref="SchemaException">The fieldName '{fieldName}'</exception>
         /// <exception cref="System.ArgumentNullException"></exception>
         /// <exception cref="System.InvalidOperationException">Cannot index a Document that does not have an _id.</exception>
-        public static LuceneDocument ToLuceneDocument(this Document document, Schema schema = null)
+        public static LuceneDocument ToLuceneDocument(this Document document, Schema schema = null, LuceneFacetBuilder facetBuilder = null)
         {
             if (document == null)
                 throw new ArgumentNullException(nameof(document));
-
             if (schema == null)
-                schema = Schema.CreateDefault();
+                schema = Schema.CreateDefault();            
 
             var documentDictionary = document.AsDictionary();
             if (!documentDictionary.ContainsKey(Schema.StandardField.ID))
@@ -79,8 +83,13 @@ namespace ExpandoDB.Search
             var fullText = document.ToLuceneFullTextString();
             luceneDocument.Add(new TextField(Schema.StandardField.FULL_TEXT, fullText, FieldStore.NO));
 
+            // Check if the document has the special _categories field,
+            // which means that we need to create facets for it.
+            if (document.HasCategories() && facetBuilder != null)            
+                luceneDocument = facetBuilder.RebuildDocumentWithFacets(luceneDocument, document, schema);            
+
             return luceneDocument;
-        }
+        }        
 
         /// <summary>
         /// Generates Lucene fields for the given value.
@@ -253,7 +262,7 @@ namespace ExpandoDB.Search
             }
 
             return luceneFields;
-        }
+        }       
 
         private static List<Field> ToLuceneFields(this IDictionary<string, object> dictionary, Schema.Field parentSchemaField)
         {

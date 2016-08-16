@@ -8,7 +8,7 @@
         /// <summary>
         /// The defaul value for the TopN property.
         /// </summary>
-        internal const int DEFAULT_TOP_N = 100000;
+        internal const int DEFAULT_TOP_N = 100;
 
         /// <summary>
         /// The defaul valeu of the ItemsPerPage property.

@@ -30,26 +30,26 @@ namespace ExpandoDB.Search
         /// Populates the SearchResult object with data from the specified TopFieldDocs object.
         /// </summary>
         /// <param name="result">The SearchResult to be populated.</param>
-        /// <param name="topFieldDocs">The TopFieldDocs object returned by Lucene.</param>
+        /// <param name="topDocs">The TopDocs object returned by Lucene.</param>
         /// <param name="getDoc">A lambda that returns the Lucene document given the doc id.</param>
-        public static void PopulateWith(this SearchResult<Guid> result, TopFieldDocs topFieldDocs, Func<int, LuceneDocument> getDoc)
+        public static void PopulateWith(this SearchResult<Guid> result, TopDocs topDocs, Func<int, LuceneDocument> getDoc)
         {
             if (result == null)
                 throw new ArgumentNullException(nameof(result));
-            if (topFieldDocs == null)
-                throw new ArgumentNullException(nameof(topFieldDocs));
+            if (topDocs == null)
+                throw new ArgumentNullException(nameof(topDocs));
             if (getDoc == null)
                 throw new ArgumentNullException(nameof(getDoc));
 
-            result.ItemCount = topFieldDocs.ScoreDocs.Length;
-            result.TotalHits = topFieldDocs.TotalHits;
+            result.ItemCount = topDocs.ScoreDocs.Length;
+            result.TotalHits = topDocs.TotalHits;
 
             if (result.ItemCount > 0)
             {
                 var itemsToSkip = (result.PageNumber - 1) * result.ItemsPerPage;
                 var itemsToTake = result.ItemsPerPage;
 
-                var scoreDocs = topFieldDocs.ScoreDocs
+                var scoreDocs = topDocs.ScoreDocs
                                             .Skip(itemsToSkip)
                                             .Take(itemsToTake)
                                             .ToList();
