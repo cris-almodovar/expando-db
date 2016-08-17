@@ -84,8 +84,7 @@ namespace ExpandoDB.Tests
 
                 documents.Add(newDocument);
                 _luceneIndex.Insert(newDocument);
-                Thread.Sleep(1200);
-                
+                Thread.Sleep(1200);                
             }
 
             var documentIds = documents.Select(c => c._id.Value).ToList();

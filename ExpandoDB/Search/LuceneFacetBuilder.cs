@@ -28,11 +28,11 @@ namespace ExpandoDB.Search
                 throw new ArgumentNullException(nameof(taxonomyWriter));
 
             _taxonomyWriter = taxonomyWriter;
-            _facetsConfig = new FacetsConfig();            
+            _facetsConfig = new FacetsConfig();                        
         }        
 
         /// <summary>
-        /// Creates Lucene FacetFields from the specified Document object.
+        /// Creates Lucene FacetFields from the _categories field of the specified Document.
         /// </summary>
         /// <param name="document">The document.</param>
         /// <param name="schema">The schema.</param>
@@ -53,12 +53,20 @@ namespace ExpandoDB.Search
             {
                 if (categoriesField.DataType == Schema.DataType.Array &&
                     categoriesField.ArrayElementDataType == Schema.DataType.Text)
-                {
-                    var documentDictionary = document.AsDictionary();
-                    var categories = documentDictionary[Schema.StandardField.CATEGORIES] as IList<string>;
+                {                    
+                    var categories = document.AsDictionary()[Schema.StandardField.CATEGORIES] as IList<string>;
                     if (categories != null)
                     {
-                        // TODO: Parse the categories to create FacetFields, then add to facetFields list.
+                        // Parse each category to create a FacetField, then add to facetFields list.
+                        foreach (var category in categories.Distinct())
+                        {
+                            var facetField = category.ToLuceneFacetField();
+                            if (facetField != null)
+                            {
+                                facetFields.Add(facetField);                                
+                                _facetsConfig.EnsureConfig(facetField);                                
+                            }
+                        }
                     }
                 } 
                 else

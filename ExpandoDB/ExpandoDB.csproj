@@ -215,6 +215,7 @@
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Search\CompositeAnalyzer.cs" />
     <Compile Include="Search\LuceneFacetBuilder.cs" />
+    <Compile Include="Search\LuceneFacetUtils.cs" />
     <Compile Include="Search\LuceneQueryParserUtils.cs" />
     <Compile Include="Search\SchemaException.cs" />
     <Compile Include="Search\LuceneUtils.cs" />
