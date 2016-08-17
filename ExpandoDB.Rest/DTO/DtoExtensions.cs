@@ -79,7 +79,7 @@ namespace ExpandoDB.Rest.DTO
             if (fieldsToSelect.Count > 0 && searchResult.IncludeHighlight)
                 fieldsToSelect.Add(LuceneHighlighter.HIGHLIGHT_FIELD_NAME);
 
-            responseDto.items = searchResult.Items.Select(c => c.Select(fieldsToSelect).AsExpando()).ToList();
+            responseDto.items = searchResult.Items.Select(c => c.Select(fieldsToSelect).AsExpando());
 
             return responseDto;
         }

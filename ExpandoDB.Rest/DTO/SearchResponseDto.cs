@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using ExpandoDB.Search;
+using System.Collections.Generic;
 using System.Dynamic;
 
 namespace ExpandoDB.Rest.DTO
@@ -20,6 +21,8 @@ namespace ExpandoDB.Rest.DTO
         public int pageNumber { get; set; }
         public int itemsPerPage { get; set; }
         public bool highlight { get; set; }
-        public List<ExpandoObject> items { get; set; }        
+        public IEnumerable<Category> categories { get; set; }
+        public int topNCategories { get; set; }
+        public IEnumerable<ExpandoObject> items { get; set; }        
     }
 }

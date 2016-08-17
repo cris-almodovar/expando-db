@@ -90,12 +90,19 @@ namespace ExpandoDB.Search
                 throw new ArgumentNullException(nameof(facetField));
 
             var facetName = facetField.Dim;
+
             if (!facetsConfig.Contains(facetName))
             {
                 // Configure the FacetField if not already configured.
                 // By default set it to hierarchical, and multi-valued.
-                facetsConfig.SetHierarchical(facetName, true);
-                facetsConfig.SetMultiValued(facetName, true);
+                lock (facetsConfig)
+                {
+                    if (!facetsConfig.Contains(facetName))
+                    {
+                        facetsConfig.SetHierarchical(facetName, true);
+                        facetsConfig.SetMultiValued(facetName, true);
+                    }
+                }
             }
         }
     }

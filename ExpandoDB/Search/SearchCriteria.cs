@@ -1,4 +1,6 @@
-﻿namespace ExpandoDB.Search
+﻿using System.Collections.Generic;
+
+namespace ExpandoDB.Search
 {
     /// <summary>
     /// Represents the search parameters accepted by ExpandoDB.
@@ -9,6 +11,11 @@
         /// The defaul value for the TopN property.
         /// </summary>
         internal const int DEFAULT_TOP_N = 100;
+
+        /// <summary>
+        /// The defaul value for the TopNCategories property.
+        /// </summary>
+        internal const int DEFAULT_TOP_N_CATEGORIES = 20;
 
         /// <summary>
         /// The defaul valeu of the ItemsPerPage property.
@@ -63,5 +70,23 @@
         ///   <c>true</c> if highlights will be included; otherwise, <c>false</c>.
         /// </value>
         public bool IncludeHighlight { get; set; }
+
+
+        /// <summary>
+        /// Gets or sets a comma-separated list of categories to drill-sideways to.
+        /// </summary>
+        /// <value>
+        /// The categories.
+        /// </value>
+        public string Categories { get; set; }  
+
+
+        /// <summary>
+        /// Gets or sets the maximum number of categories to be returned by the search query.
+        /// </summary>
+        /// <value>
+        /// The maximum number of categories to be returned by the search query.
+        /// </value>
+        public int TopNCategories { get; set; } = DEFAULT_TOP_N;
     }
 }

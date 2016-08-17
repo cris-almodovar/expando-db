@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace ExpandoDB.Search
 {
@@ -75,12 +76,12 @@ namespace ExpandoDB.Search
         /// The number of items in one page of the result set.
         /// </value>
         public int ItemsPerPage { get; set; }
-        
+
         /// <summary>
-        /// Gets or sets a value indicating whether [include highlight].
+        /// Gets or sets a value indicating whether text matches are highlighted.
         /// </summary>
         /// <value>
-        ///   <c>true</c> if [include highlight]; otherwise, <c>false</c>.
+        ///   <c>true</c> if text matches are highlighted; otherwise, <c>false</c>.
         /// </value>
         public bool IncludeHighlight { get; set; }
         
@@ -91,6 +92,23 @@ namespace ExpandoDB.Search
         /// The items.
         /// </value>
         public IEnumerable<TResult> Items { get; set; }
+
+
+        /// <summary>
+        /// Gets or sets the categories of the items in the search results.
+        /// </summary>
+        /// <value>
+        /// The categories.
+        /// </value>
+        public IEnumerable<Category> Categories { get; set; }
+
+        /// <summary>
+        /// Gets or sets the maximum number of categories to be returned by the search query.
+        /// </summary>
+        /// <value>
+        /// The maximum number of categories to be returned by the search query.
+        /// </value>
+        public int TopNCategories { get; set; }
 
 
         /// <summary>
@@ -112,6 +130,7 @@ namespace ExpandoDB.Search
             ItemsPerPage = criteria.ItemsPerPage;
             IncludeHighlight = criteria.IncludeHighlight;
             PageNumber = criteria.PageNumber;
+            TopNCategories = criteria.TopNCategories;
 
             ItemCount = itemCount;
             TotalHits = totalHits;
@@ -121,5 +140,59 @@ namespace ExpandoDB.Search
         }
 
         
+    }
+
+    /// <summary>
+    /// Represents a category that a Document is assigned to.
+    /// </summary>
+    public class Category
+    {
+        /// <summary>
+        /// Gets or sets the name of the category.
+        /// </summary>
+        /// <value>
+        /// The name.
+        /// </value>
+        public string Name { get; set; }
+
+        /// <summary>
+        /// Gets or sets the count of Documents that fall in the category.
+        /// </summary>
+        /// <value>
+        /// The count.
+        /// </value>
+        public int Count { get; set; }
+
+        /// <summary>
+        /// Gets or sets the child categories under the current category.
+        /// </summary>
+        /// <value>
+        /// The child categories.
+        /// </value>
+        public IEnumerable<Category> ChildCategories { get; private set; } = new List<Category>();
+
+
+        /// <summary>
+        /// Returns a <see cref="System.String" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {            
+            return ToString(this);
+        }
+
+        private string ToString(Category category, int level = 0)
+        {
+            var buffer = new StringBuilder();
+            var space = new String(' ', level*4);
+
+            buffer.Append($"{space}Category: '{category.Name}', Count: {category.Count}");
+            foreach (var child in ChildCategories)
+                buffer.Append(ToString(child, level+1));
+
+            return buffer.ToString();
+        }
     }
 }

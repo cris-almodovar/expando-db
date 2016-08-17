@@ -12,5 +12,7 @@
         public int? itemsPerPage { get; set; }
         public int? pageNumber { get; set; }
         public bool? highlight { get; set; }
+        public string categories { get; set; }
+        public int? topNCategories { get; set; }
     }
 }

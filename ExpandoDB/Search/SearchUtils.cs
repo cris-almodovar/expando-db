@@ -1,4 +1,5 @@
 ﻿using FlexLucene.Document;
+using FlexLucene.Facet;
 using FlexLucene.Search;
 using System;
 using System.Collections.Generic;
@@ -30,8 +31,10 @@ namespace ExpandoDB.Search
         /// Populates the SearchResult object with data from the specified TopFieldDocs object.
         /// </summary>
         /// <param name="result">The SearchResult to be populated.</param>
-        /// <param name="topDocs">The TopDocs object returned by Lucene.</param>
+        /// <param name="topDocs">The TopDocs object returned by Lucene.</param>        
         /// <param name="getDoc">A lambda that returns the Lucene document given the doc id.</param>
+        /// <exception cref="ArgumentNullException">
+        /// </exception>
         public static void PopulateWith(this SearchResult<Guid> result, TopDocs topDocs, Func<int, LuceneDocument> getDoc)
         {
             if (result == null)

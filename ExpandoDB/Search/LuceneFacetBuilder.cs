@@ -15,7 +15,14 @@ namespace ExpandoDB.Search
     public class LuceneFacetBuilder
     {
         private readonly TaxonomyWriter _taxonomyWriter;
-        private readonly FacetsConfig _facetsConfig;
+
+        /// <summary>
+        /// Gets the facets configuration.
+        /// </summary>
+        /// <value>
+        /// The facets configuration.
+        /// </value>
+        public FacetsConfig FacetsConfig { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LuceneFacetBuilder"/> class.
@@ -28,7 +35,7 @@ namespace ExpandoDB.Search
                 throw new ArgumentNullException(nameof(taxonomyWriter));
 
             _taxonomyWriter = taxonomyWriter;
-            _facetsConfig = new FacetsConfig();                        
+            FacetsConfig = new FacetsConfig();                        
         }        
 
         /// <summary>
@@ -64,7 +71,7 @@ namespace ExpandoDB.Search
                             if (facetField != null)
                             {
                                 facetFields.Add(facetField);                                
-                                _facetsConfig.EnsureConfig(facetField);                                
+                                FacetsConfig.EnsureConfig(facetField);                                
                             }
                         }
                     }
@@ -102,7 +109,7 @@ namespace ExpandoDB.Search
                 foreach (var facetField in facetFields)
                     luceneDocument.Add(facetField);
 
-                luceneDocument = _facetsConfig.Build(_taxonomyWriter, luceneDocument);
+                luceneDocument = FacetsConfig.Build(_taxonomyWriter, luceneDocument);
             }
 
             return luceneDocument;
