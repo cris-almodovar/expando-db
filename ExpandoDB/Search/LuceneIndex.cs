@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace ExpandoDB.Search
 {
@@ -233,23 +234,38 @@ namespace ExpandoDB.Search
                 {
                     var sort = GetSortCriteria(criteria.SortByField);
                     var topDocs = (TopDocs)null;
-                    var facetResults = new List<FacetResult>();
+                    var facetResults = (IEnumerable<FacetResult>)null;
 
                     if (String.IsNullOrWhiteSpace(criteria.Categories))
                     {
-                        var collector = new FacetsCollector();
-                        topDocs = FacetsCollector.Search(searcher, query, criteria.TopN, sort, collector);
+                        var facetsCollector = new FacetsCollector();
 
-                        // Get the categories (Facets)
-                        
+                        // Get the matching Documents
+                        topDocs = FacetsCollector.Search(searcher, query, criteria.TopN, sort, facetsCollector);
+
+                        // Get the Facet counts from the matching Documents
+                        var facetCounts = new FastTaxonomyFacetCounts(taxonomyReader, _facetBuilder.FacetsConfig, facetsCollector);
+                        facetResults = facetCounts.GetFacets(criteria.TopNCategories);
+
                     }
                     else
                     {
                         // Perform a drill-sideways query
+                        var drillDownQuery = new DrillDownQuery(_facetBuilder.FacetsConfig, query);
+                        drillDownQuery.AddSelectedCategories(criteria.Categories);
 
+                        var drillSideways = new DrillSideways(searcher, _facetBuilder.FacetsConfig, taxonomyReader);
+                        var drillSidewaysResult = drillSideways.Search(drillDownQuery, null, null, criteria.TopN, sort, false, false);
+
+                        // Get the matching documents
+                        topDocs = drillSidewaysResult.Hits;
+
+                        // Get the Facet counts from the matching Documents
+                        facetResults = drillSidewaysResult.GetFacets(criteria.TopNCategories);
                     }
 
                     result.PopulateWith(topDocs, id => searcher.Doc(id));
+                    result.Categories = facetResults.Select(f => f.ToCategory());
                 }
                 finally
                 {

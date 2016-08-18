@@ -1,4 +1,5 @@
 ﻿using FlexLucene.Facet;
+using FlexLucene.Facet.Taxonomy;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -33,7 +34,7 @@ namespace ExpandoDB.Search
 
             // Split the string using / as separateor
             var categoryParts = categoryStringCopy.Split(new[] { SLASH }, StringSplitOptions.None);
-            if (categoryParts.Length > 1)
+            if (categoryParts.Count() > 1)
             {
                 // The first part is the facet name
                 var facetName = categoryParts.FirstOrDefault();
@@ -104,6 +105,112 @@ namespace ExpandoDB.Search
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Gets the FacetResults from FacetCounts.
+        /// </summary>
+        /// <param name="facetCounts">The facet counts.</param>
+        /// <param name="topNCategories">The top n categories.</param>
+        /// <returns></returns>
+        public static IEnumerable<FacetResult> GetFacets(this FastTaxonomyFacetCounts facetCounts, int topNCategories)
+        {
+            if (facetCounts == null)
+                throw new ArgumentNullException(nameof(facetCounts));
+            if (topNCategories <= 0)
+                throw new ArgumentException($"{nameof(topNCategories)} cannot be zero or less.");
+
+            var facetResults = new List<FacetResult>();
+            var allDims = facetCounts.GetAllDims(topNCategories);
+
+            for (var i = 0; i < allDims.size(); i++)
+            {
+                var fc = allDims.get(i) as FacetResult;
+                if (fc != null)
+                    facetResults.Add(fc);
+            }
+
+            return facetResults;
+        }
+
+        /// <summary>
+        /// Converts the FacetResult object to a <see cref="Category"/> object.
+        /// </summary>
+        /// <param name="facetResult">The FacetResult object.</param>
+        /// <returns></returns>
+        public static Category ToCategory(this FacetResult facetResult)
+        {
+            if (facetResult == null)
+                throw new ArgumentNullException(nameof(facetResult));
+
+            var category = new Category { Name = facetResult.Dim };
+            foreach (var value in facetResult.LabelValues)
+                category.Values.Add(new Category.CategoryCount { Name = value.Label, Count = value.Value.intValue() });            
+
+            return category;
+        }
+
+        /// <summary>
+        /// Adds the selected categories to the DrillDownQuery.
+        /// </summary>
+        /// <param name="drillDownQuery">The drill down query.</param>
+        /// <param name="categoriesCsvString">The comma-separated list of categories.</param>
+        public static void AddSelectedCategories(this DrillDownQuery drillDownQuery, string categoriesCsvString)
+        {
+            if (drillDownQuery == null)
+                throw new ArgumentNullException(nameof(drillDownQuery));
+            if (String.IsNullOrWhiteSpace(categoriesCsvString))
+                return;
+
+            const string COMMA = ",";
+            const string ESCAPED_COMMA = @"\,";
+            const string ESCAPED_COMMA_TEMP_TOKEN = @"<<££££££>>";
+            
+            var categoriesList = categoriesCsvString.Trim()
+                                                    .Replace(ESCAPED_COMMA, ESCAPED_COMMA_TEMP_TOKEN)
+                                                    .Split(new[] { COMMA }, StringSplitOptions.None);
+            if (categoriesList != null)
+            {
+                foreach (var categoryString in categoriesList)
+                {
+                    if (!String.IsNullOrWhiteSpace(categoryString))
+                    {
+                        var category = categoryString.Trim().Replace(ESCAPED_COMMA_TEMP_TOKEN, COMMA);
+                        var facetField = category.ToLuceneFacetField();
+                        if (facetField != null)                        
+                            drillDownQuery.Add(facetField.Dim, facetField.Path);                        
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the FacetResults from DrillSidewaysResult.
+        /// </summary>
+        /// <param name="drillSidewaysResult">The DrillSidewaysResult.</param>
+        /// <param name="topNCategories">The top N categories to extract.</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        public static IEnumerable<FacetResult> GetFacets(this DrillSidewaysDrillSidewaysResult drillSidewaysResult, int topNCategories)
+        {
+            if (drillSidewaysResult == null)
+                throw new ArgumentNullException(nameof(drillSidewaysResult));
+            if (topNCategories <= 0)
+                throw new ArgumentException($"{nameof(topNCategories)} cannot be zero or less.");
+
+            var facetResults = new List<FacetResult>();
+            var allDims = drillSidewaysResult.Facets.GetAllDims(topNCategories);
+
+            for (var i = 0; i < allDims.size(); i++)
+            {
+                var fc = allDims.get(i) as FacetResult;
+                if (fc != null)
+                    facetResults.Add(fc);
+            }
+
+            return facetResults;
+
         }
     }
 }

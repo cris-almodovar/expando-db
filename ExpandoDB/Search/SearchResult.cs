@@ -84,7 +84,7 @@ namespace ExpandoDB.Search
         ///   <c>true</c> if text matches are highlighted; otherwise, <c>false</c>.
         /// </value>
         public bool IncludeHighlight { get; set; }
-        
+
         /// <summary>
         /// Gets or sets the items.
         /// </summary>
@@ -123,7 +123,7 @@ namespace ExpandoDB.Search
         {
             if (criteria == null)
                 throw new ArgumentNullException(nameof(criteria));
-                   
+
             Query = criteria.Query;
             SortByField = criteria.SortByField;
             TopN = criteria.TopN;
@@ -134,65 +134,12 @@ namespace ExpandoDB.Search
 
             ItemCount = itemCount;
             TotalHits = totalHits;
-            PageCount = pageCount;            
+            PageCount = pageCount;
 
             Items = new List<TResult>();
         }
 
-        
+
     }
-
-    /// <summary>
-    /// Represents a category that a Document is assigned to.
-    /// </summary>
-    public class Category
-    {
-        /// <summary>
-        /// Gets or sets the name of the category.
-        /// </summary>
-        /// <value>
-        /// The name.
-        /// </value>
-        public string Name { get; set; }
-
-        /// <summary>
-        /// Gets or sets the count of Documents that fall in the category.
-        /// </summary>
-        /// <value>
-        /// The count.
-        /// </value>
-        public int Count { get; set; }
-
-        /// <summary>
-        /// Gets or sets the child categories under the current category.
-        /// </summary>
-        /// <value>
-        /// The child categories.
-        /// </value>
-        public IEnumerable<Category> ChildCategories { get; private set; } = new List<Category>();
-
-
-        /// <summary>
-        /// Returns a <see cref="System.String" /> that represents this instance.
-        /// </summary>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
-        public override string ToString()
-        {            
-            return ToString(this);
-        }
-
-        private string ToString(Category category, int level = 0)
-        {
-            var buffer = new StringBuilder();
-            var space = new String(' ', level*4);
-
-            buffer.Append($"{space}Category: '{category.Name}', Count: {category.Count}");
-            foreach (var child in ChildCategories)
-                buffer.Append(ToString(child, level+1));
-
-            return buffer.ToString();
-        }
-    }
+    
 }
