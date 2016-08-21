@@ -32,7 +32,8 @@ namespace ExpandoDB.Search
         private readonly LuceneFacetBuilder _facetBuilder;
         private readonly SearcherTaxonomyManager _searcherTaxonomyManager;        
         private readonly Timer _refreshTimer;
-        private readonly Timer _commitTimer;        
+        private readonly Timer _commitTimer;
+        private readonly ReaderWriterLockSlim _indexWriterLock;       
         private readonly ILog _log = LogManager.GetLogger(typeof(LuceneIndex).Name);    
         private readonly double _refreshIntervalSeconds;
         private readonly double _commitIntervalSeconds;        
@@ -107,8 +108,10 @@ namespace ExpandoDB.Search
             _refreshIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["IndexSearcher.RefreshIntervalSeconds"] ?? "0.5");    
             _commitIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["IndexWriter.CommitIntervalSeconds"] ?? "60");
 
+            _indexWriterLock = new ReaderWriterLockSlim();
             _refreshTimer = new Timer(o => Refresh(), null, TimeSpan.FromSeconds(_refreshIntervalSeconds), TimeSpan.FromSeconds(_refreshIntervalSeconds));
             _commitTimer = new Timer(o => Commit(), null, TimeSpan.FromSeconds(_commitIntervalSeconds), TimeSpan.FromSeconds(_commitIntervalSeconds));
+
         }
 
         /// <summary>
@@ -122,18 +125,25 @@ namespace ExpandoDB.Search
         /// </remarks>      
         public void Commit()
         {
-            try
-            {                
-                _taxonomyWriter.Commit();
-                // TODO: Use a WaitHandle to prevent writer.Add|Update|Delete in between these 2 statements. 
-                if (_indexWriter.HasUncommittedChanges()) 
-                    _indexWriter.Commit();                
-            }
-            catch (Exception ex)
+            if (_indexWriter.HasUncommittedChanges())
             {
-                _log.Error(ex);
-            }
+                if (!_indexWriterLock.TryEnterWriteLock(100))
+                    return;
 
+                try
+                {                    
+                    _taxonomyWriter.Commit();
+                    _indexWriter.Commit();
+                }
+                catch (Exception ex)
+                {
+                    _log.Error(ex);
+                }
+                finally
+                {
+                    _indexWriterLock.ExitWriteLock();
+                }
+            }
         }
 
         /// <summary>
@@ -167,7 +177,16 @@ namespace ExpandoDB.Search
                 document._id = Guid.NewGuid();
 
             var luceneDocument = document.ToLuceneDocument(Schema, _facetBuilder);
-            _indexWriter.AddDocument(luceneDocument);            
+
+            _indexWriterLock.EnterWriteLock();
+            try
+            {                
+                _indexWriter.AddDocument(luceneDocument);
+            }
+            finally
+            {
+                _indexWriterLock.ExitWriteLock();
+            }   
         }
 
         /// <summary>
@@ -180,7 +199,16 @@ namespace ExpandoDB.Search
                 throw new ArgumentException(nameof(guid) + " cannot be empty");
 
             var idTerm = new Term(Schema.StandardField.ID, guid.ToString().ToLower());
-            _indexWriter.DeleteDocuments(idTerm);
+
+            _indexWriterLock.EnterWriteLock();
+            try
+            {
+                _indexWriter.DeleteDocuments(idTerm);
+            }
+            finally
+            {
+                _indexWriterLock.ExitWriteLock();
+            }
         }
 
         /// <summary>
@@ -200,7 +228,15 @@ namespace ExpandoDB.Search
             var id = document._id.ToString().ToLower();
             var idTerm = new Term(Schema.StandardField.ID, id);
 
-            _indexWriter.UpdateDocument(idTerm, luceneDocument);
+            _indexWriterLock.EnterWriteLock();
+            try
+            {
+                _indexWriter.UpdateDocument(idTerm, luceneDocument);
+            }
+            finally
+            {
+                _indexWriterLock.ExitWriteLock();
+            }
         }
 
         /// <summary>
@@ -236,7 +272,7 @@ namespace ExpandoDB.Search
                     var topDocs = (TopDocs)null;
                     var facetResults = (IEnumerable<FacetResult>)null;
 
-                    if (String.IsNullOrWhiteSpace(criteria.Categories))
+                    if (String.IsNullOrWhiteSpace(criteria.SelectCategories))
                     {
                         var facetsCollector = new FacetsCollector();
 
@@ -252,7 +288,7 @@ namespace ExpandoDB.Search
                     {
                         // Perform a drill-sideways query
                         var drillDownQuery = new DrillDownQuery(_facetBuilder.FacetsConfig, query);
-                        drillDownQuery.AddSelectedCategories(criteria.Categories);
+                        drillDownQuery.AddCategories(criteria.SelectCategories);
 
                         var drillSideways = new DrillSideways(searcher, _facetBuilder.FacetsConfig, taxonomyReader);
                         var drillSidewaysResult = drillSideways.Search(drillDownQuery, null, null, criteria.TopN, sort, false, false);
@@ -264,6 +300,7 @@ namespace ExpandoDB.Search
                         facetResults = drillSidewaysResult.GetFacets(criteria.TopNCategories);
                     }
 
+                    // TODO: Don't pass TopDocs; pass an IEnumerable<Guid> and IEnumerable<Category>
                     result.PopulateWith(topDocs, id => searcher.Doc(id));
                     result.Categories = facetResults.Select(f => f.ToCategory());
                 }
@@ -375,17 +412,19 @@ namespace ExpandoDB.Search
                 if (disposing)
                 {
                     _refreshTimer.Dispose();
-                    _commitTimer.Dispose();
+                    _commitTimer.Dispose();                                      
+
+                    if (_indexWriter.HasUncommittedChanges())
+                    {
+                        _taxonomyWriter.Commit();
+                        _indexWriter.Commit();
+                    }
 
                     _searcherTaxonomyManager.Close();
 
-                    _taxonomyWriter.Commit();
                     _taxonomyWriter.Close();
-
-                    if (_indexWriter.HasUncommittedChanges())
-                        _indexWriter.Commit();
-
-                    _indexWriter.Close();                    
+                    _indexWriter.Close();
+                    _indexWriterLock.Dispose();             
                 }               
 
                 IsDisposed = true;

@@ -24,7 +24,9 @@ namespace ExpandoDB.Rest.DTO
                 TopN = dto.topN ?? SearchCriteria.DEFAULT_TOP_N,
                 ItemsPerPage = dto.itemsPerPage ?? SearchCriteria.DEFAULT_ITEMS_PER_PAGE,
                 PageNumber = dto.pageNumber ?? 1, 
-                IncludeHighlight = dto.highlight ?? false 
+                IncludeHighlight = dto.highlight ?? false,
+                SelectCategories = dto.selectCategories,
+                TopNCategories = dto.topNCategories ?? SearchCriteria.DEFAULT_TOP_N_CATEGORIES                 
             };
 
             return searchCriteria;
@@ -74,6 +76,9 @@ namespace ExpandoDB.Rest.DTO
             responseDto.pageNumber = searchResult.PageNumber;
             responseDto.itemsPerPage = searchResult.ItemsPerPage;
             responseDto.highlight = searchResult.IncludeHighlight;
+            responseDto.selectCategories = searchResult.SelectCategories;
+            responseDto.topNCategories = searchResult.TopNCategories;
+            responseDto.categories = searchResult.Categories;
 
             var fieldsToSelect = searchRequestDto.select.ToList();
             if (fieldsToSelect.Count > 0 && searchResult.IncludeHighlight)

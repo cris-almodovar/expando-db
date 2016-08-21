@@ -1,6 +1,7 @@
 ﻿using FlexLucene.Facet;
 using FlexLucene.Facet.Taxonomy;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,7 +11,8 @@ using LuceneDocument = FlexLucene.Document.Document;
 namespace ExpandoDB.Search
 {
     /// <summary>
-    /// 
+    /// Creates Lucene facets by reading the _categories field of a Document
+    /// and converting each element to a FacetField.
     /// </summary>    
     public class LuceneFacetBuilder
     {
@@ -41,8 +43,8 @@ namespace ExpandoDB.Search
         /// <summary>
         /// Creates Lucene FacetFields from the _categories field of the specified Document.
         /// </summary>
-        /// <param name="document">The document.</param>
-        /// <param name="schema">The schema.</param>
+        /// <param name="document">The Document.</param>
+        /// <param name="schema">The schema of the Document.</param>
         /// <returns></returns>
         /// <exception cref="ArgumentNullException">
         /// </exception>
@@ -61,11 +63,11 @@ namespace ExpandoDB.Search
                 if (categoriesField.DataType == Schema.DataType.Array &&
                     categoriesField.ArrayElementDataType == Schema.DataType.Text)
                 {                    
-                    var categories = document.AsDictionary()[Schema.StandardField.CATEGORIES] as IList<string>;
+                    var categories = document.AsDictionary()[Schema.StandardField.CATEGORIES] as IEnumerable<object>;
                     if (categories != null)
                     {
                         // Parse each category to create a FacetField, then add to facetFields list.
-                        foreach (var category in categories.Distinct())
+                        foreach (var category in categories.Select(c => c as string).Where(c => !String.IsNullOrWhiteSpace(c)).Distinct())
                         {
                             var facetField = category.ToLuceneFacetField();
                             if (facetField != null)
@@ -86,7 +88,7 @@ namespace ExpandoDB.Search
         }
 
         /// <summary>
-        /// Rebuilds the LuceneDocument by adding FacetFields which are generated from the original Document.
+        /// Rebuilds the LuceneDocument by adding FacetFields, which are generated from the original Document.
         /// </summary>
         /// <param name="luceneDocument">The lucene document.</param>
         /// <param name="document">The document.</param>

@@ -73,12 +73,13 @@ namespace ExpandoDB.Search
 
 
         /// <summary>
-        /// Gets or sets a comma-separated list of categories to drill-sideways to.
+        /// Gets or sets a comma-separated list of categories that the user has selected;
+        /// these categories will be used to drill-sideways to.
         /// </summary>
         /// <value>
         /// The categories.
         /// </value>
-        public string Categories { get; set; }  
+        public string SelectCategories { get; set; }  
 
 
         /// <summary>
@@ -87,6 +88,6 @@ namespace ExpandoDB.Search
         /// <value>
         /// The maximum number of categories to be returned by the search query.
         /// </value>
-        public int TopNCategories { get; set; } = DEFAULT_TOP_N;
+        public int TopNCategories { get; set; } = DEFAULT_TOP_N_CATEGORIES;
     }
 }

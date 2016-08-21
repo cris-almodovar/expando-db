@@ -20,33 +20,45 @@ namespace ExpandoDB.Search
         /// <returns></returns>
         public static FacetField ToLuceneFacetField(this string categoryString)
         {
+            const string COLON = ":";
+            const string ESCAPED_COLON = @"\:";
+            const string ESCAPED_COLON_TEMP_TOKEN = @"<<€€€€€€>>";
             const string SLASH = @"/";
             const string ESCAPED_SLASH = @"\/";
             const string ESCAPED_SLASH_TEMP_TOKEN = @"<<$$$$$$>>";
             
-            // Sample categoryString:  "Author\Arthur Dent" => facet name is "Author", value is "Crispin"
+            // Sample categoryString:  "Author:Arthur Dent" => facet name is "Author", value is "Arthur Dent"
 
             if (String.IsNullOrWhiteSpace(categoryString))
                 throw new ArgumentNullException(nameof(categoryString));
 
-            // Convert \/ to $$$$$$
-            var categoryStringCopy = categoryString.Trim().Replace(ESCAPED_SLASH, ESCAPED_SLASH_TEMP_TOKEN);
+            // Convert \/ to <<$$$$$$>> and \: to <<€€€€€€>>
+            var categoryStringCopy = categoryString.Trim()
+                                                   .Replace(ESCAPED_SLASH, ESCAPED_SLASH_TEMP_TOKEN)
+                                                   .Replace(ESCAPED_COLON, ESCAPED_COLON_TEMP_TOKEN);
 
-            // Split the string using / as separateor
+            // Split the string using ":" to get the facet name
+            var facetName = categoryStringCopy.Contains(COLON) ?
+                            categoryStringCopy.Split(new[] { COLON }, StringSplitOptions.None).FirstOrDefault() :
+                            null;
+
+            if (String.IsNullOrWhiteSpace(facetName))
+                throw new SchemaException($"Invalid category string: '{categoryString}'");
+
+            facetName = facetName.Trim()
+                                 .Replace(ESCAPED_SLASH_TEMP_TOKEN, SLASH)
+                                 .Replace(ESCAPED_COLON, COLON);
+
+            var facetValueStartIndex = categoryStringCopy.IndexOf(COLON, StringComparison.InvariantCulture) + 1;
+            categoryStringCopy = categoryStringCopy.Substring(facetValueStartIndex);
+
+            // Split the string using / as separateor to get the facet values
             var categoryParts = categoryStringCopy.Split(new[] { SLASH }, StringSplitOptions.None);
-            if (categoryParts.Count() > 1)
-            {
-                // The first part is the facet name
-                var facetName = categoryParts.FirstOrDefault();
-                if (String.IsNullOrWhiteSpace(facetName))
-                    throw new SchemaException($"Invalid category string: '{categoryStringCopy}'");
-
-                facetName = facetName.Trim().Replace(ESCAPED_SLASH_TEMP_TOKEN, SLASH);
-
-                // The remaing parts the values of the facet
-                var facetValues = categoryParts.Skip(1)
-                                               .Take(categoryParts.Length - 1)
-                                               .Select(s => s.Trim().Replace(ESCAPED_SLASH_TEMP_TOKEN, SLASH))
+            if (categoryParts.Count() >= 1)
+            {  
+                var facetValues = categoryParts.Select(s => s.Trim()
+                                                             .Replace(ESCAPED_SLASH_TEMP_TOKEN, SLASH)
+                                                             .Replace(ESCAPED_COLON_TEMP_TOKEN, COLON))
                                                .ToArray();
 
                 var facetField = new FacetField(facetName, facetValues);
@@ -155,13 +167,13 @@ namespace ExpandoDB.Search
         /// </summary>
         /// <param name="drillDownQuery">The drill down query.</param>
         /// <param name="categoriesCsvString">The comma-separated list of categories.</param>
-        public static void AddSelectedCategories(this DrillDownQuery drillDownQuery, string categoriesCsvString)
+        public static void AddCategories(this DrillDownQuery drillDownQuery, string categoriesCsvString)
         {
             if (drillDownQuery == null)
                 throw new ArgumentNullException(nameof(drillDownQuery));
             if (String.IsNullOrWhiteSpace(categoriesCsvString))
                 return;
-
+            
             const string COMMA = ",";
             const string ESCAPED_COMMA = @"\,";
             const string ESCAPED_COMMA_TEMP_TOKEN = @"<<££££££>>";

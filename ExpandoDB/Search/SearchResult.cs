@@ -83,16 +83,24 @@ namespace ExpandoDB.Search
         /// <value>
         ///   <c>true</c> if text matches are highlighted; otherwise, <c>false</c>.
         /// </value>
-        public bool IncludeHighlight { get; set; }
+        public bool IncludeHighlight { get; set; }    
 
         /// <summary>
-        /// Gets or sets the items.
+        /// Gets or sets a comma-separated list of categories that the user has selected;
+        /// these categories will be used to drill-sideways to.
         /// </summary>
         /// <value>
-        /// The items.
+        /// The categories.
         /// </value>
-        public IEnumerable<TResult> Items { get; set; }
+        public string SelectCategories { get; set; }
 
+        /// <summary>
+        /// Gets or sets the maximum number of categories to be returned by the search query.
+        /// </summary>
+        /// <value>
+        /// The maximum number of categories to be returned by the search query.
+        /// </value>
+        public int TopNCategories { get; set; }
 
         /// <summary>
         /// Gets or sets the categories of the items in the search results.
@@ -103,13 +111,12 @@ namespace ExpandoDB.Search
         public IEnumerable<Category> Categories { get; set; }
 
         /// <summary>
-        /// Gets or sets the maximum number of categories to be returned by the search query.
+        /// Gets or sets the items.
         /// </summary>
         /// <value>
-        /// The maximum number of categories to be returned by the search query.
+        /// The items.
         /// </value>
-        public int TopNCategories { get; set; }
-
+        public IEnumerable<TResult> Items { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SearchResult{TResult}"/> class.
@@ -130,11 +137,13 @@ namespace ExpandoDB.Search
             ItemsPerPage = criteria.ItemsPerPage;
             IncludeHighlight = criteria.IncludeHighlight;
             PageNumber = criteria.PageNumber;
-            TopNCategories = criteria.TopNCategories;
+
+            SelectCategories = criteria.SelectCategories;
+            TopNCategories = criteria.TopNCategories;            
 
             ItemCount = itemCount;
             TotalHits = totalHits;
-            PageCount = pageCount;
+            PageCount = pageCount;     
 
             Items = new List<TResult>();
         }
