@@ -26,8 +26,10 @@ namespace ExpandoDB.Search
             const string SLASH = @"/";
             const string ESCAPED_SLASH = @"\/";
             const string ESCAPED_SLASH_TEMP_TOKEN = @"<<$$$$$$>>";
-            
-            // Sample categoryString:  "Author:Arthur Dent" => facet name is "Author", value is "Arthur Dent"
+
+            // Sample categoryStrings:  
+            //    "Author:Arthur Dent" => facet name is "Author", value is "Arthur Dent"
+            //    "Publish Date:2013/Mar/12" => facet name is "Publish Date", value (hierarchical) is "2013/Mar/12"
 
             if (String.IsNullOrWhiteSpace(categoryString))
                 throw new ArgumentNullException(nameof(categoryString));
