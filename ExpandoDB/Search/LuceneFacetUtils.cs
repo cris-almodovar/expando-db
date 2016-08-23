@@ -146,6 +146,69 @@ namespace ExpandoDB.Search
         }
 
         /// <summary>
+        /// Converts the specified comma-separated list of category strings to a list of FacetFields.
+        /// </summary>
+        /// <param name="categoriesCsvString">The comma-separated list of categories.</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static IEnumerable<FacetField> ToFacetFields(this string categoriesCsvString)
+        {
+            var facetFields = new List<FacetField>();
+
+            if (!String.IsNullOrWhiteSpace(categoriesCsvString))
+            {
+                const string COMMA = ",";
+                const string ESCAPED_COMMA = @"\,";
+                const string ESCAPED_COMMA_TEMP_TOKEN = @"<<££££££>>";
+
+                var categoriesList = categoriesCsvString.Trim()
+                                                        .Replace(ESCAPED_COMMA, ESCAPED_COMMA_TEMP_TOKEN)
+                                                        .Split(new[] { COMMA }, StringSplitOptions.None);
+                if (categoriesList != null)
+                {
+                    foreach (var categoryString in categoriesList)
+                    {
+                        if (!String.IsNullOrWhiteSpace(categoryString))
+                        {
+                            var category = categoryString.Trim().Replace(ESCAPED_COMMA_TEMP_TOKEN, COMMA);
+                            var facetField = category.ToLuceneFacetField();
+                            if (facetField != null)
+                                facetFields.Add(facetField);
+                        }
+                    }
+                }
+            }
+
+            return facetFields;
+        }
+
+        /// <summary>
+        /// Gets the Categories from the FacetCounts.
+        /// </summary>
+        /// <param name="facetCounts">The facet counts.</param>
+        /// <param name="topNCategories">The top n categories.</param>
+        /// <returns></returns>
+        public static IEnumerable<Category> GetCategories(this FastTaxonomyFacetCounts facetCounts, int topNCategories)
+        {
+            if (facetCounts == null)
+                throw new ArgumentNullException(nameof(facetCounts));
+            if (topNCategories <= 0)
+                throw new ArgumentException($"{nameof(topNCategories)} cannot be zero or less.");
+
+            var categories = new List<Category>();
+            var allDims = facetCounts.GetAllDims(topNCategories);
+
+            for (var i = 0; i < allDims.size(); i++)
+            {
+                var fc = allDims.get(i) as FacetResult;
+                if (fc != null)
+                    categories.Add(fc.ToCategory());
+            }
+
+            return categories;
+        }
+
+        /// <summary>
         /// Converts the FacetResult object to a <see cref="Category"/> object.
         /// </summary>
         /// <param name="facetResult">The FacetResult object.</param>
@@ -155,74 +218,60 @@ namespace ExpandoDB.Search
             if (facetResult == null)
                 throw new ArgumentNullException(nameof(facetResult));
 
-            var category = new Category { Name = facetResult.Dim };
-            foreach (var value in facetResult.LabelValues)
-                category.Values.Add(new Category.CategoryCount { Name = value.Label, Count = value.Value.intValue() });            
+            var category = new Category
+            {
+                Name = facetResult.Dim,
+                Count = facetResult.Value.intValue()
+            };
+
+            if (facetResult.ChildCount > 0)
+            {
+                category.SubCategories = new List<Category>();
+                foreach (var value in facetResult.LabelValues)
+                    category.SubCategories.Add(new Category { Name = value.Label, Count = value.Value.intValue() });
+            }
 
             return category;
         }
 
         /// <summary>
-        /// Adds the selected categories to the DrillDownQuery.
+        /// Gets the Categories from the Facets object.
         /// </summary>
-        /// <param name="drillDownQuery">The drill down query.</param>
-        /// <param name="categoriesCsvString">The comma-separated list of categories.</param>
-        public static void AddCategories(this DrillDownQuery drillDownQuery, string categoriesCsvString)
-        {
-            if (drillDownQuery == null)
-                throw new ArgumentNullException(nameof(drillDownQuery));
-            if (String.IsNullOrWhiteSpace(categoriesCsvString))
-                return;
-            
-            const string COMMA = ",";
-            const string ESCAPED_COMMA = @"\,";
-            const string ESCAPED_COMMA_TEMP_TOKEN = @"<<££££££>>";
-            
-            var categoriesList = categoriesCsvString.Trim()
-                                                    .Replace(ESCAPED_COMMA, ESCAPED_COMMA_TEMP_TOKEN)
-                                                    .Split(new[] { COMMA }, StringSplitOptions.None);
-            if (categoriesList != null)
-            {
-                foreach (var categoryString in categoriesList)
-                {
-                    if (!String.IsNullOrWhiteSpace(categoryString))
-                    {
-                        var category = categoryString.Trim().Replace(ESCAPED_COMMA_TEMP_TOKEN, COMMA);
-                        var facetField = category.ToLuceneFacetField();
-                        if (facetField != null)                        
-                            drillDownQuery.Add(facetField.Dim, facetField.Path);                        
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Gets the FacetResults from DrillSidewaysResult.
-        /// </summary>
-        /// <param name="drillSidewaysResult">The DrillSidewaysResult.</param>
+        /// <param name="facets">The Facets.</param>
         /// <param name="topNCategories">The top N categories to extract.</param>
+        /// <param name="selectedFacets">The selected facets.</param>
         /// <returns></returns>
         /// <exception cref="ArgumentNullException"></exception>
-        /// <exception cref="ArgumentException"></exception>
-        public static IEnumerable<FacetResult> GetFacets(this DrillSidewaysDrillSidewaysResult drillSidewaysResult, int topNCategories)
+        /// <exception cref="ArgumentException">{nameof(topNCategories)}</exception>
+        public static IEnumerable<Category> GetCategories(this Facets facets, int topNCategories, IEnumerable<FacetField> selectedFacets)
         {
-            if (drillSidewaysResult == null)
-                throw new ArgumentNullException(nameof(drillSidewaysResult));
+            if (facets == null)
+                throw new ArgumentException(nameof(facets));
             if (topNCategories <= 0)
                 throw new ArgumentException($"{nameof(topNCategories)} cannot be zero or less.");
+            if (selectedFacets == null)
+                throw new ArgumentException(nameof(selectedFacets));
 
-            var facetResults = new List<FacetResult>();
-            var allDims = drillSidewaysResult.Facets.GetAllDims(topNCategories);
+            var categories = new List<Category>();
+            var allDims = facets.GetAllDims(topNCategories);
 
             for (var i = 0; i < allDims.size(); i++)
             {
                 var fc = allDims.get(i) as FacetResult;
                 if (fc != null)
-                    facetResults.Add(fc);
+                {
+                    var category = fc.ToCategory();
+                    var selectedFacetMatch = selectedFacets.FirstOrDefault(f => f.Dim == category.Name);
+                    if (selectedFacetMatch != null)
+                    {
+                        // Get the sub categories
+                    }
+
+                    categories.Add(category);
+                }
             }
 
-            return facetResults;
-
-        }
+            return categories;
+        }        
     }
 }

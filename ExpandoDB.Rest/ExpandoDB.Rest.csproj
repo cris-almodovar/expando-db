@@ -88,7 +88,7 @@
     <Compile Include="DTO\CountRequestDto.cs" />
     <Compile Include="DTO\CountResponseDto.cs" />
     <Compile Include="DTO\DropCollectionResponseDto.cs" />
-    <Compile Include="DTO\DtoExtensions.cs" />
+    <Compile Include="DTO\DtoUtils.cs" />
     <Compile Include="DTO\ErrorResponseDto.cs" />
     <Compile Include="DTO\InsertResponseDto.cs" />
     <Compile Include="DTO\PatchOperationDto.cs" />

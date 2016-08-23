@@ -244,6 +244,7 @@ namespace ExpandoDB.Search
         /// </summary>
         /// <param name="criteria">The search criteria.</param>
         /// <returns></returns>
+        /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="System.ArgumentNullException"></exception>
         public SearchResult<Guid> Search(SearchCriteria criteria)
         {
@@ -269,40 +270,43 @@ namespace ExpandoDB.Search
                 try
                 {
                     var sort = GetSortCriteria(criteria.SortByField);
-                    var topDocs = (TopDocs)null;
-                    var facetResults = (IEnumerable<FacetResult>)null;
+                    var selectedFacets = criteria.SelectCategories.ToFacetFields();
+                    var topDocs = (TopDocs)null;                                        
+                    var categories = Enumerable.Empty<Category>();
 
-                    if (String.IsNullOrWhiteSpace(criteria.SelectCategories))
+                    if (selectedFacets.Count() == 0)
                     {
+                        // We are not going to do a drill-down on specific facets.
+                        // Instead we will just take the top N facets from the matching Documents.
                         var facetsCollector = new FacetsCollector();
 
                         // Get the matching Documents
                         topDocs = FacetsCollector.Search(searcher, query, criteria.TopN, sort, facetsCollector);
 
                         // Get the Facet counts from the matching Documents
-                        var facetCounts = new FastTaxonomyFacetCounts(taxonomyReader, _facetBuilder.FacetsConfig, facetsCollector);
-                        facetResults = facetCounts.GetFacets(criteria.TopNCategories);
-
+                        var facetCounts = new FastTaxonomyFacetCounts(taxonomyReader, _facetBuilder.FacetsConfig, facetsCollector);                        
+                        categories = facetCounts.GetCategories(criteria.TopNCategories);
                     }
                     else
                     {
                         // Perform a drill-sideways query
                         var drillDownQuery = new DrillDownQuery(_facetBuilder.FacetsConfig, query);
-                        drillDownQuery.AddCategories(criteria.SelectCategories);
+                        foreach (var facetField in selectedFacets)
+                            drillDownQuery.Add(facetField.Dim, facetField.Path);                        
 
                         var drillSideways = new DrillSideways(searcher, _facetBuilder.FacetsConfig, taxonomyReader);
                         var drillSidewaysResult = drillSideways.Search(drillDownQuery, null, null, criteria.TopN, sort, false, false);
 
                         // Get the matching documents
-                        topDocs = drillSidewaysResult.Hits;
+                        topDocs = drillSidewaysResult.Hits;                        
 
                         // Get the Facet counts from the matching Documents
-                        facetResults = drillSidewaysResult.GetFacets(criteria.TopNCategories);
+                        categories = drillSidewaysResult.Facets.GetCategories(criteria.TopNCategories, selectedFacets);
                     }
 
                     // TODO: Don't pass TopDocs; pass an IEnumerable<Guid> and IEnumerable<Category>
                     result.PopulateWith(topDocs, id => searcher.Doc(id));
-                    result.Categories = facetResults.Select(f => f.ToCategory());
+                    result.Categories = categories;
                 }
                 finally
                 {

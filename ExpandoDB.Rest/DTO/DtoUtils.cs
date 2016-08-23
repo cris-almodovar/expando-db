@@ -8,7 +8,7 @@ namespace ExpandoDB.Rest.DTO
     /// <summary>
     /// Implements utitlity methods for ExpandoDB Data Transfer Objects (DTOs).
     /// </summary>
-    public static class DtoExtensions
+    public static class DtoUtils
     {
         /// <summary>
         /// Converts the given <see cref="SearchRequestDto"/> to a <see cref="SearchCriteria"/> object./>
