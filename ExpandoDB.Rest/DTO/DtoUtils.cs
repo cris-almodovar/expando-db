@@ -1,6 +1,7 @@
 ﻿using ExpandoDB.Search;
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 
 namespace ExpandoDB.Rest.DTO
@@ -87,6 +88,40 @@ namespace ExpandoDB.Rest.DTO
             responseDto.items = searchResult.Items.Select(c => c.Select(fieldsToSelect).AsExpando());
 
             return responseDto;
+        }
+
+        public static ExpandoObject PopulateWith(this ExpandoObject responseDto, SearchRequestDto searchRequestDto, string collectionName, SearchResult<Document> searchResult, TimeSpan elapsed)
+        {
+            if (searchRequestDto == null)
+                throw new ArgumentNullException(nameof(searchRequestDto));
+            if (searchResult == null)
+                throw new ArgumentNullException(nameof(searchResult));
+
+            dynamic dynamicDto = responseDto;
+            dynamicDto.select = searchRequestDto.select;
+            dynamicDto.from = collectionName;
+            dynamicDto.where = searchRequestDto.where;
+            dynamicDto.orderBy = searchRequestDto.orderBy;
+            dynamicDto.topN = searchResult.TopN;
+            dynamicDto.itemCount = searchResult.ItemCount;
+            dynamicDto.totalHits = searchResult.TotalHits;
+            dynamicDto.pageCount = searchResult.PageCount;
+            dynamicDto.pageNumber = searchResult.PageNumber;
+            dynamicDto.itemsPerPage = searchResult.ItemsPerPage;
+            dynamicDto.highlight = searchResult.IncludeHighlight;
+            dynamicDto.selectCategories = searchResult.SelectCategories;
+            dynamicDto.topNCategories = searchResult.TopNCategories;
+            dynamicDto.categories = searchResult.Categories.Select(c => c.ToCategoryDto());
+
+            var fieldsToSelect = searchRequestDto.select.ToList();
+            if (fieldsToSelect.Count > 0 && searchResult.IncludeHighlight)
+                fieldsToSelect.Add(LuceneHighlighter.HIGHLIGHT_FIELD_NAME);
+
+            dynamicDto.items = searchResult.Items.Select(c => c.Select(fieldsToSelect).AsExpando());
+            dynamicDto.timestamp = DateTime.UtcNow;
+            dynamicDto.elapsed = elapsed.ToString();
+
+            return dynamicDto;
         }
 
         /// <summary>

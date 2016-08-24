@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using ExpandoDB.Serialization;
 using Nancy.Metrics;
 using Metrics;
+using System.Dynamic;
 
 namespace ExpandoDB.Rest
 {
@@ -173,10 +174,11 @@ namespace ExpandoDB.Rest
 
             stopwatch.Stop();
 
-            var responseDto = new SearchResponseDto().PopulateWith(requestDto, collectionName, result);
-            responseDto.timestamp = DateTime.UtcNow;
-            responseDto.elapsed = stopwatch.Elapsed.ToString();
+            //var responseDto = new SearchResponseDto().PopulateWith(requestDto, collectionName, result);
+            //responseDto.timestamp = DateTime.UtcNow;
+            //responseDto.elapsed = stopwatch.Elapsed.ToString();
 
+            var responseDto = new ExpandoObject().PopulateWith(requestDto, collectionName, result, stopwatch.Elapsed);           
             return Response.AsJson(responseDto);
         }
 
