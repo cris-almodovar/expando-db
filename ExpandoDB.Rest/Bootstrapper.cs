@@ -11,8 +11,6 @@ using Nancy.Responses.Negotiation;
 using System.Configuration;
 using Nancy.Conventions;
 using Metrics;
-using Jil;
-using Nancy.Serialization.Jil;
 
 namespace ExpandoDB.Rest
 {
@@ -22,21 +20,7 @@ namespace ExpandoDB.Rest
     /// <seealso cref="Nancy.DefaultNancyBootstrapper" />
     public class Bootstrapper : DefaultNancyBootstrapper
     {
-        private readonly ILog _log = LogManager.GetLogger(typeof(Bootstrapper).Name);
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Bootstrapper"/> class.
-        /// </summary>
-        public Bootstrapper()
-        {
-            // Configure JSON handling.
-            JsonSettings.RetainCasing = true;
-            JsonSettings.ISO8601DateFormat = true;
-            JsonSettings.MaxJsonLength = Int32.MaxValue;
-
-            var jsonOptions = new Options(dateFormat: DateTimeFormat.ISO8601, includeInherited: true);
-            JSON.SetDefaultOptions(jsonOptions);
-        }
+        private readonly ILog _log = LogManager.GetLogger(typeof(Bootstrapper).Name);             
 
         /// <summary>
         /// Initialise the bootstrapper - can be used for adding pre/post hooks and
@@ -46,7 +30,13 @@ namespace ExpandoDB.Rest
         /// <param name="container">Container instance for resolving types if required.</param>
         /// <param name="pipelines"></param>
         protected override void ApplicationStartup(TinyIoCContainer container, IPipelines pipelines)
-        {   
+        {
+            // Configure JSON handling.
+            JsonSettings.RetainCasing = true;
+            JsonSettings.ISO8601DateFormat = true;
+            JsonSettings.MaxJsonLength = Int32.MaxValue;
+
+            // Enable CORS
             EnableCORS(pipelines);                        
 
             // Configure Metrics.NET             
@@ -159,7 +149,13 @@ namespace ExpandoDB.Rest
                     c =>
                     {
                         c.ResponseProcessors.Clear();
-                        c.ResponseProcessors.Add(typeof(JsonProcessor));                        
+                        c.ResponseProcessors.Add(typeof(JsonProcessor));
+
+                        // Make sure Nancy uses our own custom DTO serializer.
+                        //c.Serializers.Clear();
+                        //c.Serializers.Add(typeof(DtoSerializer));
+
+                        c.Serializers.Remove(typeof(DtoSerializer));
                     }
                 );
             }

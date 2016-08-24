@@ -59,7 +59,6 @@ namespace ExpandoDB.Serialization
             JSON.SerializeDynamic(data, writer, Options.ISO8601IncludeInherited);
         }
 
-
         /// <summary>
         /// Deserializes the specified JSON into an object.
         /// </summary>

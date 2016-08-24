@@ -101,6 +101,14 @@ namespace ExpandoDB.Search
         /// The maximum number of categories to be returned by the search query.
         /// </value>
         public int TopNCategories { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the items.
+        /// </summary>
+        /// <value>
+        /// The items.
+        /// </value>
+        public IEnumerable<TResult> Items { get; set; }
 
         /// <summary>
         /// Gets or sets the categories of the items in the search results.
@@ -109,14 +117,6 @@ namespace ExpandoDB.Search
         /// The categories.
         /// </value>
         public IEnumerable<Category> Categories { get; set; }
-
-        /// <summary>
-        /// Gets or sets the items.
-        /// </summary>
-        /// <value>
-        /// The items.
-        /// </value>
-        public IEnumerable<TResult> Items { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SearchResult{TResult}"/> class.

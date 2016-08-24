@@ -22,8 +22,8 @@ namespace ExpandoDB.Rest.DTO
         public int itemsPerPage { get; set; }
         public bool highlight { get; set; }        
         public string selectCategories { get; set; }
-        public int topNCategories { get; set; }
-        public IEnumerable<Category> categories { get; set; }
-        public IEnumerable<ExpandoObject> items { get; set; }        
+        public int topNCategories { get; set; }        
+        public IEnumerable<ExpandoObject> items { get; set; }
+        public IEnumerable<CategoryDto> categories { get; set; }
     }
 }

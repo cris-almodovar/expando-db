@@ -78,7 +78,7 @@ namespace ExpandoDB.Rest.DTO
             responseDto.highlight = searchResult.IncludeHighlight;
             responseDto.selectCategories = searchResult.SelectCategories;
             responseDto.topNCategories = searchResult.TopNCategories;
-            responseDto.categories = searchResult.Categories;
+            responseDto.categories = searchResult.Categories.Select(c => c.ToCategoryDto());
 
             var fieldsToSelect = searchRequestDto.select.ToList();
             if (fieldsToSelect.Count > 0 && searchResult.IncludeHighlight)
@@ -138,6 +138,29 @@ namespace ExpandoDB.Rest.DTO
                 list.AddRange(fields);
             }
             return list;
+        }
+
+        /// <summary>
+        /// Converts the given Category object to a DTO.
+        /// </summary>
+        /// <param name="category">The category.</param>
+        /// <returns></returns>
+        public static CategoryDto ToCategoryDto(this Category category)
+        {
+            var dto = new CategoryDto
+            {
+                name = category.Name,
+                count = category.Count
+            };
+
+            if ((category.Values?.Count ?? 0) > 0)
+            {
+                dto.values = (from c in category.Values
+                             select c.ToCategoryDto())
+                             ?.ToList();
+            }
+
+            return dto;
         }
     }    
 }

@@ -30,6 +30,7 @@ namespace ExpandoDB.Search
             // Sample categoryStrings:  
             //    "Author:Arthur Dent" => facet name is "Author", value is "Arthur Dent"
             //    "Publish Date:2013/Mar/12" => facet name is "Publish Date", value (hierarchical) is "2013/Mar/12"
+            // A category string must have a name and value => {name}:{value}
 
             if (String.IsNullOrWhiteSpace(categoryString))
                 throw new ArgumentNullException(nameof(categoryString));
@@ -226,11 +227,16 @@ namespace ExpandoDB.Search
                 Count = facetResult.Value.intValue()
             };
 
+            if (category.Count < 0)
+                category.Count = null;
+
             if (facetResult.ChildCount > 0)
             {
-                category.SubCategories = new List<Category>();
+                category.Values = new List<Category>();
                 foreach (var value in facetResult.LabelValues)
-                    category.SubCategories.Add(new Category { Name = value.Label, Count = value.Value.intValue() });
+                    category.Values.Add(new Category { Name = value.Label, Count = value.Value.intValue() });
+
+                category.Count = category.Values.Sum(sc => sc.Count);
             }
 
             return category;
@@ -259,14 +265,54 @@ namespace ExpandoDB.Search
 
             for (var i = 0; i < allDims.size(); i++)
             {
+                // Get the category (facet) names
                 var fc = allDims.get(i) as FacetResult;
                 if (fc != null)
                 {
                     var category = fc.ToCategory();
-                    var selectedFacetMatch = selectedFacets.FirstOrDefault(f => f.Dim == category.Name);
-                    if (selectedFacetMatch != null)
+
+                    // Check if the current category/facet is one of the categories
+                    // that the user wants to drill-down to.                    
+
+                    var facetToDrillDownTo = selectedFacets.FirstOrDefault(f => f.Dim == category.Name);
+                    if (facetToDrillDownTo != null && 
+                        (facetToDrillDownTo.Path?.Length ?? 0) > 0)
                     {
-                        // Get the sub categories
+                        // If yes, then we want to get the names and counts of all category child values.
+                        // Do this by traversing the facet path.
+
+                        var currentCategory = category;
+                        for (var j = 0; j < facetToDrillDownTo.Path.Length; j++)
+                        {
+                            var currentFacetPath = facetToDrillDownTo.Path.Take(j + 1).ToArray();
+                            var childFacetResult = facets.GetTopChildren(topNCategories, facetToDrillDownTo.Dim, currentFacetPath);
+                            if (childFacetResult == null)
+                                break;
+
+                            if (childFacetResult.ChildCount > 0)
+                            {
+                                var childName = currentFacetPath.Last();
+                                if (currentCategory.Values == null)
+                                    currentCategory.Values = new List<Category>();
+
+                                var childCategory = currentCategory.Values.FirstOrDefault(c => c.Name == childName);
+                                if (childCategory == null)
+                                {
+                                    childCategory = new Category { Name = childName };
+                                    currentCategory.Values.Add(childCategory);
+                                }
+
+                                if (childCategory.Values == null)
+                                    childCategory.Values = new List<Category>();
+
+                                foreach (var lv in childFacetResult.LabelValues)
+                                    childCategory.Values.Add(new Category { Name = lv.Label, Count = lv.Value.intValue() });
+
+                                childCategory.Count = childCategory.Values.Sum(sc => sc.Count);
+
+                                currentCategory = childCategory;
+                            }
+                        }
                     }
 
                     categories.Add(category);
