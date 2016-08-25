@@ -47,82 +47,7 @@ namespace ExpandoDB.Rest.DTO
             };
 
             return searchCriteria;
-        }
-
-        /// <summary>
-        /// Populates the given <see cref="SearchResponseDto"/> with data from the given <see cref="SearchRequestDto"/> and <see cref="SearchResult{TResult}"/> objects.
-        /// </summary>
-        /// <param name="responseDto">The SearchResponseDto object.</param>
-        /// <param name="searchRequestDto">The SearchRequestDto object.</param>
-        /// <param name="collectionName">Name of the collection.</param>
-        /// <param name="searchResult">The SearchResult object.</param>
-        /// <returns></returns>
-        /// <exception cref="System.ArgumentNullException">
-        /// </exception>
-        public static SearchResponseDto PopulateWith(this SearchResponseDto responseDto, SearchRequestDto searchRequestDto, string collectionName, SearchResult<Document> searchResult)
-        {
-            if (searchRequestDto == null)
-                throw new ArgumentNullException(nameof(searchRequestDto));
-            if (searchResult == null)
-                throw new ArgumentNullException(nameof(searchResult));
-
-            responseDto.select = searchRequestDto.select;
-            responseDto.from = collectionName;
-            responseDto.where = searchRequestDto.where;
-            responseDto.orderBy = searchRequestDto.orderBy;
-            responseDto.topN = searchResult.TopN;
-            responseDto.itemCount = searchResult.ItemCount;
-            responseDto.totalHits = searchResult.TotalHits;
-            responseDto.pageCount = searchResult.PageCount;
-            responseDto.pageNumber = searchResult.PageNumber;
-            responseDto.itemsPerPage = searchResult.ItemsPerPage;
-            responseDto.highlight = searchResult.IncludeHighlight;
-            responseDto.selectCategories = searchResult.SelectCategories;
-            responseDto.topNCategories = searchResult.TopNCategories;
-            responseDto.categories = searchResult.Categories.Select(c => c.ToCategoryDto());
-
-            var fieldsToSelect = searchRequestDto.select.ToList();
-            if (fieldsToSelect.Count > 0 && searchResult.IncludeHighlight)
-                fieldsToSelect.Add(LuceneHighlighter.HIGHLIGHT_FIELD_NAME);
-
-            responseDto.items = searchResult.Items.Select(c => c.Select(fieldsToSelect).AsExpando());
-
-            return responseDto;
-        }
-
-        public static ExpandoObject PopulateWith(this ExpandoObject responseDto, SearchRequestDto searchRequestDto, string collectionName, SearchResult<Document> searchResult, TimeSpan elapsed)
-        {
-            if (searchRequestDto == null)
-                throw new ArgumentNullException(nameof(searchRequestDto));
-            if (searchResult == null)
-                throw new ArgumentNullException(nameof(searchResult));
-
-            dynamic dynamicDto = responseDto;
-            dynamicDto.select = searchRequestDto.select;
-            dynamicDto.from = collectionName;
-            dynamicDto.where = searchRequestDto.where;
-            dynamicDto.orderBy = searchRequestDto.orderBy;
-            dynamicDto.topN = searchResult.TopN;
-            dynamicDto.itemCount = searchResult.ItemCount;
-            dynamicDto.totalHits = searchResult.TotalHits;
-            dynamicDto.pageCount = searchResult.PageCount;
-            dynamicDto.pageNumber = searchResult.PageNumber;
-            dynamicDto.itemsPerPage = searchResult.ItemsPerPage;
-            dynamicDto.highlight = searchResult.IncludeHighlight;
-            dynamicDto.selectCategories = searchResult.SelectCategories;
-            dynamicDto.topNCategories = searchResult.TopNCategories;
-            dynamicDto.categories = searchResult.Categories.Select(c => c.ToCategoryDto());
-
-            var fieldsToSelect = searchRequestDto.select.ToList();
-            if (fieldsToSelect.Count > 0 && searchResult.IncludeHighlight)
-                fieldsToSelect.Add(LuceneHighlighter.HIGHLIGHT_FIELD_NAME);
-
-            dynamicDto.items = searchResult.Items.Select(c => c.Select(fieldsToSelect).AsExpando());
-            dynamicDto.timestamp = DateTime.UtcNow;
-            dynamicDto.elapsed = elapsed.ToString();
-
-            return dynamicDto;
-        }
+        }        
 
         /// <summary>
         /// Selects only the specified list of fields.
@@ -173,29 +98,214 @@ namespace ExpandoDB.Rest.DTO
                 list.AddRange(fields);
             }
             return list;
-        }
+        }       
 
         /// <summary>
-        /// Converts the given Category object to a DTO.
+        /// Converts the given Category object to ExpandoObject.
         /// </summary>
         /// <param name="category">The category.</param>
         /// <returns></returns>
-        public static CategoryDto ToCategoryDto(this Category category)
+        public static ExpandoObject ToExpando(this Category category)
         {
-            var dto = new CategoryDto
-            {
-                name = category.Name,
-                count = category.Count
-            };
+            dynamic dto = new ExpandoObject();
+            dto.name = category.Name;
+            dto.count = category.Count;
 
             if ((category.Values?.Count ?? 0) > 0)
-            {
                 dto.values = (from c in category.Values
-                             select c.ToCategoryDto())
+                              select c.ToExpando())
                              ?.ToList();
-            }
+            else
+                dto.values = null;
 
             return dto;
+        }
+
+        /// <summary>
+        /// Builds a response DTO for a POST (Insert) request.
+        /// </summary>
+        /// <param name="dbService">The database service.</param>
+        /// <param name="collectionName">Name of the collection.</param>
+        /// <param name="docId">The identifier.</param>
+        /// <param name="elapsed">The elapsed time.</param>
+        /// <returns></returns>
+        public static ExpandoObject BuildInsertResponseDto(this DbService dbService, string collectionName, Guid docId, TimeSpan elapsed)
+        {
+            dynamic dynamicDto = new ExpandoObject();
+
+            dynamicDto.from = collectionName;
+            dynamicDto._id = docId;
+            dynamicDto.timestamp = DateTime.UtcNow;
+            dynamicDto.elapsed = elapsed.ToString();
+
+            return dynamicDto;
+        }
+
+        /// <summary>
+        /// Builds a response DTO for the GET Schema request.
+        /// </summary>
+        /// <param name="dbService">The database service.</param>
+        /// <param name="schema">The schema.</param>
+        /// <param name="elapsed">The elapsed time.</param>
+        /// <returns></returns>
+        public static ExpandoObject BuildSchemaResponseDto(this DbService dbService, Schema schema, TimeSpan elapsed)
+        {
+            dynamic dynamicDto = new ExpandoObject();
+
+            dynamicDto.from = schema.Name;
+            dynamicDto.schema = schema.ToDocument().AsExpando();
+            dynamicDto.timestamp = DateTime.UtcNow;
+            dynamicDto.elapsed = elapsed.ToString();
+
+            return dynamicDto;
+        }
+
+        /// <summary>
+        /// Builds a response DTO for the GET Schemas request.
+        /// </summary>
+        /// <param name="dbService">The database service.</param>
+        /// <param name="schemas">The schemas.</param>
+        /// <param name="elapsed">The elapsed time.</param>
+        /// <returns></returns>
+        public static ExpandoObject BuildSchemaResponseDto(this DbService dbService, IEnumerable<Schema> schemas, TimeSpan elapsed)
+        {
+            dynamic dynamicDto = new ExpandoObject();
+
+            dynamicDto.schemas = schemas.Select(s => s.ToDocument().AsExpando());
+            dynamicDto.timestamp = DateTime.UtcNow;
+            dynamicDto.elapsed = elapsed.ToString();
+
+            return dynamicDto;
+        }
+
+        /// <summary>
+        /// Builds a response DTO for GET Documents (via Search) requests, using data from the given <see cref="SearchRequestDto" /> and <see cref="SearchResult{TResult}" /> objects.
+        /// </summary>
+        /// <param name="dbService">The database service.</param>
+        /// <param name="searchRequestDto">The search request dto.</param>
+        /// <param name="collectionName">Name of the collection.</param>
+        /// <param name="searchResult">The search result.</param>
+        /// <param name="elapsed">The elapsed time.</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException">
+        /// </exception>
+        public static ExpandoObject BuildSearchResponseDto(this DbService dbService, SearchRequestDto searchRequestDto, string collectionName, SearchResult<Document> searchResult, TimeSpan elapsed)
+        {
+            if (searchRequestDto == null)
+                throw new ArgumentNullException(nameof(searchRequestDto));
+            if (searchResult == null)
+                throw new ArgumentNullException(nameof(searchResult));
+
+            dynamic dynamicDto = new ExpandoObject();
+
+            dynamicDto.select = searchRequestDto.select;
+            dynamicDto.topN = searchResult.TopN;
+            dynamicDto.from = collectionName;
+            dynamicDto.where = searchRequestDto.where;
+            dynamicDto.orderBy = searchRequestDto.orderBy;
+
+            dynamicDto.documentCount = searchResult.ItemCount;
+            dynamicDto.totalHits = searchResult.TotalHits;
+            dynamicDto.pageCount = searchResult.PageCount;
+            dynamicDto.pageNumber = searchResult.PageNumber;
+            dynamicDto.documentsPerPage = searchResult.ItemsPerPage;
+            dynamicDto.highlight = searchResult.IncludeHighlight;
+            dynamicDto.selectCategories = searchResult.SelectCategories;
+            dynamicDto.topNCategories = searchResult.TopNCategories;
+
+            var fieldsToSelect = searchRequestDto.select.ToList();
+            if (fieldsToSelect.Count > 0 && searchResult.IncludeHighlight)
+                fieldsToSelect.Add(LuceneHighlighter.HIGHLIGHT_FIELD_NAME);
+
+            dynamicDto.documents = searchResult.Items?.Select(c => c.Select(fieldsToSelect).AsExpando());
+            dynamicDto.categories = searchResult.Categories?.Select(c => c.ToExpando());
+
+            dynamicDto.timestamp = DateTime.UtcNow;
+            dynamicDto.elapsed = elapsed.ToString();
+
+            return dynamicDto;
+        }
+
+        /// <summary>
+        /// Builds a response DTO for the GET Collection Count request.
+        /// </summary>
+        /// <param name="dbService">The database service.</param>
+        /// <param name="collectionName">Name of the collection.</param>
+        /// <param name="where">The where.</param>
+        /// <param name="count">The count.</param>
+        /// <param name="elapsed">The elapsed time.</param>
+        /// <returns></returns>
+        public static ExpandoObject BuildCountResponseDto(this DbService dbService, string collectionName, string where, int count, TimeSpan elapsed)
+        {
+            dynamic dynamicDto = new ExpandoObject();
+
+            dynamicDto.from = collectionName;
+            dynamicDto.where = where;
+            dynamicDto.count = count;
+            dynamicDto.timestamp = DateTime.UtcNow;
+            dynamicDto.elapsed = elapsed.ToString();
+
+            return dynamicDto;
+        }
+
+        /// <summary>
+        /// Builds a response DTO for the GET Document (via ID lookup) request.
+        /// </summary>
+        /// <param name="dbService">The database service.</param>
+        /// <param name="collectionName">Name of the collection.</param>
+        /// <param name="document">The document.</param>
+        /// <param name="elapsed">The elapsed time.</param>
+        /// <returns></returns>
+        public static ExpandoObject BuildDocumentResponseDto(this DbService dbService, string collectionName, Document document, TimeSpan elapsed)
+        {
+            dynamic dynamicDto = new ExpandoObject();
+
+            dynamicDto.from = collectionName;
+            dynamicDto.document = document.AsExpando();
+            dynamicDto.timestamp = DateTime.UtcNow;
+            dynamicDto.elapsed = elapsed.ToString();
+
+            return dynamicDto;
+        }
+
+        /// <summary>
+        /// Builds a response DTO for the PUT, PATCH, DELETE requests.
+        /// </summary>
+        /// <param name="dbService">The database service.</param>
+        /// <param name="collectionName">Name of the collection.</param>
+        /// <param name="affectedCount">The number of affected Documents.</param>
+        /// <param name="elapsed">The elapsed time.</param>
+        /// <returns></returns>
+        public static ExpandoObject BuildUpdateResponseDto(this DbService dbService, string collectionName, int affectedCount, TimeSpan elapsed)
+        {
+            dynamic dynamicDto = new ExpandoObject();
+
+            dynamicDto.from = collectionName;
+            dynamicDto.affectedCount = affectedCount;
+            dynamicDto.timestamp = DateTime.UtcNow;
+            dynamicDto.elapsed = elapsed.ToString();
+
+            return dynamicDto;
+        }
+
+        /// <summary>
+        /// Builds a response DTO for the DELETE (Drop) Collection request.
+        /// </summary>
+        /// <param name="dbService">The database service.</param>
+        /// <param name="collectionName">Name of the collection.</param>
+        /// <param name="isDropped">if set to <c>true</c> the Collection was dropped.</param>
+        /// <param name="elapsed">The elapsed time.</param>
+        /// <returns></returns>
+        public static ExpandoObject BuildDropResposeDto(this DbService dbService, string collectionName, bool isDropped, TimeSpan elapsed)
+        {
+            dynamic dynamicDto = new ExpandoObject();
+
+            dynamicDto.from = collectionName;
+            dynamicDto.isDropped = isDropped;
+            dynamicDto.timestamp = DateTime.UtcNow;
+            dynamicDto.elapsed = elapsed.ToString();
+
+            return dynamicDto;
         }
     }    
 }

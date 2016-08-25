@@ -272,7 +272,7 @@ namespace ExpandoDB.Search
                     var sort = GetSortCriteria(criteria.SortByField);
                     var selectedFacets = criteria.SelectCategories.ToFacetFields();
                     var topDocs = (TopDocs)null;                                        
-                    var categories = Enumerable.Empty<Category>();
+                    var categories = (IEnumerable<Category>)null;
 
                     if (selectedFacets.Count() == 0)
                     {
@@ -304,14 +304,14 @@ namespace ExpandoDB.Search
                         categories = drillSidewaysResult.Facets.GetCategories(criteria.TopNCategories, selectedFacets);
                     }
 
-                    // TODO: Don't pass TopDocs; pass an IEnumerable<Guid> and IEnumerable<Category>
-                    result.PopulateWith(topDocs, id => searcher.Doc(id));
-                    result.Categories = categories;
+                    // TODO: Don't pass TopDocs; pass an IEnumerable<Guid>
+                    result.PopulateWith(topDocs, categories, id => searcher.Doc(id));                    
                 }
                 finally
                 {
                     _searcherTaxonomyManager.Release(instance); 
                     searcher = null;
+                    taxonomyReader = null;
                 }
             }
 

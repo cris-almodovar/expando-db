@@ -146,6 +146,7 @@ namespace ExpandoDB.Search
             PageCount = pageCount;     
 
             Items = new List<TResult>();
+            Categories = new List<Category>();
         }
 
 

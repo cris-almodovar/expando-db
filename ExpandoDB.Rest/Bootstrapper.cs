@@ -11,6 +11,7 @@ using Nancy.Responses.Negotiation;
 using System.Configuration;
 using Nancy.Conventions;
 using Metrics;
+using System.Dynamic;
 
 namespace ExpandoDB.Rest
 {
@@ -58,17 +59,15 @@ namespace ExpandoDB.Rest
 
             // Configure exception handling for Web Service endpoints.                        
             pipelines.OnError.AddItemToStartOfPipeline((ctx, ex) =>
-            {
-                _log.Error(ex);                
+            {                
+                _log.Error(ex);
 
-                var dto = new ErrorResponseDto
-                {
-                    timestamp = DateTime.UtcNow,
-                    errorMessage = $"{ex.GetType().Name} - {ex.Message}",
-                    statusCode = HttpStatusCode.InternalServerError
-                };
+                dynamic dto = new ExpandoObject();
+                dto.statusCode = HttpStatusCode.InternalServerError;
+                dto.errorMessage = $"{ex.GetType().Name} - {ex.Message}";
+                dto.timestamp = DateTime.UtcNow;                
 
-                var response = new JsonResponse<ErrorResponseDto>(dto, new DefaultJsonSerializer())
+                var response = new JsonResponse<ExpandoObject>(dto, new DtoSerializer())
                 {
                     StatusCode = HttpStatusCode.InternalServerError
                 };
@@ -152,10 +151,10 @@ namespace ExpandoDB.Rest
                         c.ResponseProcessors.Add(typeof(JsonProcessor));
 
                         // Make sure Nancy uses our own custom DTO serializer.
-                        //c.Serializers.Clear();
-                        //c.Serializers.Add(typeof(DtoSerializer));
+                        c.Serializers.Clear();
+                        c.Serializers.Add(typeof(DtoSerializer));
 
-                        c.Serializers.Remove(typeof(DtoSerializer));
+                        //c.Serializers.Remove(typeof(DtoSerializer));
                     }
                 );
             }

@@ -31,11 +31,12 @@ namespace ExpandoDB.Search
         /// Populates the SearchResult object with data from the specified TopFieldDocs object.
         /// </summary>
         /// <param name="result">The SearchResult to be populated.</param>
-        /// <param name="topDocs">The TopDocs object returned by Lucene.</param>        
+        /// <param name="topDocs">The TopDocs object returned by Lucene.</param>
+        /// <param name="categories">The categories.</param>
         /// <param name="getDoc">A lambda that returns the Lucene document given the doc id.</param>
         /// <exception cref="ArgumentNullException">
         /// </exception>
-        public static void PopulateWith(this SearchResult<Guid> result, TopDocs topDocs, Func<int, LuceneDocument> getDoc)
+        public static void PopulateWith(this SearchResult<Guid> result, TopDocs topDocs, IEnumerable<Category> categories, Func<int, LuceneDocument> getDoc)
         {
             if (result == null)
                 throw new ArgumentNullException(nameof(result));
@@ -72,6 +73,7 @@ namespace ExpandoDB.Search
                 }
 
                 result.Items = documentIds;
+                result.Categories = categories ?? Enumerable.Empty<Category>();
                 result.PageCount = ComputePageCount(result.ItemCount, result.ItemsPerPage);
             }
         }

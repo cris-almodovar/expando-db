@@ -72,22 +72,13 @@
     </Compile>
     <Compile Include="Bootstrapper.cs" />
     <Compile Include="DbService.cs" />
-    <Compile Include="DTO\CategoryDto.cs" />
-    <Compile Include="DTO\DocumentResposeDto.cs" />
     <Compile Include="DTO\CountRequestDto.cs" />
-    <Compile Include="DTO\CountResponseDto.cs" />
-    <Compile Include="DTO\DropCollectionResponseDto.cs" />
     <Compile Include="DTO\DtoUtils.cs" />
-    <Compile Include="DTO\ErrorResponseDto.cs" />
-    <Compile Include="DTO\InsertResponseDto.cs" />
     <Compile Include="DTO\PatchOperationDto.cs" />
-    <Compile Include="DTO\ResponseDto.cs" />
-    <Compile Include="DTO\SchemaResponseDto.cs" />
     <Compile Include="DTO\SearchRequestDto.cs" />
-    <Compile Include="DTO\SearchResponseDto.cs" />
-    <Compile Include="DTO\UpdateResponseDto.cs" />
     <Compile Include="DynamicModelBinder.cs" />
     <Compile Include="DtoSerializer.cs" />
+    <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="PatchOperationUtils.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StatusCodeHandler.cs" />

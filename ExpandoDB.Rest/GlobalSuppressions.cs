@@ -1,0 +1,15 @@
+﻿
+// This file is used by Code Analysis to maintain SuppressMessage 
+// attributes that are applied to this project.
+// Project-level suppressions either have no target or are given 
+// a specific target and scoped to a namespace, type, member, etc.
+
+[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Redundancies in Symbol Declarations", "RECS0154:Parameter is never used", Justification = "<Pending>", Scope = "member", Target = "~M:ExpandoDB.Rest.DTO.DtoUtils.BuildInsertResponseDto(ExpandoDB.Rest.DbService,System.String,System.Guid,System.TimeSpan)~System.Dynamic.ExpandoObject")]
+[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Redundancies in Symbol Declarations", "RECS0154:Parameter is never used", Justification = "<Pending>", Scope = "member", Target = "~M:ExpandoDB.Rest.DTO.DtoUtils.BuildSchemaResponseDto(ExpandoDB.Rest.DbService,ExpandoDB.Schema,System.TimeSpan)~System.Dynamic.ExpandoObject")]
+[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Redundancies in Symbol Declarations", "RECS0154:Parameter is never used", Justification = "<Pending>", Scope = "member", Target = "~M:ExpandoDB.Rest.DTO.DtoUtils.BuildSchemaResponseDto(ExpandoDB.Rest.DbService,System.Collections.Generic.IEnumerable{ExpandoDB.Schema},System.TimeSpan)~System.Dynamic.ExpandoObject")]
+[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Redundancies in Symbol Declarations", "RECS0154:Parameter is never used", Justification = "<Pending>", Scope = "member", Target = "~M:ExpandoDB.Rest.DTO.DtoUtils.BuildSearchResponseDto(ExpandoDB.Rest.DbService,ExpandoDB.Rest.DTO.SearchRequestDto,System.String,ExpandoDB.Search.SearchResult{ExpandoDB.Document},System.TimeSpan)~System.Dynamic.ExpandoObject")]
+[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Redundancies in Symbol Declarations", "RECS0154:Parameter is never used", Justification = "<Pending>", Scope = "member", Target = "~M:ExpandoDB.Rest.DTO.DtoUtils.BuildCountResponseDto(ExpandoDB.Rest.DbService,System.String,System.String,System.Int32,System.TimeSpan)~System.Dynamic.ExpandoObject")]
+[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Redundancies in Symbol Declarations", "RECS0154:Parameter is never used", Justification = "<Pending>", Scope = "member", Target = "~M:ExpandoDB.Rest.DTO.DtoUtils.BuildDocumentResponseDto(ExpandoDB.Rest.DbService,System.String,ExpandoDB.Document,System.TimeSpan)~System.Dynamic.ExpandoObject")]
+[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Redundancies in Symbol Declarations", "RECS0154:Parameter is never used", Justification = "<Pending>", Scope = "member", Target = "~M:ExpandoDB.Rest.DTO.DtoUtils.BuildUpdateResponseDto(ExpandoDB.Rest.DbService,System.String,System.Int32,System.TimeSpan)~System.Dynamic.ExpandoObject")]
+[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Redundancies in Symbol Declarations", "RECS0154:Parameter is never used", Justification = "<Pending>", Scope = "member", Target = "~M:ExpandoDB.Rest.DTO.DtoUtils.BuildDropResposeDto(ExpandoDB.Rest.DbService,System.String,System.Boolean,System.TimeSpan)~System.Dynamic.ExpandoObject")]
+
