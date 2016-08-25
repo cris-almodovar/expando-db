@@ -83,7 +83,8 @@ namespace Loader
                                             {
                                                 date = dateTime > DateTime.MinValue ? (DateTime?)dateTime : null,
                                                 title = title,
-                                                text = body
+                                                text = body,
+                                                _categories = dateTime > DateTime.MinValue ? new [] { $"Publish Date:{dateTime.Year}/{dateTime.Month:D2}/{dateTime.Day}" } : null
                                             };
 
                                             var restRequest = new RestRequest

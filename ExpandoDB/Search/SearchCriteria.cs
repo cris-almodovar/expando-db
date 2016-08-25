@@ -15,7 +15,7 @@ namespace ExpandoDB.Search
         /// <summary>
         /// The defaul value for the TopNCategories property.
         /// </summary>
-        internal const int DEFAULT_TOP_N_CATEGORIES = 20;
+        internal const int DEFAULT_TOP_N_CATEGORIES = 10;
 
         /// <summary>
         /// The defaul valeu of the ItemsPerPage property.
