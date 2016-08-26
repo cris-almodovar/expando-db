@@ -28,9 +28,9 @@ namespace ExpandoDB.Rest
             if (statusCode == HttpStatusCode.NotFound)
             {
                 dynamic dto = new ExpandoObject();
+                dto.statusCode = (int)HttpStatusCode.NotFound;
+                dto.errorMessage = "The resource you have requested cannot be found.";                
                 dto.timestamp = DateTime.UtcNow;
-                dto.errorMessage = "The resource you have requested cannot be found.";
-                dto.statusCode = HttpStatusCode.NotFound;
 
                 var response = new JsonResponse<ExpandoObject>(dto, new DtoSerializer())
                 {

@@ -14,6 +14,7 @@ using System.Configuration;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Linq;
+using FlexLucene.Codecs.Lucene60;
 
 namespace ExpandoDB.Search
 {
@@ -32,8 +33,8 @@ namespace ExpandoDB.Search
         private readonly LuceneFacetBuilder _facetBuilder;
         private readonly SearcherTaxonomyManager _searcherTaxonomyManager;        
         private readonly Timer _refreshTimer;
-        private readonly Timer _commitTimer;
-        private readonly ReaderWriterLockSlim _indexWriterLock;       
+        private readonly Timer _commitTimer;        
+        private readonly ManualResetEventSlim _writeAllowedFlag;
         private readonly ILog _log = LogManager.GetLogger(typeof(LuceneIndex).Name);    
         private readonly double _refreshIntervalSeconds;
         private readonly double _commitIntervalSeconds;        
@@ -92,12 +93,12 @@ namespace ExpandoDB.Search
                            
             _compositeAnalyzer = new CompositeAnalyzer(Schema);            
 
-            _ramBufferSizeMB = Double.Parse(ConfigurationManager.AppSettings["IndexWriter.RAMBufferSizeMB"] ?? "128");            
+            _ramBufferSizeMB = Double.Parse(ConfigurationManager.AppSettings["IndexWriter.RAMBufferSizeMB"] ?? "128");
 
-            var config = new IndexWriterConfig(_compositeAnalyzer)
+            var config = new IndexWriterConfig(_compositeAnalyzer)                            
                             .SetOpenMode(IndexWriterConfigOpenMode.CREATE_OR_APPEND)
-                            .SetRAMBufferSizeMB(_ramBufferSizeMB)                            
-                            .SetCommitOnClose(true);
+                            .SetRAMBufferSizeMB(_ramBufferSizeMB)
+                            .SetCommitOnClose(true);                            
             
             _indexWriter = new IndexWriter(_indexDirectory, config);
             _taxonomyWriter = new DirectoryTaxonomyWriter(_taxonomyDirectory, IndexWriterConfigOpenMode.CREATE_OR_APPEND);
@@ -107,8 +108,9 @@ namespace ExpandoDB.Search
 
             _refreshIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["IndexSearcher.RefreshIntervalSeconds"] ?? "0.5");    
             _commitIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["IndexWriter.CommitIntervalSeconds"] ?? "60");
+           
+            _writeAllowedFlag = new ManualResetEventSlim(true);
 
-            _indexWriterLock = new ReaderWriterLockSlim();
             _refreshTimer = new Timer(o => Refresh(), null, TimeSpan.FromSeconds(_refreshIntervalSeconds), TimeSpan.FromSeconds(_refreshIntervalSeconds));
             _commitTimer = new Timer(o => Commit(), null, TimeSpan.FromSeconds(_commitIntervalSeconds), TimeSpan.FromSeconds(_commitIntervalSeconds));
 
@@ -127,11 +129,12 @@ namespace ExpandoDB.Search
         {
             if (_indexWriter.HasUncommittedChanges())
             {
-                if (!_indexWriterLock.TryEnterWriteLock(100))
-                    return;
-
                 try
-                {                    
+                {
+                    // Don't allow index writes while are committing 
+                    // to the main index and taxonomy index.
+                    _writeAllowedFlag.Reset();                    
+
                     _taxonomyWriter.Commit();
                     _indexWriter.Commit();
                 }
@@ -140,8 +143,8 @@ namespace ExpandoDB.Search
                     _log.Error(ex);
                 }
                 finally
-                {
-                    _indexWriterLock.ExitWriteLock();
+                {             
+                    _writeAllowedFlag.Set();
                 }
             }
         }
@@ -178,15 +181,8 @@ namespace ExpandoDB.Search
 
             var luceneDocument = document.ToLuceneDocument(Schema, _facetBuilder);
 
-            _indexWriterLock.EnterWriteLock();
-            try
-            {                
-                _indexWriter.AddDocument(luceneDocument);
-            }
-            finally
-            {
-                _indexWriterLock.ExitWriteLock();
-            }   
+            _writeAllowedFlag.Wait();
+            _indexWriter.AddDocument(luceneDocument);
         }
 
         /// <summary>
@@ -199,16 +195,9 @@ namespace ExpandoDB.Search
                 throw new ArgumentException(nameof(guid) + " cannot be empty");
 
             var idTerm = new Term(Schema.StandardField.ID, guid.ToString().ToLower());
-
-            _indexWriterLock.EnterWriteLock();
-            try
-            {
-                _indexWriter.DeleteDocuments(idTerm);
-            }
-            finally
-            {
-                _indexWriterLock.ExitWriteLock();
-            }
+            
+            _writeAllowedFlag.Wait();
+            _indexWriter.DeleteDocuments(idTerm);            
         }
 
         /// <summary>
@@ -228,15 +217,8 @@ namespace ExpandoDB.Search
             var id = document._id.ToString().ToLower();
             var idTerm = new Term(Schema.StandardField.ID, id);
 
-            _indexWriterLock.EnterWriteLock();
-            try
-            {
-                _indexWriter.UpdateDocument(idTerm, luceneDocument);
-            }
-            finally
-            {
-                _indexWriterLock.ExitWriteLock();
-            }
+            _writeAllowedFlag.Wait();
+            _indexWriter.UpdateDocument(idTerm, luceneDocument);            
         }
 
         /// <summary>
@@ -428,7 +410,7 @@ namespace ExpandoDB.Search
 
                     _taxonomyWriter.Close();
                     _indexWriter.Close();
-                    _indexWriterLock.Dispose();             
+                    _writeAllowedFlag.Dispose();
                 }               
 
                 IsDisposed = true;

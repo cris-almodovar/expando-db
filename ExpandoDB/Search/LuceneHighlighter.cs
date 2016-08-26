@@ -71,7 +71,7 @@ namespace ExpandoDB.Search
                 writer.DeleteAll();
                 writer.Commit();
                 writer.Close();
-                indexDirectory.Close();
+                indexDirectory.Close();            
             }
             catch (Exception ex)
             {

@@ -203,7 +203,7 @@ namespace ExpandoDB.Serialization
                 return false;
 
             var length = value.Length;            
-
+            
             if (length == DateTimeFormat.DATE_ONLY.Length &&
                 DateTime.TryParseExact(value, DateTimeFormat.DATE_ONLY, null, DateTimeStyles.AssumeLocal, out dateValue)) return true;
 

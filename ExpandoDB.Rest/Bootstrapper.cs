@@ -63,7 +63,7 @@ namespace ExpandoDB.Rest
                 _log.Error(ex);
 
                 dynamic dto = new ExpandoObject();
-                dto.statusCode = HttpStatusCode.InternalServerError;
+                dto.statusCode = (int)HttpStatusCode.InternalServerError;
                 dto.errorMessage = $"{ex.GetType().Name} - {ex.Message}";
                 dto.timestamp = DateTime.UtcNow;                
 
