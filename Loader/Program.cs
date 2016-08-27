@@ -66,17 +66,24 @@ namespace Loader
 
                                 var date = reuters["DATE"].InnerText;
                                 var text = reuters["TEXT"];
-                                var title = text["TITLE"] != null ? text["TITLE"].InnerText : null;
-                                var body = text["BODY"] != null ? text["BODY"].InnerText : null;
+                                var title = text["TITLE"]?.InnerText;
+                                var body = text["BODY"]?.InnerText;
 
-                                var categories = new List<string>();
-                                categories.Add($"file:{fileName}");
+                                var categories = new List<string>();                                
 
                                 DateTime dateTime;
                                 if (DateTime.TryParse(date, out dateTime))
                                 {
                                     const string dateFormat = "yyyy/MMM/dd";
-                                    categories.Add($"date:{dateTime.ToString(dateFormat)}");
+                                    categories.Add($"Date:{dateTime.ToString(dateFormat)}");
+                                }
+
+                                var topicsNode = reuters["TOPICS"];                                
+                                if (topicsNode != null)
+                                {
+                                    foreach (XmlNode childNode in topicsNode.ChildNodes)
+                                        if (!String.IsNullOrWhiteSpace(childNode.InnerText))
+                                            categories.Add($"Topic:{childNode.InnerText}");
                                 }
 
                                 var document = new
