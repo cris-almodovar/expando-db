@@ -1,4 +1,5 @@
 ﻿using FlexLucene.Document;
+using FlexLucene.Facet;
 using FlexLucene.Search;
 using System;
 using System.Collections.Generic;
@@ -30,26 +31,29 @@ namespace ExpandoDB.Search
         /// Populates the SearchResult object with data from the specified TopFieldDocs object.
         /// </summary>
         /// <param name="result">The SearchResult to be populated.</param>
-        /// <param name="topFieldDocs">The TopFieldDocs object returned by Lucene.</param>
+        /// <param name="topDocs">The TopDocs object returned by Lucene.</param>
+        /// <param name="categories">The categories.</param>
         /// <param name="getDoc">A lambda that returns the Lucene document given the doc id.</param>
-        public static void PopulateWith(this SearchResult<Guid> result, TopFieldDocs topFieldDocs, Func<int, LuceneDocument> getDoc)
+        /// <exception cref="ArgumentNullException">
+        /// </exception>
+        public static void PopulateWith(this SearchResult<Guid> result, TopDocs topDocs, IEnumerable<Category> categories, Func<int, LuceneDocument> getDoc)
         {
             if (result == null)
                 throw new ArgumentNullException(nameof(result));
-            if (topFieldDocs == null)
-                throw new ArgumentNullException(nameof(topFieldDocs));
+            if (topDocs == null)
+                throw new ArgumentNullException(nameof(topDocs));
             if (getDoc == null)
                 throw new ArgumentNullException(nameof(getDoc));
 
-            result.ItemCount = topFieldDocs.ScoreDocs.Length;
-            result.TotalHits = topFieldDocs.TotalHits;
+            result.ItemCount = topDocs.ScoreDocs.Length;
+            result.TotalHits = topDocs.TotalHits;
 
             if (result.ItemCount > 0)
             {
                 var itemsToSkip = (result.PageNumber - 1) * result.ItemsPerPage;
                 var itemsToTake = result.ItemsPerPage;
 
-                var scoreDocs = topFieldDocs.ScoreDocs
+                var scoreDocs = topDocs.ScoreDocs
                                             .Skip(itemsToSkip)
                                             .Take(itemsToTake)
                                             .ToList();
@@ -69,6 +73,7 @@ namespace ExpandoDB.Search
                 }
 
                 result.Items = documentIds;
+                result.Categories = categories ?? Enumerable.Empty<Category>();
                 result.PageCount = ComputePageCount(result.ItemCount, result.ItemsPerPage);
             }
         }

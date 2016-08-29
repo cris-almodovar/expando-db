@@ -34,90 +34,92 @@ namespace Loader
 
             var stopwatch = new Stopwatch();
             stopwatch.Start();
-
-            var batchSize = sgmlFiles.Count();
-
-            foreach (var batch in sgmlFiles.InSetsOf(batchSize))
+            
+            var options = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
+            Parallel.ForEach(sgmlFiles, options, filePath =>
             {
-                var tasks = new List<Task>();
+                var fileName = Path.GetFileName(filePath);
+                Console.WriteLine("Processing file: " + fileName);
 
-                foreach (var fileName in batch)
+                using (var reader = new StreamReader(filePath))
                 {
-                    Console.WriteLine("Processing file: " + Path.GetFileName(fileName));
+                    var buffer = new StringBuilder();
 
-                    var task = Task.Factory.StartNew(
-                        () =>
+                    var line = reader.ReadLine();
+                    while (line != null)
+                    {
+                        if (!line.StartsWith("<!DOCTYPE", StringComparison.InvariantCulture))
+                            buffer.AppendLine(line);
+
+                        if (line.StartsWith("</REUTERS>", StringComparison.InvariantCulture))
                         {
-                            using (var reader = new StreamReader(fileName))
-                            {                                
-                                var buffer = new StringBuilder();
+                            // We encountered the closing tag, get all the lines accumulated so far
+                            // and convert to XmlDocument.
+                            try
+                            {
+                                var xml = buffer.ToString();
+                                buffer.Clear();
 
-                                var line = reader.ReadLine();
-                                while (line != null)
+                                var xDoc = new XmlDocument();
+                                xDoc.Load(new StringReader(xml));
+                                var reuters = xDoc.DocumentElement;
+
+                                var date = reuters["DATE"].InnerText;
+                                var text = reuters["TEXT"];
+                                var title = text["TITLE"]?.InnerText;
+                                var body = text["BODY"]?.InnerText;
+
+                                var categories = new List<string>();                                
+
+                                DateTime dateTime;
+                                if (DateTime.TryParse(date, out dateTime))
                                 {
-                                    if (!line.StartsWith("<!DOCTYPE", StringComparison.InvariantCulture))
-                                        buffer.AppendLine(line);
-
-                                    if (line.StartsWith("</REUTERS>", StringComparison.InvariantCulture))
-                                    {
-                                        // We encountered the closing tag, get all the lines accumulated so far
-                                        // and convert to XmlDocument.
-                                        try
-                                        {
-                                            var xml = buffer.ToString();
-                                            buffer.Clear();
-
-                                            var xDoc = new XmlDocument();
-                                            xDoc.Load(new StringReader(xml));
-                                            var reuters = xDoc.DocumentElement;
-
-                                            var date = reuters["DATE"].InnerText;
-                                            var text = reuters["TEXT"];
-                                            var title = text["TITLE"] != null ? text["TITLE"].InnerText : null;
-                                            var body = text["BODY"] != null ? text["BODY"].InnerText : null;
-
-                                            DateTime dateTime;
-                                            DateTime.TryParse(date, out dateTime);
-
-                                            var document = new
-                                            {
-                                                date = dateTime > DateTime.MinValue ? (DateTime?)dateTime : null,
-                                                title = title,
-                                                text = body
-                                            };
-
-                                            var restRequest = new RestRequest
-                                            {
-                                                Resource = "/reuters",
-                                                Method = Method.POST,
-                                                DateFormat = DateFormat.ISO_8601
-                                            };
-
-                                            restRequest.AddJsonBody(document);
-                                            restClient.Execute(restRequest);
-                                        }
-                                        catch (Exception e)
-                                        {
-                                            Console.WriteLine(e.Message);
-                                        }                                        
-                                    }
-
-                                    line = reader.ReadLine();
+                                    const string dateFormat = "yyyy/MMM/dd";
+                                    categories.Add($"Date:{dateTime.ToString(dateFormat)}");
                                 }
+
+                                var topicsNode = reuters["TOPICS"];                                
+                                if (topicsNode != null)
+                                {
+                                    foreach (XmlNode childNode in topicsNode.ChildNodes)
+                                        if (!String.IsNullOrWhiteSpace(childNode.InnerText))
+                                        {
+                                            var topic = childNode.InnerText.Replace(@"/", @"\/");
+                                            categories.Add($"Topic:{topic}");
+                                        }
+                                }
+
+                                var document = new
+                                {
+                                    date = dateTime > DateTime.MinValue ? (DateTime?)dateTime : null,
+                                    title = title,
+                                    text = body,
+                                    _categories = categories
+                                };
+
+                                var restRequest = new RestRequest
+                                {
+                                    Resource = "/reuters",
+                                    Method = Method.POST,
+                                    DateFormat = DateFormat.ISO_8601
+                                };
+
+                                restRequest.AddJsonBody(document);
+                                restClient.Execute(restRequest);
                             }
+                            catch (Exception e)
+                            {
+                                Console.WriteLine(e.Message);
+                            }
+                        }
 
-                            Console.WriteLine("Finished processing file: " + Path.GetFileName(fileName));
-                        },
-                        TaskCreationOptions.LongRunning
-                   );
-
-                    tasks.Add(task);
-
+                        line = reader.ReadLine();
+                    }
                 }
-
-                Task.WaitAll(tasks.ToArray());
-
+                Console.WriteLine("Finished processing file: " + fileName);
             }
+
+            );
 
             stopwatch.Stop();
             Console.WriteLine("Finished importing files. Elapsed = " + stopwatch.Elapsed);

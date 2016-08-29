@@ -13,6 +13,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using java.util;
+using System.Configuration;
 
 namespace ExpandoDB.Search
 {
@@ -28,6 +29,7 @@ namespace ExpandoDB.Search
         private const int FRAGMENT_COUNT = 3;  // This is the number of best-matching fragments to be retrieved. The fragments are concatenated and set as the value of the highlight field.
         private static readonly ILog _log = LogManager.GetLogger(typeof(LuceneHighlighter).Name);
         private static readonly FieldType ExtendedTextFieldType;
+        private static readonly double _ramBufferSizeMB;
 
         static LuceneHighlighter()
         {
@@ -36,6 +38,8 @@ namespace ExpandoDB.Search
             ExtendedTextFieldType.SetStoreTermVectorOffsets(true);
             ExtendedTextFieldType.SetStoreTermVectorPositions(true);
             ExtendedTextFieldType.Freeze();
+
+            _ramBufferSizeMB = Double.Parse(ConfigurationManager.AppSettings["IndexWriter.RAMBufferSizeMB"] ?? "128");
         }
 
         /// <summary>
@@ -62,7 +66,7 @@ namespace ExpandoDB.Search
             {
                 var indexDirectory = new RAMDirectory();
                 var analyzer = new FullTextAnalyzer();
-                var config = new IndexWriterConfig(analyzer);
+                var config = new IndexWriterConfig(analyzer).SetRAMBufferSizeMB(_ramBufferSizeMB); 
                 var writer = new IndexWriter(indexDirectory, config);
 
                 BuidIndex(documents, writer);
@@ -71,7 +75,7 @@ namespace ExpandoDB.Search
                 writer.DeleteAll();
                 writer.Commit();
                 writer.Close();
-                indexDirectory.Close();
+                indexDirectory.Close();            
             }
             catch (Exception ex)
             {

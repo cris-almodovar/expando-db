@@ -1,5 +1,8 @@
 ﻿using Common.Logging;
 using FlexLucene.Analysis;
+using FlexLucene.Facet;
+using FlexLucene.Facet.Taxonomy;
+using FlexLucene.Facet.Taxonomy.Directory;
 using FlexLucene.Index;
 using FlexLucene.Search;
 using FlexLucene.Store;
@@ -10,6 +13,8 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Linq;
+using FlexLucene.Codecs.Lucene60;
 
 namespace ExpandoDB.Search
 {
@@ -21,11 +26,15 @@ namespace ExpandoDB.Search
     {        
         private const string ALL_DOCS_QUERY = "*:*";        
         private readonly Directory _indexDirectory;
+        private readonly Directory _taxonomyDirectory;
         private readonly Analyzer _compositeAnalyzer;
-        private readonly IndexWriter _writer;                
-        private readonly SearcherManager _searcherManager;        
+        private readonly IndexWriter _indexWriter;
+        private readonly DirectoryTaxonomyWriter _taxonomyWriter;        
+        private readonly LuceneFacetBuilder _facetBuilder;
+        private readonly SearcherTaxonomyManager _searcherTaxonomyManager;        
         private readonly Timer _refreshTimer;
         private readonly Timer _commitTimer;        
+        private readonly ManualResetEventSlim _writeAllowedFlag;
         private readonly ILog _log = LogManager.GetLogger(typeof(LuceneIndex).Name);    
         private readonly double _refreshIntervalSeconds;
         private readonly double _commitIntervalSeconds;        
@@ -72,30 +81,39 @@ namespace ExpandoDB.Search
             else
             {
                 System.IO.Directory.CreateDirectory(IndexPath);
-            }
-            
+            }                        
 
-            var path = Paths.get(IndexPath);
-            _indexDirectory = new MMapDirectory(path);  
-            
+            _indexDirectory = new MMapDirectory(Paths.get(IndexPath));
+
+            var taxonomyIndexPath = System.IO.Path.Combine(IndexPath, "taxonomy");
+            if (!System.IO.Directory.Exists(taxonomyIndexPath))            
+                System.IO.Directory.CreateDirectory(taxonomyIndexPath);
+
+            _taxonomyDirectory = new MMapDirectory(Paths.get(taxonomyIndexPath));         
+                           
             _compositeAnalyzer = new CompositeAnalyzer(Schema);            
 
-            _ramBufferSizeMB = Double.Parse(ConfigurationManager.AppSettings["IndexWriter.RAMBufferSizeMB"] ?? "128");            
+            _ramBufferSizeMB = Double.Parse(ConfigurationManager.AppSettings["IndexWriter.RAMBufferSizeMB"] ?? "128");
 
-            var config = new IndexWriterConfig(_compositeAnalyzer)
+            var config = new IndexWriterConfig(_compositeAnalyzer)                            
                             .SetOpenMode(IndexWriterConfigOpenMode.CREATE_OR_APPEND)
-                            .SetRAMBufferSizeMB(_ramBufferSizeMB)                            
-                            .SetCommitOnClose(true);
+                            .SetRAMBufferSizeMB(_ramBufferSizeMB)
+                            .SetCommitOnClose(true);                            
             
-            _writer = new IndexWriter(_indexDirectory, config);            
+            _indexWriter = new IndexWriter(_indexDirectory, config);
+            _taxonomyWriter = new DirectoryTaxonomyWriter(_taxonomyDirectory, IndexWriterConfigOpenMode.CREATE_OR_APPEND);
 
-            _searcherManager = new SearcherManager(_writer, true, false, null);         
+            _searcherTaxonomyManager = new SearcherTaxonomyManager(_indexWriter, true, null, _taxonomyWriter);            
+            _facetBuilder = new LuceneFacetBuilder(_taxonomyWriter);                        
 
             _refreshIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["IndexSearcher.RefreshIntervalSeconds"] ?? "0.5");    
             _commitIntervalSeconds = Double.Parse(ConfigurationManager.AppSettings["IndexWriter.CommitIntervalSeconds"] ?? "60");
+           
+            _writeAllowedFlag = new ManualResetEventSlim(true);
 
             _refreshTimer = new Timer(o => Refresh(), null, TimeSpan.FromSeconds(_refreshIntervalSeconds), TimeSpan.FromSeconds(_refreshIntervalSeconds));
             _commitTimer = new Timer(o => Commit(), null, TimeSpan.FromSeconds(_commitIntervalSeconds), TimeSpan.FromSeconds(_commitIntervalSeconds));
+
         }
 
         /// <summary>
@@ -109,16 +127,26 @@ namespace ExpandoDB.Search
         /// </remarks>      
         public void Commit()
         {
-            try
+            if (_indexWriter.HasUncommittedChanges())
             {
-                if (_writer.HasUncommittedChanges())
-                    _writer.Commit();
-            }
-            catch (Exception ex)
-            {
-                _log.Error(ex);
-            }
+                try
+                {
+                    // Don't allow index writes while are committing 
+                    // to the main index and taxonomy index.
+                    _writeAllowedFlag.Reset();                    
 
+                    _taxonomyWriter.Commit();
+                    _indexWriter.Commit();
+                }
+                catch (Exception ex)
+                {
+                    _log.Error(ex);
+                }
+                finally
+                {             
+                    _writeAllowedFlag.Set();
+                }
+            }
         }
 
         /// <summary>
@@ -130,8 +158,8 @@ namespace ExpandoDB.Search
         public void Refresh()
         {
             try
-            {  
-                _searcherManager.MaybeRefresh();
+            {
+                _searcherTaxonomyManager.MaybeRefresh();                    
             }
             catch (Exception ex)
             {
@@ -151,8 +179,10 @@ namespace ExpandoDB.Search
             if (document._id == null || document._id.Value == Guid.Empty)
                 document._id = Guid.NewGuid();
 
-            var luceneDocument = document.ToLuceneDocument(Schema);            
-            _writer.AddDocument(luceneDocument);            
+            var luceneDocument = document.ToLuceneDocument(Schema, _facetBuilder);
+
+            _writeAllowedFlag.Wait();
+            _indexWriter.AddDocument(luceneDocument);
         }
 
         /// <summary>
@@ -165,7 +195,9 @@ namespace ExpandoDB.Search
                 throw new ArgumentException(nameof(guid) + " cannot be empty");
 
             var idTerm = new Term(Schema.StandardField.ID, guid.ToString().ToLower());
-            _writer.DeleteDocuments(idTerm);
+            
+            _writeAllowedFlag.Wait();
+            _indexWriter.DeleteDocuments(idTerm);            
         }
 
         /// <summary>
@@ -181,11 +213,12 @@ namespace ExpandoDB.Search
             if (document._id == null || document._id == Guid.Empty)
                 throw new InvalidOperationException("Cannot update Document that does not have an _id");
 
-            var luceneDocument = document.ToLuceneDocument(Schema);
+            var luceneDocument = document.ToLuceneDocument(Schema, _facetBuilder);
             var id = document._id.ToString().ToLower();
             var idTerm = new Term(Schema.StandardField.ID, id);
 
-            _writer.UpdateDocument(idTerm, luceneDocument);
+            _writeAllowedFlag.Wait();
+            _indexWriter.UpdateDocument(idTerm, luceneDocument);            
         }
 
         /// <summary>
@@ -193,6 +226,7 @@ namespace ExpandoDB.Search
         /// </summary>
         /// <param name="criteria">The search criteria.</param>
         /// <returns></returns>
+        /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="System.ArgumentNullException"></exception>
         public SearchResult<Guid> Search(SearchCriteria criteria)
         {
@@ -209,19 +243,57 @@ namespace ExpandoDB.Search
             var queryParser = new LuceneQueryParser(Schema.StandardField.FULL_TEXT, _compositeAnalyzer, Schema);
             var query = queryParser.Parse(criteria.Query);
 
-            var searcher = _searcherManager.Acquire() as IndexSearcher;
-            if (searcher != null)
+            var instance = _searcherTaxonomyManager.Acquire() as SearcherTaxonomyManagerSearcherAndTaxonomy;
+            if (instance != null)
             {
+                var searcher = instance.Searcher;
+                var taxonomyReader = instance.TaxonomyReader;
+
                 try
                 {
                     var sort = GetSortCriteria(criteria.SortByField);
-                    var topFieldDocs = searcher.Search(query, criteria.TopN, sort);
-                    result.PopulateWith(topFieldDocs, id => searcher.Doc(id));
+                    var selectedFacets = criteria.SelectCategories.ToFacetFields();
+                    var topDocs = (TopDocs)null;                                        
+                    var categories = (IEnumerable<Category>)null;
+
+                    if (selectedFacets.Count() == 0)
+                    {
+                        // We are not going to do a drill-down on specific facets.
+                        // Instead we will just take the top N facets from the matching Documents.
+                        var facetsCollector = new FacetsCollector();
+
+                        // Get the matching Documents
+                        topDocs = FacetsCollector.Search(searcher, query, criteria.TopN, sort, facetsCollector);
+
+                        // Get the Facet counts from the matching Documents
+                        var facetCounts = new FastTaxonomyFacetCounts(taxonomyReader, _facetBuilder.FacetsConfig, facetsCollector);                        
+                        categories = facetCounts.GetCategories(criteria.TopNCategories);
+                    }
+                    else
+                    {
+                        // Perform a drill-sideways query
+                        var drillDownQuery = new DrillDownQuery(_facetBuilder.FacetsConfig, query);
+                        foreach (var facetField in selectedFacets)
+                            drillDownQuery.Add(facetField.Dim, facetField.Path);                        
+
+                        var drillSideways = new DrillSideways(searcher, _facetBuilder.FacetsConfig, taxonomyReader);
+                        var drillSidewaysResult = drillSideways.Search(drillDownQuery, null, null, criteria.TopN, sort, false, false);
+
+                        // Get the matching documents
+                        topDocs = drillSidewaysResult.Hits;                        
+
+                        // Get the Facet counts from the matching Documents
+                        categories = drillSidewaysResult.Facets.GetCategories(criteria.TopNCategories, selectedFacets);
+                    }
+
+                    // TODO: Don't pass TopDocs; pass an IEnumerable<Guid>
+                    result.PopulateWith(topDocs, categories, id => searcher.Doc(id));                    
                 }
                 finally
                 {
-                    _searcherManager.Release(searcher); 
+                    _searcherTaxonomyManager.Release(instance); 
                     searcher = null;
+                    taxonomyReader = null;
                 }
             }
 
@@ -326,14 +398,19 @@ namespace ExpandoDB.Search
                 if (disposing)
                 {
                     _refreshTimer.Dispose();
-                    _commitTimer.Dispose();
+                    _commitTimer.Dispose();                                      
 
-                    _searcherManager.Close();
+                    if (_indexWriter.HasUncommittedChanges())
+                    {
+                        _taxonomyWriter.Commit();
+                        _indexWriter.Commit();
+                    }
 
-                    if (_writer.HasUncommittedChanges())
-                        _writer.Commit();
+                    _searcherTaxonomyManager.Close();
 
-                    _writer.Close();
+                    _taxonomyWriter.Close();
+                    _indexWriter.Close();
+                    _writeAllowedFlag.Dispose();
                 }               
 
                 IsDisposed = true;

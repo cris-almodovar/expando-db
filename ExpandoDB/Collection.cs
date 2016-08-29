@@ -111,10 +111,10 @@ namespace ExpandoDB
             if (document._id == null || document._id.Value == Guid.Empty)
                 document._id = Guid.NewGuid();            
 
-            _luceneIndex.Insert(document);
-            var guid = await _documentStorage.InsertAsync(Name, document).ConfigureAwait(false);             
+            _luceneIndex.Insert(document);       
+            await _documentStorage.InsertAsync(Name, document).ConfigureAwait(false);
 
-            return guid;
+            return document._id.Value;
         }
 
         /// <summary>
@@ -134,7 +134,10 @@ namespace ExpandoDB
             var searchResult = new SearchResult<Document>(criteria, luceneResult.ItemCount, luceneResult.TotalHits, luceneResult.PageCount);
 
             if (searchResult.ItemCount > 0)
-                searchResult.Items = await _documentStorage.GetAsync(Name, luceneResult.Items.ToList()).ConfigureAwait(false); 
+            {
+                searchResult.Items = await _documentStorage.GetAsync(Name, luceneResult.Items.ToList()).ConfigureAwait(false);
+                searchResult.Categories = luceneResult.Categories;
+            }
 
             // NOTE: At this point the Items collection only contains the compressed binary form of the Document objects.
             // The Items collection will be deserialized to Document objects only when enumerated.

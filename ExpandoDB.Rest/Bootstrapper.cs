@@ -11,6 +11,7 @@ using Nancy.Responses.Negotiation;
 using System.Configuration;
 using Nancy.Conventions;
 using Metrics;
+using System.Dynamic;
 
 namespace ExpandoDB.Rest
 {
@@ -20,7 +21,7 @@ namespace ExpandoDB.Rest
     /// <seealso cref="Nancy.DefaultNancyBootstrapper" />
     public class Bootstrapper : DefaultNancyBootstrapper
     {
-        private readonly ILog _log = LogManager.GetLogger(typeof(Bootstrapper).Name);
+        private readonly ILog _log = LogManager.GetLogger(typeof(Bootstrapper).Name);             
 
         /// <summary>
         /// Initialise the bootstrapper - can be used for adding pre/post hooks and
@@ -31,14 +32,13 @@ namespace ExpandoDB.Rest
         /// <param name="pipelines"></param>
         protected override void ApplicationStartup(TinyIoCContainer container, IPipelines pipelines)
         {
-            base.ApplicationStartup(container, pipelines);
-
-            EnableCORS(pipelines);            
-
             // Configure JSON handling.
             JsonSettings.RetainCasing = true;
             JsonSettings.ISO8601DateFormat = true;
             JsonSettings.MaxJsonLength = Int32.MaxValue;
+
+            // Enable CORS
+            EnableCORS(pipelines);                        
 
             // Configure Metrics.NET             
             Metric.Config 
@@ -59,17 +59,15 @@ namespace ExpandoDB.Rest
 
             // Configure exception handling for Web Service endpoints.                        
             pipelines.OnError.AddItemToStartOfPipeline((ctx, ex) =>
-            {
-                _log.Error(ex);                
+            {                
+                _log.Error(ex);
 
-                var dto = new ErrorResponseDto
-                {
-                    timestamp = DateTime.UtcNow,
-                    errorMessage = $"{ex.GetType().Name} - {ex.Message}",
-                    statusCode = HttpStatusCode.InternalServerError
-                };
+                dynamic dto = new ExpandoObject();
+                dto.statusCode = (int)HttpStatusCode.InternalServerError;
+                dto.errorMessage = $"{ex.GetType().Name} - {ex.Message}";
+                dto.timestamp = DateTime.UtcNow;                
 
-                var response = new JsonResponse<ErrorResponseDto>(dto, new DefaultJsonSerializer())
+                var response = new JsonResponse<ExpandoObject>(dto, new DtoSerializer())
                 {
                     StatusCode = HttpStatusCode.InternalServerError
                 };
@@ -126,8 +124,6 @@ namespace ExpandoDB.Rest
         /// <param name="container">Container instance</param>
         protected override void ConfigureApplicationContainer(TinyIoCContainer container)
         {
-            base.ConfigureApplicationContainer(container);
-
             Config.LuceneNullToken = ConfigurationManager.AppSettings["IndexSearcher.NullToken"] ?? Config.LuceneNullToken;
             Config.DataPath = ConfigurationManager.AppSettings["App.DataPath"] ?? Config.DataPath;
 
@@ -147,12 +143,18 @@ namespace ExpandoDB.Rest
             get
             {
                 // ExpandoDB only returns one Content-Type => application/json.
-                // Here we only enable the JsonProcessor, and disable all others (HTML, XML, etc.)
+                // Here we only enable the JsonProcessor, and disable all others (HTML, XML, etc.)   
                 return NancyInternalConfiguration.WithOverrides(
                     c =>
                     {
                         c.ResponseProcessors.Clear();
                         c.ResponseProcessors.Add(typeof(JsonProcessor));
+
+                        // Make sure Nancy uses our own custom DTO serializer.
+                        c.Serializers.Clear();
+                        c.Serializers.Add(typeof(DtoSerializer));
+
+                        //c.Serializers.Remove(typeof(DtoSerializer));
                     }
                 );
             }
@@ -164,8 +166,6 @@ namespace ExpandoDB.Rest
         /// <param name="nancyConventions">Convention object instance</param>
         protected override void ConfigureConventions(NancyConventions nancyConventions)
         {
-            base.ConfigureConventions(nancyConventions);
-
             // Here we configure the Swagger API directory as a static web directory.
             nancyConventions.StaticContentsConventions.AddDirectory(@"/api-spec");
         }

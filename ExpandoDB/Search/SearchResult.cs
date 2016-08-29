@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace ExpandoDB.Search
 {
@@ -75,14 +76,31 @@ namespace ExpandoDB.Search
         /// The number of items in one page of the result set.
         /// </value>
         public int ItemsPerPage { get; set; }
-        
+
         /// <summary>
-        /// Gets or sets a value indicating whether [include highlight].
+        /// Gets or sets a value indicating whether text matches are highlighted.
         /// </summary>
         /// <value>
-        ///   <c>true</c> if [include highlight]; otherwise, <c>false</c>.
+        ///   <c>true</c> if text matches are highlighted; otherwise, <c>false</c>.
         /// </value>
-        public bool IncludeHighlight { get; set; }
+        public bool IncludeHighlight { get; set; }    
+
+        /// <summary>
+        /// Gets or sets a comma-separated list of categories that the user has selected;
+        /// these categories will be used to drill-sideways to.
+        /// </summary>
+        /// <value>
+        /// The categories.
+        /// </value>
+        public string SelectCategories { get; set; }
+
+        /// <summary>
+        /// Gets or sets the maximum number of categories to be returned by the search query.
+        /// </summary>
+        /// <value>
+        /// The maximum number of categories to be returned by the search query.
+        /// </value>
+        public int TopNCategories { get; set; }
         
         /// <summary>
         /// Gets or sets the items.
@@ -92,6 +110,13 @@ namespace ExpandoDB.Search
         /// </value>
         public IEnumerable<TResult> Items { get; set; }
 
+        /// <summary>
+        /// Gets or sets the categories of the items in the search results.
+        /// </summary>
+        /// <value>
+        /// The categories.
+        /// </value>
+        public IEnumerable<Category> Categories { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SearchResult{TResult}"/> class.
@@ -105,7 +130,7 @@ namespace ExpandoDB.Search
         {
             if (criteria == null)
                 throw new ArgumentNullException(nameof(criteria));
-                   
+
             Query = criteria.Query;
             SortByField = criteria.SortByField;
             TopN = criteria.TopN;
@@ -113,13 +138,18 @@ namespace ExpandoDB.Search
             IncludeHighlight = criteria.IncludeHighlight;
             PageNumber = criteria.PageNumber;
 
+            SelectCategories = criteria.SelectCategories;
+            TopNCategories = criteria.TopNCategories;            
+
             ItemCount = itemCount;
             TotalHits = totalHits;
-            PageCount = pageCount;            
+            PageCount = pageCount;     
 
             Items = new List<TResult>();
+            Categories = new List<Category>();
         }
 
-        
+
     }
+    
 }

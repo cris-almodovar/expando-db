@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using ExpandoDB.Serialization;
 using Nancy.Metrics;
 using Metrics;
+using System.Dynamic;
 
 namespace ExpandoDB.Rest
 {
@@ -46,14 +47,15 @@ namespace ExpandoDB.Rest
             Patch["/{collection}/{id:guid}", true] = OnPatchDocumentAsync;
             Delete["/{collection}/{id:guid}", true] = OnDeleteDocumentAsync;
             Delete["/{collection}", true] = OnDropCollectionAsync;
-        }        
+        }
 
         /// <summary>
         /// Inserts a new Document object into a Document Collection.
         /// </summary>
         /// <param name="req">The request object.</param>
         /// <param name="token">The cancellation token.</param>
-        /// <returns></returns>        
+        /// <returns></returns>
+        /// <exception cref="ArgumentException">collection cannot be null or blank</exception>
         private async Task<object> OnInsertDocumentAsync(dynamic req, CancellationToken token)
         {
             var stopwatch = new Stopwatch();
@@ -73,20 +75,13 @@ namespace ExpandoDB.Rest
             var collection = _database[collectionName];
 
             // Insert the Document object into the target Document Collection.
-            var guid = await collection.InsertAsync(document).ConfigureAwait(false);
+            var docId = await collection.InsertAsync(document).ConfigureAwait(false);
 
-            stopwatch.Stop();            
+            stopwatch.Stop();
 
-            var responseDto = new InsertResponseDto
-            {
-                timestamp = DateTime.UtcNow,
-                elapsed = stopwatch.Elapsed.ToString(),
-                from = collectionName,
-                _id = guid
-            };
-
+            var responseDto = this.BuildInsertResponseDto(collectionName, docId, stopwatch.Elapsed);
             return Response.AsJson(responseDto);
-        }
+        }        
 
         /// <summary>
         /// Returns the schema of a Document Collection; a schema is simply a set of fields and their corresponding data types.
@@ -110,17 +105,11 @@ namespace ExpandoDB.Rest
                 return HttpStatusCode.NotFound;
 
             var collection = _database[collectionName];
-            var schemaDocument = collection.Schema.ToDocument().AsExpando();
+            var schema = collection.Schema;           
 
             stopwatch.Stop();
 
-            var responseDto = new SchemaResponseDto
-            {
-                timestamp = DateTime.UtcNow,
-                elapsed = stopwatch.Elapsed.ToString(),
-                schema = schemaDocument
-            };
-
+            var responseDto = this.BuildSchemaResponseDto(schema, stopwatch.Elapsed);
             return Response.AsJson(responseDto);
         }
 
@@ -132,22 +121,16 @@ namespace ExpandoDB.Rest
         private object OnGetDatabaseSchema(dynamic req)
         {
             var stopwatch = new Stopwatch();
-            stopwatch.Start(); 
+            stopwatch.Start();
 
-            var schemaDocuments = (from collectionName in _database.GetCollectionNames().Except(new[] { Schema.COLLECTION_NAME }).OrderBy(n=> n)
-                                  let schema = _database[collectionName]?.Schema
-                                  where schema != null
-                                  select schema.ToDocument().AsExpando()).ToList();                        
+            var schemas = from collectionName in _database.GetCollectionNames().Except(new[] { Schema.COLLECTION_NAME }).OrderBy(n => n)
+                          let schema = _database[collectionName]?.Schema
+                          where schema != null
+                          select schema;  
 
             stopwatch.Stop();
 
-            var responseDto = new DatabaseSchemaResponseDto
-            {
-                timestamp = DateTime.UtcNow,
-                elapsed = stopwatch.Elapsed.ToString(),
-                schemas = schemaDocuments
-            };
-
+            var responseDto = this.BuildSchemaResponseDto(schemas, stopwatch.Elapsed);
             return Response.AsJson(responseDto);
         }
 
@@ -171,12 +154,9 @@ namespace ExpandoDB.Rest
             var searchCriteria = requestDto.ToSearchCriteria();            
             var result = await collection.SearchAsync(searchCriteria);
 
-            stopwatch.Stop();
+            stopwatch.Stop();            
 
-            var responseDto = new SearchResponseDto().PopulateWith(requestDto, collectionName, result);
-            responseDto.timestamp = DateTime.UtcNow;
-            responseDto.elapsed = stopwatch.Elapsed.ToString();
-
+            var responseDto = this.BuildSearchResponseDto(requestDto, collectionName, result, stopwatch.Elapsed);           
             return Response.AsJson(responseDto);
         }
 
@@ -205,15 +185,7 @@ namespace ExpandoDB.Rest
 
             stopwatch.Stop();
 
-            var responseDto = new CountResponseDto
-            {
-                timestamp = DateTime.UtcNow,
-                elapsed = stopwatch.Elapsed.ToString(),
-                from = collectionName,
-                where = countRequestDto.where,
-                count = count
-            };
-
+            var responseDto = this.BuildCountResponseDto(collectionName, countRequestDto.where, count, stopwatch.Elapsed);
             return Response.AsJson(responseDto);
         }
 
@@ -246,14 +218,7 @@ namespace ExpandoDB.Rest
 
             stopwatch.Stop();
 
-            var responseDto = new DocumentResposeDto
-            {
-                timestamp = DateTime.UtcNow,
-                elapsed = stopwatch.Elapsed.ToString(),
-                from = collectionName,
-                document = document.AsExpando()
-            };
-
+            var responseDto = this.BuildDocumentResponseDto(collectionName, document, stopwatch.Elapsed);
             return Response.AsJson(responseDto);
         }
 
@@ -296,18 +261,11 @@ namespace ExpandoDB.Rest
             if (document._modifiedTimestamp != null && document._modifiedTimestamp != existingDoc._modifiedTimestamp)            
                 throw new InvalidOperationException("The document was modified by another user or process.");            
 
-            var affected = await collection.UpdateAsync(document).ConfigureAwait(false);
+            var updatedCount = await collection.UpdateAsync(document).ConfigureAwait(false);
 
             stopwatch.Stop();
 
-            var responseDto = new UpdateResponseDto
-            {
-                timestamp = DateTime.UtcNow,
-                elapsed = stopwatch.Elapsed.ToString(),
-                from = collectionName,
-                affectedCount = affected
-            };
-
+            var responseDto = this.BuildUpdateResponseDto(collectionName, updatedCount, stopwatch.Elapsed);
             return Response.AsJson(responseDto);
         }
 
@@ -355,18 +313,11 @@ namespace ExpandoDB.Rest
                 operation.Apply(document);                     
            
             // Update the PATCHed Document.
-            var affected = await collection.UpdateAsync(document).ConfigureAwait(false);
+            var updatedCount = await collection.UpdateAsync(document).ConfigureAwait(false);
 
             stopwatch.Stop();
 
-            var responseDto = new UpdateResponseDto
-            {
-                timestamp = DateTime.UtcNow,
-                elapsed = stopwatch.Elapsed.ToString(),
-                from = collectionName,
-                affectedCount = affected
-            };
-
+            var responseDto = this.BuildUpdateResponseDto(collectionName, updatedCount, stopwatch.Elapsed);
             return Response.AsJson(responseDto);
         }
 
@@ -398,18 +349,11 @@ namespace ExpandoDB.Rest
             if (count == 0)
                 return HttpStatusCode.NotFound;
 
-            var affected = await collection.DeleteAsync(guid).ConfigureAwait(false);
+            var deletedCount = await collection.DeleteAsync(guid).ConfigureAwait(false);
 
             stopwatch.Stop();
 
-            var responseDto = new UpdateResponseDto
-            {
-                timestamp = DateTime.UtcNow,
-                elapsed = stopwatch.Elapsed.ToString(),
-                from = collectionName,
-                affectedCount = affected
-            };
-
+            var responseDto = this.BuildUpdateResponseDto(collectionName, deletedCount, stopwatch.Elapsed);
             return Response.AsJson(responseDto);
         }
 
@@ -439,15 +383,8 @@ namespace ExpandoDB.Rest
 
             stopwatch.Stop();
 
-            var responseDto = new DropCollectionResponseDto
-            {
-                timestamp = DateTime.UtcNow,
-                elapsed = stopwatch.Elapsed.ToString(),
-                isDropped = isDropped
-            };
-
+            var responseDto = this.BuildDropResposeDto(collectionName, isDropped, stopwatch.Elapsed);
             return Response.AsJson(responseDto);
-        }
-        
+        }        
     }    
 }

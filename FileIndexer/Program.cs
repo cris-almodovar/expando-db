@@ -6,31 +6,37 @@ using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Toxy;
+using TikaOnDotNet.TextExtraction;
 
 namespace FileIndexer
 {
     /// <summary>
     /// This sample program reads the contents of your "My Documents" folder and looks for doc, docx, and pdf files
-    /// that are less than 100 MB in size; it then extracts the text and metadata from the files using the toxy library 
-    /// (https://github.com/tonyqus/toxy), and then sends all these data (as JSON) to a running ExpandoDB server instance.
+    /// that are less than 100 MB in size; it then extracts the text and metadata from the files using the Tika library 
+    /// (https://kevm.github.io/tikaondotnet), and then sends all these data (as JSON) to a running ExpandoDB server instance.
     /// <para>
-    /// The toxy library supports lots of other file types - it would be easy to modify this sample to implement 
+    /// The Tika library supports lots of other file types - it would be easy to modify this sample to implement 
     /// a file crawler that periodically scans your "My Documents" folder to index its contents.
     /// </para>
     /// <para>
     /// Once the documents are indexed, you can go to http://localhost:9000/db/documents and query the documents collection
     /// like so: 
     /// <![CDATA[
-    /// http://localhost:9000/db/documents?select=FileName,LastWriteTimeUtc&where="machine learning" AND "logistic regression"&highlight=true
+    /// http://localhost:9000/db/documents?select=FilePath,CreatedDate&where="machine learning"^4 AND "logistic regression"&highlight=true
     /// ]]>  
     /// </para>
     /// </summary>
     static class Program
     {
         const string EXPANDO_DB_URL = "http://localhost:9000/db";
+        const int ONE_MB = 1 * 1024 * 1024;
+        const int TEN_MB = 10 * 1024 * 1024;
+        const int TWENTY_MB = 20 * 1024 * 1024;
+        const int THIRTY_MB = 30 * 1024 * 1024;
+        const int FORTY_MB = 40 * 1024 * 1024;
+        const int FIFTY_MB = 50 * 1024 * 1024;        
 
         static void Main(string[] args)
         {
@@ -43,8 +49,8 @@ namespace FileIndexer
 
             var restClient = new RestClient(EXPANDO_DB_URL);
             
-            var filterMasks = new[] { "*.doc", "*.docx", "*.pdf"};
-            Func<FileInfo, bool> fileCheck = fi => fi.Length <= 100 * 1024 * 1024;  // File size less than 100 MB
+            var filterMasks = new[] { "*.doc", "*.docx", "*.pdf", "*.ppt", "*.pptx" };
+            Func<FileInfo, bool> fileCheck = fi => fi.Length <= FIFTY_MB;  // File size less than 50 MB
 
             Console.WriteLine("-----------------------------------------------------------------------------------");
             Console.WriteLine($"FileIndexer starting at: {startFolder}");
@@ -55,45 +61,57 @@ namespace FileIndexer
             var allDocumentFiles = GetFiles(startFolder, filterMasks, fileCheck);            
             var processedCount = 0;
 
-            foreach (var file in allDocumentFiles)
+            var options = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
+            Parallel.ForEach(allDocumentFiles, options, file =>
             {
                 try
                 {
                     // Lets create our document object
-                    dynamic document = new ExpandoObject();                     
-                    document.FileName = file.FullName;
+                    dynamic document = new ExpandoObject();
+                    document.FilePath = file.FullName;
                     document.Size = file.Length;
-                    document.CreationTimeUtc = file.CreationTimeUtc;
-                    document.LastAccessTimeUtc = file.LastAccessTimeUtc;
-                    document.LastWriteTimeUtc = file.LastWriteTimeUtc;
+                    document.CreatedDate = file.CreationTimeUtc;
+                    document.LastModifiedDate = file.LastWriteTimeUtc;
 
-                    // Now let's extract the text from the file.
-                    // WARNING - the toxy library doesn't handle multi-column pdf files correctly.
+                    // Now let's extract the text from the file.                    
 
-                    var context = new ParserContext(file.FullName);
-                    var textParser = ParserFactory.CreateText(context) as ITextParser;
-                    var text = textParser.Parse();
+                    var textExtractor = new TextExtractor();
+                    var result = textExtractor.Extract(file.FullName);
+                    var text = result.Text;
+                    var contentType = result.ContentType;                    
+
+                    var sizeCategory = "";
+                    if (file.Length < ONE_MB)
+                        sizeCategory = "Less than 1 MB";
+                    else if (file.Length >= ONE_MB && file.Length < TEN_MB)
+                        sizeCategory = "Between 1 MB to 10 MB";
+                    else if (file.Length >= TEN_MB && file.Length < TWENTY_MB)
+                        sizeCategory = "Between 10 MB to 20 MB";
+                    else if (file.Length >= TWENTY_MB && file.Length < THIRTY_MB)
+                        sizeCategory = "Between 20 MB to 30 MB";
+                    else if (file.Length >= THIRTY_MB && file.Length < FORTY_MB)
+                        sizeCategory = "Between 30 MB to 40 MB";
+                    else if (file.Length >= FORTY_MB && file.Length <= FIFTY_MB)
+                        sizeCategory = "Between 40 MB to 50 MB";
+
+                    // We need to escape any forward slash because '/' is used as a separator in category strings.
+                    var contentTypeCategory = contentType.Replace(@"/", @"\/");
+                    var dateFormat = "yyyy/MMM/dd";
+
+                    var categories = new[]
+                    {
+                        $"File Size:{sizeCategory}",
+
+                        // The Last Modified Date category is a hierarchical one -> e.g. "Last Modified Date:2013/Apr/26"
+                        // Users can 'drill-down' ('drill-sideways') to this category.
+                        $"Last Modified Date:{file.LastWriteTimeUtc.ToString(dateFormat)}",
+
+                        $"Content Type:{contentTypeCategory}"
+                    };
 
                     document.Text = text;
-
-                    if (file.Extension.ToLower().StartsWith(".doc", StringComparison.InvariantCulture))
-                    {
-                        // Lets's extract metadata from doc, docx files
-
-                        var metadataParser = ParserFactory.CreateMetadata(context) as IMetadataParser;
-                        var metadata = metadataParser.Parse();
-
-                        var dictionary = document as IDictionary<string, object>;
-                        var fieldNames = metadata.GetNames().ToList();
-
-                        foreach (var fieldName in fieldNames)
-                            try
-                            {
-                                dictionary[fieldName] = metadata.Get(fieldName).Value;
-                            }
-                            catch { }
-                    }
-
+                    document.ContentType = contentType;
+                    document._categories = categories;
 
                     // Now lets submit the document to ExpandoDB via the REST API
                     var request = new RestRequest("/documents", Method.POST) { DateFormat = DateFormat.ISO_8601 };
@@ -110,11 +128,12 @@ namespace FileIndexer
                     Console.WriteLine($"There was an error processing '{file.FullName}' - {ex.Message}");
                 }
             }
+            );
 
             stopwatch.Stop();
 
             Console.WriteLine("-----------------------------------------------------------------------------------");            
-            Console.WriteLine($"Processed {processedCount} *.docx, *.doc, *.pdf files in {stopwatch.Elapsed}");
+            Console.WriteLine($"Processed {processedCount} {String.Join(",", filterMasks)} files in {stopwatch.Elapsed}");
 
             Console.WriteLine("\n\nPRESS ENTER TO EXIT");
             Console.ReadLine();

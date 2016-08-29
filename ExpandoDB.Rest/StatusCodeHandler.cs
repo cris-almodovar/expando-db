@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Nancy;
 using ExpandoDB.Rest.DTO;
 using Nancy.Responses;
+using System.Dynamic;
 
 namespace ExpandoDB.Rest
 {
@@ -26,8 +27,12 @@ namespace ExpandoDB.Rest
             // Special handling for 404 Not Found
             if (statusCode == HttpStatusCode.NotFound)
             {
-                var dto = new ErrorResponseDto { timestamp = DateTime.UtcNow, errorMessage = "The resource you have requested cannot be found.", statusCode = HttpStatusCode.NotFound };
-                var response = new JsonResponse<ErrorResponseDto>(dto, new DefaultJsonSerializer())
+                dynamic dto = new ExpandoObject();
+                dto.statusCode = (int)HttpStatusCode.NotFound;
+                dto.errorMessage = "The resource you have requested cannot be found.";                
+                dto.timestamp = DateTime.UtcNow;
+
+                var response = new JsonResponse<ExpandoObject>(dto, new DtoSerializer())
                 {
                     StatusCode = HttpStatusCode.NotFound
                 };

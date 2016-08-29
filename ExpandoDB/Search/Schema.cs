@@ -94,6 +94,10 @@ namespace ExpandoDB
             /// The _full_text_ field; this field is hidden.
             /// </summary>
             public const string FULL_TEXT = "_full_text_";
+            /// <summary>
+            /// The _categories field; this field is an IList
+            /// </summary>
+            public const string CATEGORIES = "_categories";
         }
 
         /// <summary>

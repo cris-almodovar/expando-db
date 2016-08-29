@@ -59,7 +59,6 @@ namespace ExpandoDB.Serialization
             JSON.SerializeDynamic(data, writer, Options.ISO8601IncludeInherited);
         }
 
-
         /// <summary>
         /// Deserializes the specified JSON into an object.
         /// </summary>
@@ -204,7 +203,7 @@ namespace ExpandoDB.Serialization
                 return false;
 
             var length = value.Length;            
-
+            
             if (length == DateTimeFormat.DATE_ONLY.Length &&
                 DateTime.TryParseExact(value, DateTimeFormat.DATE_ONLY, null, DateTimeStyles.AssumeLocal, out dateValue)) return true;
 
