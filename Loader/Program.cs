@@ -83,7 +83,10 @@ namespace Loader
                                 {
                                     foreach (XmlNode childNode in topicsNode.ChildNodes)
                                         if (!String.IsNullOrWhiteSpace(childNode.InnerText))
-                                            categories.Add($"Topic:{childNode.InnerText}");
+                                        {
+                                            var topic = childNode.InnerText.Replace(@"/", @"\/");
+                                            categories.Add($"Topic:{topic}");
+                                        }
                                 }
 
                                 var document = new
@@ -117,9 +120,6 @@ namespace Loader
             }
 
             );
-                
-
-            
 
             stopwatch.Stop();
             Console.WriteLine("Finished importing files. Elapsed = " + stopwatch.Elapsed);

@@ -34,8 +34,9 @@ namespace FileIndexer
         const int ONE_MB = 1 * 1024 * 1024;
         const int TEN_MB = 10 * 1024 * 1024;
         const int TWENTY_MB = 20 * 1024 * 1024;
-        const int FIFTY_MB = 50 * 1024 * 1024;
-        const int ONE_HUNDRED_MB = 100 * 1024 * 1024;
+        const int THIRTY_MB = 30 * 1024 * 1024;
+        const int FORTY_MB = 40 * 1024 * 1024;
+        const int FIFTY_MB = 50 * 1024 * 1024;        
 
         static void Main(string[] args)
         {
@@ -49,7 +50,7 @@ namespace FileIndexer
             var restClient = new RestClient(EXPANDO_DB_URL);
             
             var filterMasks = new[] { "*.doc", "*.docx", "*.pdf", "*.ppt", "*.pptx" };
-            Func<FileInfo, bool> fileCheck = fi => fi.Length <= ONE_HUNDRED_MB;  // File size less than 100 MB
+            Func<FileInfo, bool> fileCheck = fi => fi.Length <= FIFTY_MB;  // File size less than 50 MB
 
             Console.WriteLine("-----------------------------------------------------------------------------------");
             Console.WriteLine($"FileIndexer starting at: {startFolder}");
@@ -77,7 +78,7 @@ namespace FileIndexer
                     var textExtractor = new TextExtractor();
                     var result = textExtractor.Extract(file.FullName);
                     var text = result.Text;
-                    var contentType = result.ContentType;
+                    var contentType = result.ContentType;                    
 
                     var sizeCategory = "";
                     if (file.Length < ONE_MB)
@@ -86,16 +87,26 @@ namespace FileIndexer
                         sizeCategory = "Between 1 MB to 10 MB";
                     else if (file.Length >= TEN_MB && file.Length < TWENTY_MB)
                         sizeCategory = "Between 10 MB to 20 MB";
-                    else if (file.Length >= TWENTY_MB && file.Length < FIFTY_MB)
-                        sizeCategory = "Between 20 MB to 50 MB";
-                    else if (file.Length >= FIFTY_MB && file.Length < ONE_HUNDRED_MB)
-                        sizeCategory = "Between 50 MB to 100 MB";
+                    else if (file.Length >= TWENTY_MB && file.Length < THIRTY_MB)
+                        sizeCategory = "Between 20 MB to 30 MB";
+                    else if (file.Length >= THIRTY_MB && file.Length < FORTY_MB)
+                        sizeCategory = "Between 30 MB to 40 MB";
+                    else if (file.Length >= FORTY_MB && file.Length <= FIFTY_MB)
+                        sizeCategory = "Between 40 MB to 50 MB";
 
+                    // We need to escape any forward slash because '/' is used as a separator in category strings.
+                    var contentTypeCategory = contentType.Replace(@"/", @"\/");
                     var dateFormat = "yyyy/MMM/dd";
+
                     var categories = new[]
                     {
                         $"File Size:{sizeCategory}",
-                        $"Last Modified Date:{file.LastWriteTimeUtc.ToString(dateFormat)}"
+
+                        // The Last Modified Date category is a hierarchical one -> e.g. "Last Modified Date:2013/Apr/26"
+                        // Users can 'drill-down' ('drill-sideways') to this category.
+                        $"Last Modified Date:{file.LastWriteTimeUtc.ToString(dateFormat)}",
+
+                        $"Content Type:{contentTypeCategory}"
                     };
 
                     document.Text = text;
