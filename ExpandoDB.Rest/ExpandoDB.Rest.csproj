@@ -84,19 +84,19 @@
     <Compile Include="StatusCodeHandler.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="api-spec\fonts\DroidSans-Bold.ttf">
+    <Content Include="api-spec\fonts\DroidSans-Bold.ttf">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="api-spec\fonts\DroidSans.ttf">
+    </Content>
+    <Content Include="api-spec\fonts\DroidSans.ttf">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="api-spec\lib\underscore-min.map">
+    </Content>
+    <Content Include="api-spec\lib\underscore-min.map">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    </Content>
     <None Include="app.config" />
-    <None Include="api-spec\swagger.json">
+    <Content Include="api-spec\swagger.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    </Content>
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
