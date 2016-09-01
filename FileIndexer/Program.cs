@@ -78,7 +78,8 @@ namespace FileIndexer
                     var textExtractor = new TextExtractor();
                     var result = textExtractor.Extract(file.FullName);
                     var text = result.Text;
-                    var contentType = result.ContentType;                    
+                    var metadata = result.Metadata;
+                    var contentType = result.ContentType;                                        
 
                     var sizeCategory = "";
                     if (file.Length < ONE_MB)
@@ -98,7 +99,7 @@ namespace FileIndexer
                     var contentTypeCategory = contentType.Replace(@"/", @"\/");
                     var dateFormat = "yyyy/MMM/dd";
 
-                    var categories = new[]
+                    var categories = new List<string>
                     {
                         $"File Size:{sizeCategory}",
 
@@ -108,6 +109,23 @@ namespace FileIndexer
 
                         $"Content Type:{contentTypeCategory}"
                     };
+
+                    foreach (var key in metadata.Keys)
+                    {
+                        var fieldName = key.ToLower().Trim();
+                        switch (fieldName)
+                        {
+                            case "author":
+                            case "authors":                                
+                                document.Author = metadata[key];
+                                categories.Add($"Author:{document.Author}");
+                                break;
+
+                            case "title":
+                                document.Title = metadata[key];
+                                break;
+                        }
+                    }
 
                     document.Text = text;
                     document.ContentType = contentType;
