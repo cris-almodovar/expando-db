@@ -64,6 +64,9 @@ namespace ExpandoDB.Search
                                                              .Replace(ESCAPED_COLON_TEMP_TOKEN, COLON))
                                                .ToArray();
 
+                if (facetValues.Any(s => String.IsNullOrWhiteSpace(s)))
+                    throw new SchemaException($"Invalid category string: '{categoryString}'");
+
                 var facetField = new FacetField(facetName, facetValues);
                 return facetField;
             }

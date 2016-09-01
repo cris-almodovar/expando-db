@@ -58,6 +58,7 @@ namespace FileIndexer
             var stopwatch = new Stopwatch();
             stopwatch.Start();
 
+            var textExtractor = new TextExtractor();
             var allDocumentFiles = GetFiles(startFolder, filterMasks, fileCheck);            
             var processedCount = 0;
 
@@ -73,9 +74,8 @@ namespace FileIndexer
                     document.CreatedDate = file.CreationTimeUtc;
                     document.LastModifiedDate = file.LastWriteTimeUtc;
 
-                    // Now let's extract the text from the file.                    
-
-                    var textExtractor = new TextExtractor();
+                    // Now let's extract the text from the file.
+                    
                     var result = textExtractor.Extract(file.FullName);
                     var text = result.Text;
                     var metadata = result.Metadata;
@@ -110,19 +110,35 @@ namespace FileIndexer
                         $"Content Type:{contentTypeCategory}"
                     };
 
-                    foreach (var key in metadata.Keys)
+                    foreach (var key in metadata.Keys.Where(k => !String.IsNullOrWhiteSpace(k)))
                     {
-                        var fieldName = key.ToLower().Trim();
-                        switch (fieldName)
+                        var fieldName = key.ToLowerInvariant().Trim();
+                        if (fieldName != "author" &&
+                            fieldName != "authors" &&
+                            fieldName != "title")
+                            continue;
+
+                        var authorOrTitle = metadata[key];                        
+                        if (String.IsNullOrWhiteSpace(authorOrTitle))
+                            continue;
+
+                        // Make sure the author or title value is not a Date/Time string
+                        if (IsMaybeDateTime(authorOrTitle))
+                        {                         
+                            Console.WriteLine($"Invalid author or title metadata value: {authorOrTitle}");
+                            continue;
+                        }
+
+                        switch (key)
                         {
                             case "author":
                             case "authors":                                
-                                document.Author = metadata[key];
-                                categories.Add($"Author:{document.Author}");
+                                document.Author = authorOrTitle.Trim();
+                                categories.Add($"Author:{document.Author.Replace(@"/", @"\/")}");
                                 break;
 
                             case "title":
-                                document.Title = metadata[key];
+                                document.Title = authorOrTitle.Trim();
                                 break;
                         }
                     }
@@ -229,5 +245,167 @@ namespace FileIndexer
                 throw new Exception($"The API request failed due to an error. HTTP status code is: {response.StatusCode}");            
         }
 
+        private static bool IsMaybeDateTime(this string value)
+        {
+            if (String.IsNullOrWhiteSpace(value))
+                return false;
+
+            var length = value.Length;
+
+            if (!(length >= DateTimeFormat.DATE_ONLY.Length &&
+                  length <= DateTimeFormat.DATE_HHMMSSFFFFFFF_UTC.Length + 5
+               ))
+                return false;
+
+            if (!(Char.IsNumber(value[0]) && Char.IsNumber(value[1]) && Char.IsNumber(value[2]) && Char.IsNumber(value[3]) &&
+                  value[4] == '-' &&
+                  Char.IsNumber(value[5]) && Char.IsNumber(value[6]) &&
+                  value[7] == '-' &&
+                  Char.IsNumber(value[8]) && Char.IsNumber(value[9])
+               ))
+                return false;
+
+            if (length > DateTimeFormat.DATE_ONLY.Length &&
+                  value[10] != 'T'
+               )
+                return false;
+
+            if (length == DateTimeFormat.DATE_HHMM_UTC.Length ||
+                length == DateTimeFormat.DATE_HHMMSS_UTC.Length ||
+                length == DateTimeFormat.DATE_HHMMSSF_UTC.Length ||
+                length == DateTimeFormat.DATE_HHMMSSFF_UTC.Length ||
+                length == DateTimeFormat.DATE_HHMMSSFFF_UTC.Length ||
+                length == DateTimeFormat.DATE_HHMMSSFFFF_UTC.Length ||
+                length == DateTimeFormat.DATE_HHMMSSFFFFF_UTC.Length ||
+                length == DateTimeFormat.DATE_HHMMSSFFFFFF_UTC.Length ||
+                length == DateTimeFormat.DATE_HHMMSSFFFFFFF_UTC.Length
+               )
+            {
+                if (!value.EndsWith("Z", StringComparison.InvariantCulture))
+                    return false;
+            }
+
+            return true;
+        }
+
+    }
+
+    /// <summary>
+    /// Defines the DateTime formats supported by the ExpandoDB JSON serializer/deserializer.
+    /// </summary>
+    public static class DateTimeFormat
+    {
+        /// <summary>
+        /// Date in "yyyy-MM-dd" format
+        /// </summary>
+        public const string DATE_ONLY = "yyyy-MM-dd";
+        /// <summary>
+        /// Date and time in "yyyy-MM-ddTHH:mm" format
+        /// </summary>
+        public const string DATE_HHMM = "yyyy-MM-ddTHH:mm";
+        /// <summary>
+        /// Date and time in "yyyy-MM-ddTHH:mmZ" format
+        /// </summary>
+        public const string DATE_HHMM_UTC = "yyyy-MM-ddTHH:mmZ";
+        /// <summary>
+        /// Date and time in "yyyy-MM-ddTHH:mmzzz" format
+        /// </summary>
+        public const string DATE_HHMM_TIMEZONE = "yyyy-MM-ddTHH:mmzzz";
+        /// <summary>
+        /// Date amd time in "yyyy-MM-ddTHH:mm:ss" format.
+        /// </summary>
+        public const string DATE_HHMMSS = "yyyy-MM-ddTHH:mm:ss";
+        /// <summary>
+        /// Date amd time in xxx format
+        /// </summary>
+        public const string DATE_HHMMSS_UTC = "yyyy-MM-ddTHH:mm:ssZ";
+        /// <summary>
+        /// Date amd time in "yyyy-MM-ddTHH:mm:sszzz" format
+        /// </summary>
+        public const string DATE_HHMMSS_TIMEZONE = "yyyy-MM-ddTHH:mm:sszzz";
+        /// <summary>
+        /// Date amd time in "yyyy-MM-ddTHH:mm:ss.f" format
+        /// </summary>
+        public const string DATE_HHMMSSF = "yyyy-MM-ddTHH:mm:ss.f";
+        /// <summary>
+        /// Date amd time in "yyyy-MM-ddTHH:mm:ss.fZ" format
+        /// </summary>
+        public const string DATE_HHMMSSF_UTC = "yyyy-MM-ddTHH:mm:ss.fZ";
+        /// <summary>
+        /// Date amd time in "yyyy-MM-ddTHH:mm:ss.fzzz" format
+        /// </summary>
+        public const string DATE_HHMMSSF_TIMEZONE = "yyyy-MM-ddTHH:mm:ss.fzzz";
+        /// <summary>
+        /// Date amd time in "yyyy-MM-ddTHH:mm:ss.ff" format
+        /// </summary>
+        public const string DATE_HHMMSSFF = "yyyy-MM-ddTHH:mm:ss.ff";
+        /// <summary>
+        /// Date amd time in "yyyy-MM-ddTHH:mm:ss.ffZ" format
+        /// </summary>
+        public const string DATE_HHMMSSFF_UTC = "yyyy-MM-ddTHH:mm:ss.ffZ";
+        /// <summary>
+        /// Date amd time in "yyyy-MM-ddTHH:mm:ss.ffzzz" format
+        /// </summary>
+        public const string DATE_HHMMSSFF_TIMEZONE = "yyyy-MM-ddTHH:mm:ss.ffzzz";
+        /// <summary>
+        /// Date amd time in "yyyy-MM-ddTHH:mm:ss.fff" format
+        /// </summary>
+        public const string DATE_HHMMSSFFF = "yyyy-MM-ddTHH:mm:ss.fff";
+        /// <summary>
+        /// Date amd time in "yyyy-MM-ddTHH:mm:ss.fffZ" format
+        /// </summary>
+        public const string DATE_HHMMSSFFF_UTC = "yyyy-MM-ddTHH:mm:ss.fffZ";
+        /// <summary>
+        /// Date amd time in "yyyy-MM-ddTHH:mm:ss.fffzzz" format
+        /// </summary>
+        public const string DATE_HHMMSSFFF_TIMEZONE = "yyyy-MM-ddTHH:mm:ss.fffzzz";
+        /// <summary>
+        /// Date amd time in "yyyy-MM-ddTHH:mm:ss.ffff" format
+        /// </summary>
+        public const string DATE_HHMMSSFFFF = "yyyy-MM-ddTHH:mm:ss.ffff";
+        /// <summary>
+        /// Date amd time in "yyyy-MM-ddTHH:mm:ss.ffffZ" format
+        /// </summary>
+        public const string DATE_HHMMSSFFFF_UTC = "yyyy-MM-ddTHH:mm:ss.ffffZ";
+        /// <summary>
+        /// Date amd time in "yyyy-MM-ddTHH:mm:ss.ffffzzz" format
+        /// </summary>
+        public const string DATE_HHMMSSFFFF_TIMEZONE = "yyyy-MM-ddTHH:mm:ss.ffffzzz";
+        /// <summary>
+        /// Date amd time in "yyyy-MM-ddTHH:mm:ss.fffff" format
+        /// </summary>
+        public const string DATE_HHMMSSFFFFF = "yyyy-MM-ddTHH:mm:ss.fffff";
+        /// <summary>
+        /// Date amd time in "yyyy-MM-ddTHH:mm:ss.fffffZ" format
+        /// </summary>
+        public const string DATE_HHMMSSFFFFF_UTC = "yyyy-MM-ddTHH:mm:ss.fffffZ";
+        /// <summary>
+        /// Date amd time in "yyyy-MM-ddTHH:mm:ss.fffffzzz" format
+        /// </summary>
+        public const string DATE_HHMMSSFFFFF_TIMEZONE = "yyyy-MM-ddTHH:mm:ss.fffffzzz";
+        /// <summary>
+        /// Date amd time in "yyyy-MM-ddTHH:mm:ss.ffffff" format
+        /// </summary>
+        public const string DATE_HHMMSSFFFFFF = "yyyy-MM-ddTHH:mm:ss.ffffff";
+        /// <summary>
+        /// Date amd time in "yyyy-MM-ddTHH:mm:ss.ffffffZ" format
+        /// </summary>
+        public const string DATE_HHMMSSFFFFFF_UTC = "yyyy-MM-ddTHH:mm:ss.ffffffZ";
+        /// <summary>
+        /// Date amd time in "yyyy-MM-ddTHH:mm:ss.ffffffzzz" format
+        /// </summary>
+        public const string DATE_HHMMSSFFFFFF_TIMEZONE = "yyyy-MM-ddTHH:mm:ss.ffffffzzz";
+        /// <summary>
+        /// Date amd time in "yyyy-MM-ddTHH:mm:ss.fffffff" format
+        /// </summary>
+        public const string DATE_HHMMSSFFFFFFF = "yyyy-MM-ddTHH:mm:ss.fffffff";
+        /// <summary>
+        /// Date amd time in "yyyy-MM-ddTHH:mm:ss.fffffffZ" format
+        /// </summary>
+        public const string DATE_HHMMSSFFFFFFF_UTC = "yyyy-MM-ddTHH:mm:ss.fffffffZ";
+        /// <summary>
+        /// Date amd time in "yyyy-MM-ddTHH:mm:ss.fffffffzzz" format
+        /// </summary>
+        public const string DATE_HHMMSSFFFFFFF_TIMEZONE = "yyyy-MM-ddTHH:mm:ss.fffffffzzz";
     }
 }
