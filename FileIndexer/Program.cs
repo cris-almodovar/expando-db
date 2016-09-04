@@ -6,6 +6,7 @@ using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using TikaOnDotNet.TextExtraction;
@@ -44,6 +45,9 @@ namespace FileIndexer
             if (args.Length > 0)
                 startFolder = args[0];
 
+            var process = Process.GetCurrentProcess();
+            process.PriorityClass = ProcessPriorityClass.BelowNormal;
+
             if (!Directory.Exists(startFolder))
                 throw new InvalidOperationException($"Start folder does not exist: {startFolder}");
 
@@ -62,7 +66,7 @@ namespace FileIndexer
             var allDocumentFiles = GetFiles(startFolder, filterMasks, fileCheck);            
             var processedCount = 0;
 
-            var options = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
+            var options = new ParallelOptions { MaxDegreeOfParallelism = 2 };
             Parallel.ForEach(allDocumentFiles, options, file =>
             {
                 try
@@ -70,6 +74,7 @@ namespace FileIndexer
                     // Lets create our document object
                     dynamic document = new ExpandoObject();
                     document.FilePath = file.FullName;
+                    document.FileName = file.Name;
                     document.Size = file.Length;
                     document.CreatedDate = file.CreationTimeUtc;
                     document.LastModifiedDate = file.LastWriteTimeUtc;
@@ -118,7 +123,7 @@ namespace FileIndexer
                             fieldName != "title")
                             continue;
 
-                        var authorOrTitle = metadata[key];                        
+                        var authorOrTitle = metadata[key]?.Trim();                        
                         if (String.IsNullOrWhiteSpace(authorOrTitle))
                             continue;
 
@@ -129,16 +134,16 @@ namespace FileIndexer
                             continue;
                         }
 
-                        switch (key)
+                        switch (fieldName)
                         {
                             case "author":
                             case "authors":                                
-                                document.Author = authorOrTitle.Trim();
-                                categories.Add($"Author:{document.Author.Replace(@"/", @"\/")}");
+                                document.Author = authorOrTitle;
+                                categories.Add($"Author:{authorOrTitle.Replace(@"/", @"\/")}");
                                 break;
 
                             case "title":
-                                document.Title = authorOrTitle.Trim();
+                                document.Title = authorOrTitle;
                                 break;
                         }
                     }
