@@ -41,7 +41,8 @@ namespace FileIndexer
         const int FIFTY_MB = 50 * 1024 * 1024;
 
         static readonly TextExtractor _textExtractor = new TextExtractor();
-        static int _processedCount = 0;  
+        static int _processedCount = 0;
+        
 
         static void Main(string[] args)
         {
@@ -54,62 +55,76 @@ namespace FileIndexer
             
             
             var filterMasks = new[] { "*.doc", "*.docx", "*.pdf", "*.ppt", "*.pptx" };
-            Func<FileInfo, bool> fileCheck = fi => fi.Length <= FIFTY_MB;  // File size less than 50 MB
-
-            var logWriter = new StreamWriter(@".\out.log", false);
-            logWriter.AutoFlush = true;
-            Console.SetOut(logWriter);            
+            Func<FileInfo, bool> fileCheck = fi => fi.Length <= FIFTY_MB;  // File size less than 50 MB                      
 
             Console.WriteLine("-----------------------------------------------------------------------------------");
             Console.WriteLine($"FileIndexer starting at: {startFolder}");            
 
             var stopwatch = new Stopwatch();
-            stopwatch.Start();                                       
+            stopwatch.Start();
 
-            var currentProcess = Process.GetCurrentProcess();
-            currentProcess.PriorityClass = ProcessPriorityClass.BelowNormal;
-
-            var batchSize = 4; // Environment.ProcessorCount;           
+            var batchSize = 4;  //Environment.ProcessorCount;
 
             var allDocumentFiles = GetFiles(startFolder, filterMasks, fileCheck);
+
+            var fileTheadMap = new Dictionary<FileInfo, Thread>();
+
+            var threadCompletedSignals = new ManualResetEvent[batchSize];
+            for (var i = 0; i < batchSize; i++)
+                threadCompletedSignals[i] = new ManualResetEvent(false);
+
             foreach (var batch in allDocumentFiles.InSetsOf(batchSize))
             {
-                var cts = new CancellationTokenSource();
-                var fileTaskMap = new Dictionary<FileInfo, Task>();
+                fileTheadMap.Clear();
+                for (var i = 0; i < batchSize; i++)
+                    threadCompletedSignals[i].Reset();
 
-                foreach (var file in batch)
+                var filesInBatch = batch.ToList();
+                for (var i = 0; i < filesInBatch.Count; i++)
                 {
-                    var task = Task.Run(() => ProcessFile(file), cts.Token);
-                    fileTaskMap.Add(file, task);
+                    var file = filesInBatch[i];
+                    var mre = threadCompletedSignals[i];
+
+                    var thread = new Thread(new ParameterizedThreadStart(ProcessFile)) { IsBackground = true, Priority = ThreadPriority.BelowNormal };
+                    fileTheadMap.Add(file, thread);
+                    thread.Start(new Tuple<FileInfo, ManualResetEvent>(file, mre));
                 }
 
-                Task.WaitAll(fileTaskMap.Values.ToArray(), TimeSpan.FromSeconds(60));               
-                foreach (var file in fileTaskMap.Keys)
+                WaitHandle.WaitAll(threadCompletedSignals, TimeSpan.FromSeconds(30), false);                       
+                foreach (var file in fileTheadMap.Keys)
                 {
-                    var task = fileTaskMap[file];
-                    if (!task.IsCompleted)                    
-                        Console.WriteLine($"Processing of {file.FullName} was cancelled because it took more than 30 secs.");                                            
-                }
-                cts.Cancel();
+                    var thread = fileTheadMap[file];                    
+                    if (thread.ThreadState == System.Threading.ThreadState.Running)
+                    {
+                        thread.Abort();
+                        Console.WriteLine($"Processing of {file.FullName} was cancelled because it took more than 30 secs.");
+                    }
+                }                
 
                 GC.Collect();
             }
 
             stopwatch.Stop();
+            for (var i = 0; i < batchSize; i++)
+                threadCompletedSignals[i].Dispose();
 
             Console.WriteLine("-----------------------------------------------------------------------------------");            
             Console.WriteLine($"Processed {_processedCount} {String.Join(",", filterMasks)} files in {stopwatch.Elapsed}");
-            Console.WriteLine($"Peak working set: {currentProcess.PeakWorkingSet64} bytes");
-
-            logWriter.Close();
-            logWriter.Dispose();
+            Console.WriteLine($"Peak working set: {Process.GetCurrentProcess().PeakWorkingSet64} bytes");           
 
             Console.WriteLine("\n\nPRESS ENTER TO EXIT");
             Console.ReadLine();
         }
 
-        static void ProcessFile(FileInfo file)
-        {
+        static void ProcessFile(object args)
+        {            
+            var data = args as Tuple<FileInfo, ManualResetEvent>;
+            if (data == null)
+                return;
+
+            var file = data.Item1;
+            var mre = data.Item2;
+
             try
             {
                 // Lets create our document object
@@ -201,11 +216,15 @@ namespace FileIndexer
                 var response = restClient.Post(request);
                 response.Validate();
 
-                Interlocked.Increment(ref _processedCount);
+                Interlocked.Increment(ref _processedCount);                
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine(ex);
+                Console.Error.WriteLine(ex.Message);
+            }
+            finally
+            {
+                mre.Set();
             }
         }
 
