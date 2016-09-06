@@ -84,8 +84,8 @@ namespace Loader
                                     foreach (XmlNode childNode in topicsNode.ChildNodes)
                                         if (!String.IsNullOrWhiteSpace(childNode.InnerText))
                                         {
-                                            var topic = childNode.InnerText.Replace(@"/", @"\/");
-                                            categories.Add($"Topic:{topic}");
+                                            var theme = childNode.InnerText.Replace(@"/", @"\/");
+                                            categories.Add($"Theme:{theme}");
                                         }
                                 }
 
