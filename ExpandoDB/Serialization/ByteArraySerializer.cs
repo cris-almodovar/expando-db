@@ -9,7 +9,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Wire;
+using WireSerializer = Wire.Serializer;
 
 namespace ExpandoDB.Serialization
 {
@@ -18,7 +18,7 @@ namespace ExpandoDB.Serialization
     /// </summary>
     public class ByteArraySerializer
     {
-        private readonly Serializer _serializer;
+        private readonly WireSerializer _serializer;
         private readonly RecyclableMemoryStreamManager _memoryManager;
         private readonly CompressionOption _compressionOption;
         private readonly IStreamCompressor _streamCompressor;       
@@ -29,7 +29,7 @@ namespace ExpandoDB.Serialization
         /// <param name="compressionOption">The compression option.</param>
         public ByteArraySerializer(CompressionOption compressionOption)
         {            
-            _serializer = new Serializer();
+            _serializer = new WireSerializer();            
             _memoryManager = new RecyclableMemoryStreamManager();
 
             _compressionOption = compressionOption;
@@ -44,6 +44,8 @@ namespace ExpandoDB.Serialization
                     return new LZ4Compressor();
                 case CompressionOption.Deflate:
                     return new DeflateCompressor();
+                case CompressionOption.None:
+                    return null;
                 default:
                     throw new ArgumentException($"{compressionOption} is not a valid CompressionOption");
             }
@@ -95,8 +97,8 @@ namespace ExpandoDB.Serialization
                 else
                     using (var decompressedStream = _streamCompressor.Decompress(memoryStream))
                         dictionary = _serializer.Deserialize<Dictionary<string, object>>(decompressedStream);
-                
-                document = new Document(dictionary);                
+
+                document = new Document(dictionary);
             }
 
             return document;
