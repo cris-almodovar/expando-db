@@ -23,7 +23,7 @@ namespace ExpandoDB.Rest.DTO
                 Query = dto.where,
                 SortByField = dto.orderBy,
                 TopN = dto.topN ?? SearchCriteria.DEFAULT_TOP_N,
-                ItemsPerPage = dto.itemsPerPage ?? SearchCriteria.DEFAULT_ITEMS_PER_PAGE,
+                ItemsPerPage = dto.documentsPerPage ?? SearchCriteria.DEFAULT_ITEMS_PER_PAGE,
                 PageNumber = dto.pageNumber ?? 1, 
                 IncludeHighlight = dto.highlight ?? false,
                 SelectCategories = dto.selectCategories,

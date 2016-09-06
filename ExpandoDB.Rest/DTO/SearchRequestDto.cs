@@ -9,7 +9,7 @@
         public int? topN { get; set; }
         public string where { get; set; }
         public string orderBy { get; set; }        
-        public int? itemsPerPage { get; set; }
+        public int? documentsPerPage { get; set; }
         public int? pageNumber { get; set; }
         public bool? highlight { get; set; }
         public string selectCategories { get; set; }

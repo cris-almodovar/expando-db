@@ -16,12 +16,12 @@
     "paths": {
         "/db/{collection}": {
             "get": {
-                "summary": "Searches a Document Collection for Documents that satisfy a query expression. This API is analogous to the SQL SELECT statement; as such, it adopts the names of the different parts/clauses of the SQL SELECT statement as the names of the API parameters. This API returns the resultset in pages of P items, where P is the value of the itemsPerPage parameter.",
+                "summary": "Searches a Document Collection for Documents that satisfy a query expression. This API is analogous to the SQL SELECT statement. As such, the parameters of this API borrows the names of the different clauses  of the SQL SELECT statement. This API returns results in pages of N items each, where N is the value of the documentsPerPage parameter.",
                 "parameters": [
                     {
                         "name": "collection",
                         "in": "path",
-                        "description": "The name of the Document Collection to be searched. A Document Collection is a collection of Documents that share the same schema, similar to a table in SQL. This parameter is analogous to the FROM clause in SQL.",
+                        "description": "The name of the Document Collection to be searched. A Document Collection is similar to a table in SQL. This parameter is analogous to the  FROM clause in SQL.",
                         "required": true,
                         "type": "string"
                     },
@@ -35,7 +35,7 @@
                     {
                         "name": "topN",
                         "in": "query",
-                        "description": "The maximum number of items to be included in the resultset. This parameter is analogous to the TOP N clause in SQL. If not specified, this parameter defaults to 10000.",
+                        "description": "The maximum number of Documents to be included in the resultset. This parameter is analogous to the TOP N clause in SQL. If not specified, this parameter defaults to 100.",
                         "required": false,
                         "type": "integer"
                     },
@@ -49,12 +49,12 @@
                     {
                         "name": "orderBy",
                         "in": "query",
-                        "description": "The field to be used for sorting the resultset. If not specified, the resultset will be sorted by relevance score (<a href=\"https://en.wikipedia.org/wiki/Tf%E2%80%93idf\">tf-idf</a> computed by Lucene). This parameter is analogous to the ORDER BY clause in SQL. You can only specify a single field to sort on. To sort in ascending order, prefix the field name with '+' (or don't use a prefix). To sort in descending order, prefix the field name with a '-' (minus sign).",
+                        "description": "The field that will be used to sort the Documents in the resultset. If not specified, the Documents will be sorted by relevance score (<a href=\"https://en.wikipedia.org/wiki/Tf%E2%80%93idf\">tf-idf</a> computed by Lucene). This parameter is analogous to the ORDER BY clause in SQL. You can only specify a single field to sort on. To sort in ascending order, prefix the field name with '+' (or don't use a prefix). To sort in descending order, prefix the field name with a '-' (minus sign).",
                         "required": false,
                         "type": "string"
                     },
                     {
-                        "name": "itemsPerPage",
+                        "name": "documentsPerPage",
                         "in": "query",
                         "description": "The number of Documents in one page of the resultset. This parameter and the pageNumber parameter are analogous to the OFFSET-FETCH filter in T-SQL. If not specified, this parameter defaults to 10.",
                         "required": false,
@@ -63,16 +63,30 @@
                     {
                         "name": "pageNumber",
                         "in": "query",
-                        "description": "Specifies the page number to return, if the resultset consists of more than one page. This parameter and the itemsPerPage parameter are analogous to the OFFSET-FETCH filter in T-SQL. If not specified, this parameter defaults to 1.",
+                        "description": "Specifies the page number to return, if the resultset consists of more than one page. This parameter and the documentsPerPage parameter are analogous to the OFFSET-FETCH filter in T-SQL. If not specified, this parameter defaults to 1.",
                         "required": false,
                         "type": "integer"
                     },
                     {
                         "name": "highlight",
                         "in": "query",
-                        "description": "Specifies whether to generate a '_highlight' field for each item in the resultset. The '_highlight' field contains a snippet from the text of each Document, with the matching search terms highlighted.",
+                        "description": "Specifies whether to generate a '_highlight' field for each item in the resultset. The '_highlight' field contains snippets from the full-text of each Document, with the matching search terms highlighted.",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "selectCategories",
+                        "in": "query",
+                        "description": "A comma-separated list of Categories (a.k.a. Facets) to drill-down to;  only Documents that are tagged with the specified categories will be included in the resultset.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "topNCategories",
+                        "in": "query",
+                        "description": "The maximum number of Categories (a.k.a. Facets) to be included in the categories section of the resultset. If not specified, this parameter defaults to 10.",
+                        "required": false,
+                        "type": "integer"
                     }
                 ],
                 "tags": [
@@ -99,7 +113,7 @@
                     {
                         "name": "collection",
                         "in": "path",
-                        "description": "The name of the target Document Collection.",
+                        "description": "The name of the target Document Collection. If the Collection does not exist, it will be auto-created.",
                         "required": true,
                         "type": "string"
                     },
@@ -444,13 +458,13 @@
                     "type": "string",
                     "description": "A copy of the 'orderBy' request parameter."
                 },
-                "itemCount": {
+                "documentCount": {
                     "type": "string",
-                    "description": "The number of items in the resultset. This value is <= topN."
+                    "description": "The number of Documents in the resultset. This value is <= topN."
                 },
                 "totalHits": {
                     "type": "integer",
-                    "description": "The total number of Documents in the Document Collection that match the search query. This value is >= itemCount."
+                    "description": "The total number of Documents in the Document Collection that matched the search query. This value is >= documentCount."
                 },
                 "pageCount": {
                     "type": "integer",
@@ -460,19 +474,34 @@
                     "type": "integer",
                     "description": "The current page number in the resultset."
                 },
-                "itemsPerPage": {
+                "documentsPerPage": {
                     "type": "integer",
-                    "description": "The number of items in one page of the resultset."
+                    "description": "The number of Documents in one page of the resultset; this is a copy of the 'documentsPerPage' request parameter."
                 },
                 "higlight": {
                     "type": "boolean",
                     "description": "A copy of the 'highlight' request parameter."
                 },
-                "items": {
+                "selectCategories": {
+                    "type": "string",
+                    "description": "A copy of the 'selectCategories' request parameter."
+                },
+                "topNCategories": {
+                    "type": "integer",
+                    "description": "A copy of the 'topNCategories' request parameter."
+                },
+                "documents": {
                     "type": "array",
-                    "description": "An array of Documents that match the query expression.",
+                    "description": "The Documents that matched the query expression.",
                     "items": {
                         "$ref": "#/definitions/DocumentDTO"
+                    }
+                },
+                "categories": {
+                    "type": "array",
+                    "description": "The Categories (a.k.a. Facets) of the matching Documents.",
+                    "items": {
+                        "$ref": "#/definitions/CategoryDTO"
                     }
                 },
                 "timestamp": {
@@ -511,6 +540,10 @@
         "DropResponseDTO": {
             "type": "object",
             "properties": {
+                "from": {
+                    "type": "string",
+                    "description": "The name of the target Document Collection."
+                },
                 "isDropped": {
                     "type": "boolean",
                     "description": "Specifies whether the target Document Collection was dropped successfully."
@@ -566,6 +599,26 @@
                 }
             }
         },
+        "CategoryDTO": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "The name of the Category (a.k.a. Facet)."
+                },
+                "count": {
+                    "type": "integer",
+                    "description": "The total number of Documents that are classified (or 'tagged') as belonging to  the Category."
+                },
+                "values": {
+                    "type": "array",
+                    "description": "The values (name/count pairs) of the Category. If the Category is hierarchical,  then this field will contain the sub-Categories.",
+                    "items": {
+                        "$ref": "#/definitions/CategoryDTO"
+                    }
+                }
+            }
+        },
         "UpdateResponseDTO": {
             "type": "object",
             "properties": {
@@ -617,6 +670,10 @@
         "SchemaResponseDTO": {
             "type": "object",
             "properties": {
+                "from": {
+                    "type": "string",
+                    "description": "The name of the target Document Collection."
+                },
                 "schema": {
                     "$ref": "#/definitions/SchemaDTO"
                 },
@@ -718,10 +775,10 @@
                     "type": "integer",
                     "description": "The HTTP status code."
                 },
-                "errorMessage": {
-                    "type": "string",
-                    "description": "The error message."
-                }
+              "errorMessage": {
+                "type": "string",
+                "description": "The error message."
+              }
             }
         }
     }

@@ -169,8 +169,8 @@
       <HintPath>..\packages\Jil.2.14.5\lib\net45\Jil.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="LightningDB, Version=0.9.4.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\LightningDB.0.9.4\lib\net45\LightningDB.dll</HintPath>
+    <Reference Include="LightningDB, Version=0.9.6.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\LightningDB.0.9.6\lib\net45\LightningDB.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="LZ4, Version=1.0.10.93, Culture=neutral, PublicKeyToken=62e1b5ec1eec9bdd, processorArchitecture=MSIL">
@@ -196,8 +196,8 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
     <Reference Include="Wire, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Wire.0.7.1\lib\net45\Wire.dll</HintPath>
-      <Private>True</Private>
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>lib\Wire.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -250,6 +250,9 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Wire.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="lmdb.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
