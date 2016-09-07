@@ -206,7 +206,7 @@ namespace ExpandoDB.Rest
 
             var guid = (Guid)req["id"];
             if (guid == Guid.Empty)
-                throw new ArgumentException("id cannot be Guid.Empty");
+                throw new ArgumentException("id cannot be Guid.Empty");            
 
             if (!_database.ContainsCollection(collectionName))
                 return HttpStatusCode.NotFound;
@@ -215,6 +215,14 @@ namespace ExpandoDB.Rest
             var document = await collection.GetAsync(guid).ConfigureAwait(false);
             if (document == null)
                 return HttpStatusCode.NotFound;
+
+            // Check if there is a 'select' parameter; if yes then 
+            // we only return the fields specified in the 'select' parameter.
+
+            var requestDto = this.Bind<DocumentRequestDto>();
+            var fieldsToSelect = requestDto.select.ToList();
+            if (fieldsToSelect.Count > 0)
+                document = document.Select(fieldsToSelect);
 
             stopwatch.Stop();
 

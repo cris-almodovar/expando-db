@@ -73,6 +73,7 @@
     <Compile Include="Bootstrapper.cs" />
     <Compile Include="DbService.cs" />
     <Compile Include="DTO\CountRequestDto.cs" />
+    <Compile Include="DTO\DocumentRequestDto.cs" />
     <Compile Include="DTO\DtoUtils.cs" />
     <Compile Include="DTO\PatchOperationDto.cs" />
     <Compile Include="DTO\SearchRequestDto.cs" />
