@@ -287,7 +287,7 @@
                 {
                   "name": "select",
                   "in": "query",
-                  "description": "A comma-separated list of fields; only these fields will be included in the resultset. This parameter is analogous to the SELECT list in SQL. If not specified, all fields will be included.",
+                  "description": "A comma-separated list of fields; only these fields will be returned. If not specified, all fields will be returned.",
                   "required": false,
                   "type": "string"
                 }
