@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Linq;
+using System.IO.Compression;
 
 namespace Loader
 {
@@ -27,7 +28,12 @@ namespace Loader
             var appDirectory = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
             Directory.SetCurrentDirectory(appDirectory);            
 
-            var datasetFolder = ConfigurationManager.AppSettings["DatasetFolder"] ?? "reuters";
+            var dataset = ConfigurationManager.AppSettings["Dataset"] ?? @"reuters\reuters-21578.zip";
+            var datasetFolder = Path.GetDirectoryName(dataset);
+
+            if (Directory.EnumerateFiles(datasetFolder, "*.sgm").Count() == 0)
+                ZipFile.ExtractToDirectory(dataset, datasetFolder);
+            
             var sgmlFiles = Directory.GetFiles(datasetFolder, "*.sgm");
 
             Console.WriteLine(String.Format("Importing {0} sgml files from folder: '{1}'.", sgmlFiles.Length, Path.GetFullPath(datasetFolder)));
