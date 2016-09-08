@@ -391,7 +391,7 @@ namespace ExpandoDB.Search
                     break;
 
                 case TypeCode.DateTime:
-                    buffer.Append($"{((DateTime)value).ToString("yyyy-MM-dd")}");
+                    buffer.Append($"{((DateTime)value).ToString("yyyy-MM-dd")}{Environment.NewLine}");
                     break;
 
                 case TypeCode.String:

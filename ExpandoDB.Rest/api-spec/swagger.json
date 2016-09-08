@@ -268,23 +268,30 @@
         },
         "/db/{collection}/{id}": {
             "get": {
-                "summary": "Gets the Document with the specified id.",
-                "parameters": [
-                    {
-                        "name": "collection",
-                        "in": "path",
-                        "description": "The name of the Document Collection that contains the Document.",
-                        "required": true,
-                        "type": "string"
-                    },
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "description": "The unique id (GUID) of the Document.",
-                        "required": true,
-                        "type": "string"
-                    }
-                ],
+                "summary": "Gets the Document with the specified id, with an option to specify the fields to return.",
+              "parameters": [
+                {
+                  "name": "collection",
+                  "in": "path",
+                  "description": "The name of the Document Collection that contains the Document.",
+                  "required": true,
+                  "type": "string"
+                },
+                {
+                  "name": "id",
+                  "in": "path",
+                  "description": "The unique id (GUID) of the Document.",
+                  "required": true,
+                  "type": "string"
+                },
+                {
+                  "name": "select",
+                  "in": "query",
+                  "description": "A comma-separated list of fields; only these fields will be returned. If not specified, all fields will be returned.",
+                  "required": false,
+                  "type": "string"
+                }
+              ],
                 "tags": [
                     "Search for Document"
                 ],
