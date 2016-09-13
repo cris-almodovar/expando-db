@@ -76,7 +76,7 @@ namespace ExpandoDB.Tests
         public void Can_dispose_and_reload()
         {
             _db.Dispose();
-            Thread.Sleep(1000);
+            Thread.Sleep(2000);
 
             _db = new Database(_dataPath);
             Thread.Sleep(1000);
