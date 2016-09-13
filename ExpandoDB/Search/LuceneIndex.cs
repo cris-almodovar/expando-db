@@ -131,7 +131,7 @@ namespace ExpandoDB.Search
             {
                 try
                 {
-                    // Don't allow index writes while are committing 
+                    // Don't allow index writes while we are committing 
                     // to the main index and taxonomy index.
                     _writeAllowedFlag.Reset();                    
 
@@ -409,7 +409,11 @@ namespace ExpandoDB.Search
                     _searcherTaxonomyManager.Close();
 
                     _taxonomyWriter.Close();
-                    _indexWriter.Close();
+                    _taxonomyDirectory.Close();
+
+                    _indexWriter.Close();                    
+                    _indexDirectory.Close();
+
                     _writeAllowedFlag.Dispose();
                 }               
 
