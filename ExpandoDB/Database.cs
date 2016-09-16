@@ -196,20 +196,18 @@ namespace ExpandoDB
         {
             return _collections.ContainsKey(collectionName);
         }
-
-        private readonly object _schemaPersistenceLock = new object();
+        
+        private readonly SemaphoreSlim _persistSchemasLock = new SemaphoreSlim(1, 1);
 
         /// <summary>
         /// Persists Schema objects to a special _schemas collection.
         /// </summary>
         /// <returns></returns>
         private async Task PersistSchemas()
-        {
-            var isLockTaken = false;
-            try
+        {            
+            if (await _persistSchemasLock.WaitAsync(500))
             {
-                Monitor.TryEnter(_schemaPersistenceLock, ref isLockTaken);
-                if (isLockTaken)
+                try
                 {
                     foreach (var collectionName in GetCollectionNames())
                     {
@@ -220,15 +218,14 @@ namespace ExpandoDB
                         await PersistSchema(collection).ConfigureAwait(false);
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                _log.Error(ex);
-            }
-            finally
-            {
-                if (isLockTaken)
-                    Monitor.Exit(_schemaPersistenceLock);
+                catch (Exception ex)
+                {
+                    _log.Error(ex);
+                }
+                finally
+                {
+                    _persistSchemasLock.Release();
+                }
             }
         }
 
@@ -316,5 +313,5 @@ namespace ExpandoDB
         }
 
         #endregion
-    }
+    }   
 }
