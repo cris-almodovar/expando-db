@@ -9,10 +9,10 @@ using ExpandoDB.Storage;
 namespace ExpandoDB
 {
     /// <summary>
-    /// Defines the schema of a Document, as it is indexed in Lucene.
+    /// Defines the schema of a Document, as it is indexed in Lucene. A schema is associated with each Document Collection.
     /// </summary>    
     [Serializable]
-    public class Schema
+    public class Schema // TODO: Rename to IndexSchema
     {
         internal const string COLLECTION_NAME = "_schemas";
         /// <summary>

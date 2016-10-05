@@ -19,7 +19,7 @@ namespace ExpandoDB.Search
     public static class LuceneUtils
     {        
         internal const string DEFAULT_NULL_TOKEN = "_null_";
-        internal const string QUERY_PARSER_ILLEGAL_CHARS = @"[\+&|!\(\)\{\}\[\]^""~\*\?:\\ ]";
+        internal const string QUERY_PARSER_ILLEGAL_CHARS = @"[\+&|!\(\)\{\}\[\]^""~\*\?:\\/ ]";
         internal const int INDEX_NULL_VALUE = 1; // This is a marker value for NULL in the Lucene index.
         internal const int SORT_FIELD_MAX_TEXT_LENGTH = 20;
         internal static readonly JavaDouble DOUBLE_MIN_VALUE = new JavaDouble(Double.MinValue);
