@@ -58,7 +58,9 @@ namespace FileIndexer
             Func<FileInfo, bool> fileCheck = fi => fi.Length <= FIFTY_MB;  // File size less than 50 MB                      
 
             Console.WriteLine("-----------------------------------------------------------------------------------");
-            Console.WriteLine($"FileIndexer starting at: {startFolder}");            
+            Console.WriteLine($"FileIndexer starting at: {startFolder}");
+
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
 
             var stopwatch = new Stopwatch();
             stopwatch.Start();
@@ -116,6 +118,11 @@ namespace FileIndexer
             Console.ReadLine();
         }
 
+        private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            Console.WriteLine(e.ToString());
+        }
+
         static void ProcessFile(object args)
         {            
             var data = args as Tuple<FileInfo, ManualResetEvent>;
@@ -124,6 +131,8 @@ namespace FileIndexer
 
             var file = data.Item1;
             var mre = data.Item2;
+
+            Console.WriteLine($"Processing '{file}'.");
 
             try
             {
