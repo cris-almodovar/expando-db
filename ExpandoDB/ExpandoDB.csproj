@@ -49,8 +49,8 @@
       <HintPath>..\packages\Common.Logging.Core.3.3.1\lib\net40\Common.Logging.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="FlexLucene, Version=6.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\FlexLucene.6.1.0.0\lib\net40\FlexLucene.dll</HintPath>
+    <Reference Include="FlexLucene, Version=6.2.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\FlexLucene.6.2.0.0\lib\net40\FlexLucene.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="IKVM.AWT.WinForms, Version=8.1.5717.0, Culture=neutral, PublicKeyToken=13235d27fcbfff58, processorArchitecture=MSIL">

@@ -227,7 +227,7 @@ namespace ExpandoDB.Search
                     if (schemaField.ArrayElementDataType == Schema.DataType.Null)
                         schemaField.ArrayElementDataType = GetFieldDataType(element);
                     else if (schemaField.ArrayElementDataType != GetFieldDataType(element))
-                        throw new SchemaException($"All the elements of '{schemaField.Name}' must be of type '{schemaField.ArrayElementDataType}'");
+                        throw new SchemaException($"All the elements of the '{schemaField.Name}' array must be of type '{schemaField.ArrayElementDataType}'");
 
                     switch (schemaField.ArrayElementDataType)
                     {
