@@ -44,7 +44,7 @@ namespace ExpandoDB.Tests
         {
             _db.Dispose();
             Thread.Sleep(5000);
-            Directory.Delete(_dataPath, true);
+            Directory.Delete(_db.DataPath, true);
         }
 
         [TestMethod]
