@@ -1,4 +1,6 @@
-﻿using Topshelf;
+﻿using Common.Logging;
+using System;
+using Topshelf;
 
 namespace ExpandoDB.Rest
 {
@@ -6,9 +8,13 @@ namespace ExpandoDB.Rest
     /// Implements the application's Main() method.
     /// </summary>
     class EntryPoint
-    {        
+    {
+        private static readonly ILog _log = LogManager.GetLogger(nameof(EntryPoint));
+
         static void Main()
         {
+            AppDomain.CurrentDomain.UnhandledException += (sender, ex) => _log.Error("FATAL ERROR", ex.ExceptionObject as Exception);
+
             HostFactory.Run(
                 hc =>
                 {
