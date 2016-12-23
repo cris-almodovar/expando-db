@@ -49,7 +49,7 @@ namespace ExpandoDB.Search
 
             var pattern = Pattern.compile(_separatorChars);
             var tokenizer = new PatternTokenizer(pattern, -1);
-            var stream = _ignoreCase ? new LowerCaseFilter(tokenizer) as TokenStream : tokenizer as TokenStream;
+            var stream = _ignoreCase ? new FlexLucene.Analysis.LowerCaseFilter(tokenizer) as TokenStream : tokenizer as TokenStream;
 
             if (_enableStemming)
                 stream = new PorterStemFilter(stream);

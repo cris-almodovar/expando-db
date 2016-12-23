@@ -43,16 +43,16 @@
       <HintPath>..\packages\Common.Logging.Core.3.3.1\lib\net40\Common.Logging.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Metrics, Version=0.3.7.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Metrics.NET.0.3.7\lib\net45\Metrics.dll</HintPath>
+    <Reference Include="Metrics, Version=0.4.4.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Metrics.NET.0.4.4\lib\net45\Metrics.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Nancy, Version=1.4.2.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Nancy.1.4.3\lib\net40\Nancy.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Nancy.Metrics, Version=0.3.7.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nancy.Metrics.0.3.7\lib\net45\Nancy.Metrics.dll</HintPath>
+    <Reference Include="Nancy.Metrics, Version=0.4.4.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Nancy.Metrics.0.4.4\lib\net45\Nancy.Metrics.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />

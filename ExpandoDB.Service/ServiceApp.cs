@@ -16,7 +16,7 @@ namespace ExpandoDB.Rest
         private NancyHost _nancyHost;
         private readonly HostConfiguration _nancyHostConfig;
         private readonly Uri _baseUri;
-        private readonly ILog _log = LogManager.GetLogger(typeof(ServiceApp).Name);
+        private readonly ILog _log = LogManager.GetLogger(nameof(ServiceApp));
         private const string DEFAULT_BASE_URL = @"http://localhost:9000/";
 
         /// <summary>
@@ -49,7 +49,8 @@ namespace ExpandoDB.Rest
             _nancyHostConfig = new HostConfiguration
             {
                 UrlReservations = new UrlReservations { CreateAutomatically = true }
-            };            
+            };           
+                        
         }        
 
         /// <summary>

@@ -476,12 +476,12 @@ namespace ExpandoDB
                 if (String.IsNullOrWhiteSpace(json))
                     json = DynamicJsonSerializer.Serialize(this);
 
-                var data = Encoding.UTF8.GetBytes(json);
+                byte[] data = Encoding.UTF8.GetBytes(json);
                 byte[] hash = md5.ComputeHash(data);
 
                 var buffer = new System.Text.StringBuilder();
-                for (int i = 0; i < data.Length; i++)
-                    buffer.Append(data[i].ToString("x2"));
+                for (int i = 0; i < hash.Length; i++)
+                    buffer.Append(hash[i].ToString("x2"));
 
                 // Return the hexadecimal string.
                 return buffer.ToString();
