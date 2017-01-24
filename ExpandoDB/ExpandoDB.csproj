@@ -53,6 +53,10 @@
       <HintPath>..\packages\FlexLucene.6.3.0.0\lib\net40\FlexLucene.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Hyperion, Version=0.9.2.2, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Hyperion.0.9.2\lib\net45\Hyperion.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="IKVM.AWT.WinForms, Version=8.1.5717.0, Culture=neutral, PublicKeyToken=13235d27fcbfff58, processorArchitecture=MSIL">
       <HintPath>..\packages\IKVM.8.1.5717.0\lib\IKVM.AWT.WinForms.dll</HintPath>
       <Private>True</Private>
@@ -165,8 +169,8 @@
       <HintPath>..\packages\IKVM.8.1.5717.0\lib\IKVM.Runtime.JNI.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Jil, Version=2.14.5.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Jil.2.14.5\lib\net45\Jil.dll</HintPath>
+    <Reference Include="Jil, Version=2.15.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Jil.2.15.0\lib\net45\Jil.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="LightningDB, Version=0.9.7.0, Culture=neutral, processorArchitecture=MSIL">
@@ -195,10 +199,6 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
-    <Reference Include="Wire, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Wire.0.8.2\lib\net45\Wire.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\VersionInfo.cs">
