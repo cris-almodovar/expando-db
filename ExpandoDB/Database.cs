@@ -292,11 +292,8 @@ namespace ExpandoDB
                 if (disposing)
                 {
                     _schemaPersistenceTimer.Dispose();
-
-                    var collections = _collections.Values.ToList();
-                    foreach (var collection in collections)
-                        collection.Dispose();
-
+                    _collections.Values.ToList().ForEach(item => item.Dispose());
+                    
                     DocumentStorage.Dispose();
                 }
 

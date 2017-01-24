@@ -9,7 +9,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using WireSerializer = Wire.Serializer;
+using HyperionSerializer = Hyperion.Serializer;
 
 namespace ExpandoDB.Serialization
 {
@@ -18,7 +18,7 @@ namespace ExpandoDB.Serialization
     /// </summary>
     public class ByteArraySerializer
     {
-        private readonly WireSerializer _serializer;
+        private readonly HyperionSerializer _serializer;
         private readonly RecyclableMemoryStreamManager _memoryManager;
         private readonly CompressionOption _compressionOption;
         private readonly IStreamCompressor _streamCompressor;       
@@ -29,7 +29,7 @@ namespace ExpandoDB.Serialization
         /// <param name="compressionOption">The compression option.</param>
         public ByteArraySerializer(CompressionOption compressionOption)
         {            
-            _serializer = new WireSerializer();            
+            _serializer = new HyperionSerializer();            
             _memoryManager = new RecyclableMemoryStreamManager();
 
             _compressionOption = compressionOption;
