@@ -9,12 +9,8 @@ namespace ExpandoDB.Rest
     /// </summary>
     class EntryPoint
     {
-        private static readonly ILog _log = LogManager.GetLogger(nameof(EntryPoint));
-
         static void Main()
         {
-            AppDomain.CurrentDomain.UnhandledException += (sender, ex) => _log.Error("FATAL ERROR", ex.ExceptionObject as Exception);
-
             HostFactory.Run(
                 hc =>
                 {

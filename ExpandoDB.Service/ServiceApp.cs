@@ -32,7 +32,7 @@ namespace ExpandoDB.Rest
                 Directory.CreateDirectory(logFolder);
 
             var logFile = Path.Combine(logFolder, "ExpandoDB.log");
-            GlobalContext.Properties["App.LogFilename"] = logFile;
+            GlobalContext.Properties["App.LogFilename"] = logFile;            
         }
 
 
@@ -40,7 +40,9 @@ namespace ExpandoDB.Rest
         /// Initializes a new instance of the <see cref="ServiceApp"/> class.
         /// </summary>
         public ServiceApp()
-        { 
+        {
+            AppDomain.CurrentDomain.UnhandledException += (sender, ex) => _log.Error("FATAL ERROR", ex.ExceptionObject as Exception);
+
             var baseUriString = ConfigurationManager.AppSettings["RestService.BaseUrl"] ?? DEFAULT_BASE_URL;
             if (!baseUriString.Trim().EndsWith("/", StringComparison.InvariantCulture))
                 baseUriString += "/";
@@ -49,8 +51,7 @@ namespace ExpandoDB.Rest
             _nancyHostConfig = new HostConfiguration
             {
                 UrlReservations = new UrlReservations { CreateAutomatically = true }
-            };           
-                        
+            };          
         }        
 
         /// <summary>
