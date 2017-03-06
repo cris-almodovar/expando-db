@@ -58,12 +58,12 @@ namespace ExpandoDB.Search
             var facetFields = new List<FacetField>();
 
             Schema.Field categoriesField = null;
-            if (schema.Fields.TryGetValue(Schema.StandardField.CATEGORIES, out categoriesField))
+            if (schema.Fields.TryGetValue(Schema.MetadataField.CATEGORIES, out categoriesField))
             {
                 if (categoriesField.DataType == Schema.DataType.Array &&
                     categoriesField.ArrayElementDataType == Schema.DataType.Text)
                 {                    
-                    var categories = document.AsDictionary()[Schema.StandardField.CATEGORIES] as IEnumerable<object>;
+                    var categories = document.AsDictionary()[Schema.MetadataField.CATEGORIES] as IEnumerable<object>;
                     if (categories != null)
                     {
                         // Parse each category to create a FacetField, then add to facetFields list.
@@ -80,7 +80,7 @@ namespace ExpandoDB.Search
                 } 
                 else
                 {
-                    throw new SchemaException($"The {Schema.StandardField.CATEGORIES} field must be list of Text values.");
+                    throw new SchemaException($"The {Schema.MetadataField.CATEGORIES} field must be list of Text values.");
                 }               
             }
 

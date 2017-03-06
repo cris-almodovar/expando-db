@@ -43,8 +43,8 @@ namespace ExpandoDB.Tests
         public void Cleanup()
         {
             _db.Dispose();
-            Thread.Sleep(5000);
-            Directory.Delete(_db.DataPath, true);
+            //Thread.Sleep(10000);
+            //Directory.Delete(_db.DataPath, true);
         }
 
         [TestMethod]
@@ -87,7 +87,7 @@ namespace ExpandoDB.Tests
             Assert.AreEqual<int?>(1, result.ItemCount);
             Assert.AreEqual<int?>(5, result.TotalHits);
 
-            dynamic firstItem = result.Items.First();
+            dynamic firstItem = result.Items.First(); 
             Assert.AreEqual<string>("The Restaurant at the End of the Universe", firstItem.Title);
         }
     }
