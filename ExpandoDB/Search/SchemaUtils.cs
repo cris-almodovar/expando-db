@@ -54,14 +54,14 @@ namespace ExpandoDB.Search
         internal static IDictionary<string, object> ToDictionary(this Schema schema)
         {
             var dictionary = new Dictionary<string, object>();
-            dictionary[Schema.StandardField.ID] = schema._id;
+            dictionary[Schema.MetadataField.ID] = schema._id;
             dictionary["Name"] = schema.Name;
 
             var fieldsList = schema.Fields.Values.Select(f => f.ToDictionary()).ToList();
             dictionary["Fields"] = fieldsList;
 
-            dictionary[Schema.StandardField.CREATED_TIMESTAMP] = schema._createdTimestamp;
-            dictionary[Schema.StandardField.MODIFIED_TIMESTAMP] = schema._modifiedTimestamp;
+            dictionary[Schema.MetadataField.CREATED_TIMESTAMP] = schema._createdTimestamp;
+            dictionary[Schema.MetadataField.MODIFIED_TIMESTAMP] = schema._modifiedTimestamp;
 
             return dictionary;
         }
@@ -93,7 +93,7 @@ namespace ExpandoDB.Search
         /// <returns></returns>
         internal static Schema PopulateWith(this Schema schema, IDictionary<string, object> dictionary)
         {
-            schema._id = dictionary.ContainsKey(Schema.StandardField.ID) ? (Guid?)dictionary[Schema.StandardField.ID] : null;
+            schema._id = dictionary.ContainsKey(Schema.MetadataField.ID) ? (Guid?)dictionary[Schema.MetadataField.ID] : null;
             schema.Name = dictionary["Name"] as string;
 
             var fields = dictionary["Fields"] as IList;
@@ -110,8 +110,8 @@ namespace ExpandoDB.Search
                 }
             }
 
-            schema._createdTimestamp = (DateTime?)dictionary[Schema.StandardField.CREATED_TIMESTAMP];
-            schema._modifiedTimestamp = (DateTime?)dictionary[Schema.StandardField.MODIFIED_TIMESTAMP];
+            schema._createdTimestamp = (DateTime?)dictionary[Schema.MetadataField.CREATED_TIMESTAMP];
+            schema._modifiedTimestamp = (DateTime?)dictionary[Schema.MetadataField.MODIFIED_TIMESTAMP];
 
             return schema;
         }
@@ -187,10 +187,10 @@ namespace ExpandoDB.Search
                 return true;
 
             return (schema.Fields.Count == 4 &&
-                    schema.Fields.ContainsKey(Schema.StandardField.ID) &&
-                    schema.Fields.ContainsKey(Schema.StandardField.CREATED_TIMESTAMP) &&
-                    schema.Fields.ContainsKey(Schema.StandardField.MODIFIED_TIMESTAMP) &&
-                    schema.Fields.ContainsKey(Schema.StandardField.FULL_TEXT));
+                    schema.Fields.ContainsKey(Schema.MetadataField.ID) &&
+                    schema.Fields.ContainsKey(Schema.MetadataField.CREATED_TIMESTAMP) &&
+                    schema.Fields.ContainsKey(Schema.MetadataField.MODIFIED_TIMESTAMP) &&
+                    schema.Fields.ContainsKey(Schema.MetadataField.FULL_TEXT));
         }
     }
 }

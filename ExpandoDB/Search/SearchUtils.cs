@@ -66,7 +66,7 @@ namespace ExpandoDB.Search
                     if (doc == null)
                         continue;
 
-                    var idField = doc.GetField(Schema.StandardField.ID);
+                    var idField = doc.GetField(Schema.MetadataField.ID);
                     var idValue = idField.StringValue();
 
                     documentIds.Add(Guid.Parse(idValue));

@@ -105,9 +105,9 @@ namespace ExpandoDB.Search
 
             foreach (var sd in scoreDocs)
             {
-                var bestFragments = highlighter.GetBestFragments(fieldQuery, reader, sd.Doc, Schema.StandardField.FULL_TEXT, FRAGMENT_SIZE, FRAGMENT_COUNT);
+                var bestFragments = highlighter.GetBestFragments(fieldQuery, reader, sd.Doc, Schema.MetadataField.FULL_TEXT, FRAGMENT_SIZE, FRAGMENT_COUNT);
                 var document = searcher.Doc(sd.Doc);
-                var docId = document.Get(Schema.StandardField.ID);
+                var docId = document.Get(Schema.MetadataField.ID);
 
                 if (documentHightlightMap.ContainsKey(docId) && bestFragments.Length > 0)
                 {
@@ -124,10 +124,10 @@ namespace ExpandoDB.Search
             {
                 var doc = new FlexLucene.Document.Document();
 
-                var idField = new StringField(Schema.StandardField.ID, document._id.ToString(), FieldStore.YES);
+                var idField = new StringField(Schema.MetadataField.ID, document._id.ToString(), FieldStore.YES);
                 doc.Add(idField);
 
-                var fullTextField = new Field(Schema.StandardField.FULL_TEXT, document.ToLuceneFullTextString(), ExtendedTextFieldType);
+                var fullTextField = new Field(Schema.MetadataField.FULL_TEXT, document.ToLuceneFullTextString(), ExtendedTextFieldType);
                 doc.Add(fullTextField);
 
                 writer.AddDocument(doc);
@@ -145,13 +145,13 @@ namespace ExpandoDB.Search
         class HighlighterQueryParser : QueryParser
         {
             public HighlighterQueryParser(Analyzer analyzer)
-                : base(Schema.StandardField.FULL_TEXT, analyzer)
+                : base(Schema.MetadataField.FULL_TEXT, analyzer)
             {
             }
 
             protected override Query GetFieldQuery(string fieldName, string queryText, bool quoted)
             {
-                if (fieldName != Schema.StandardField.FULL_TEXT)
+                if (fieldName != Schema.MetadataField.FULL_TEXT)
                     return null;
 
                 return base.GetFieldQuery(fieldName, queryText, quoted);
@@ -159,7 +159,7 @@ namespace ExpandoDB.Search
 
             protected override Query GetFieldQuery(string fieldName, string queryText, int slop)
             {
-                if (fieldName != Schema.StandardField.FULL_TEXT)
+                if (fieldName != Schema.MetadataField.FULL_TEXT)
                     return null;
 
                 return base.GetFieldQuery(fieldName, queryText, slop);
@@ -167,7 +167,7 @@ namespace ExpandoDB.Search
 
             protected override Query GetRangeQuery(string fieldName, string part1, string part2, bool startInclusive, bool endInclusive)
             {
-                if (fieldName != Schema.StandardField.FULL_TEXT)
+                if (fieldName != Schema.MetadataField.FULL_TEXT)
                     return null;
 
                 return base.GetRangeQuery(fieldName, part1, part2, startInclusive, endInclusive);
@@ -175,7 +175,7 @@ namespace ExpandoDB.Search
 
             protected override Query GetFuzzyQuery(string fieldName, string termString, float minSimilarity)
             {
-                if (fieldName != Schema.StandardField.FULL_TEXT)
+                if (fieldName != Schema.MetadataField.FULL_TEXT)
                     return null;
 
                 return base.GetFuzzyQuery(fieldName, termString, minSimilarity);
@@ -183,7 +183,7 @@ namespace ExpandoDB.Search
 
             protected override Query GetPrefixQuery(string fieldName, string termString)
             {
-                if (fieldName != Schema.StandardField.FULL_TEXT)
+                if (fieldName != Schema.MetadataField.FULL_TEXT)
                     return null;
 
                 return base.GetPrefixQuery(fieldName, termString);
@@ -191,7 +191,7 @@ namespace ExpandoDB.Search
 
             protected override Query GetRegexpQuery(string fieldName, string termString)
             {
-                if (fieldName != Schema.StandardField.FULL_TEXT)
+                if (fieldName != Schema.MetadataField.FULL_TEXT)
                     return null;
 
                 return base.GetRegexpQuery(fieldName, termString);
@@ -199,7 +199,7 @@ namespace ExpandoDB.Search
 
             protected override Query GetWildcardQuery(string fieldName, string termString)
             {
-                if (fieldName != Schema.StandardField.FULL_TEXT)
+                if (fieldName != Schema.MetadataField.FULL_TEXT)
                     return null;
 
                 return base.GetWildcardQuery(fieldName, termString);

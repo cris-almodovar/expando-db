@@ -302,7 +302,7 @@ namespace ExpandoDB
         }
 
         /// <summary>
-        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// Closes the database and deallocates resources.
         /// </summary>
         public void Dispose()
         {            

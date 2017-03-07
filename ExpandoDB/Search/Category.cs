@@ -11,7 +11,7 @@ namespace ExpandoDB.Search
     /// <summary>
     /// Represents a category that a Document is assigned to.
     /// </summary>
-    public class Category
+    public class Category  // TODO: Rename to CategoryValue
     {
         /// <summary>
         /// Gets or sets the name of the category.

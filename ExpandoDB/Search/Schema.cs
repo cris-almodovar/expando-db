@@ -12,7 +12,7 @@ namespace ExpandoDB
     /// Defines the schema of a Document, as it is indexed in Lucene. A schema is associated with each Document Collection.
     /// </summary>    
     [Serializable]
-    public class Schema // TODO: Rename to IndexSchema
+    public class Schema // TODO: Rename to IndexSchema => Documents are supposed to be schema-less.
     {
         internal const string COLLECTION_NAME = "_schemas";
         /// <summary>
@@ -30,6 +30,7 @@ namespace ExpandoDB
         /// The name of the Schema.
         /// </value>
         public string Name { get; set; }
+        
         /// <summary>
         /// Gets or sets the set of Fields.
         /// </summary>
@@ -37,6 +38,7 @@ namespace ExpandoDB
         /// The fields.
         /// </value>
         public ConcurrentDictionary<string, Field> Fields { get; set; } = new ConcurrentDictionary<string, Field>();
+        
         /// <summary>
         /// Gets or sets a timestamp value indicating the date/time the Document was created.
         /// </summary>
@@ -44,6 +46,7 @@ namespace ExpandoDB
         /// The date/time the Document was created.
         /// </value>
         public DateTime? _createdTimestamp { get; set; }
+        
         /// <summary>
         /// Gets or sets a timestamp value indicating the date/time the Document was last modified.
         /// </summary>
@@ -64,19 +67,27 @@ namespace ExpandoDB
 
             var defaultSchema = new Schema();            
             defaultSchema.Name = name;      
-            defaultSchema.Fields[StandardField.ID] = new Field { Name = StandardField.ID, DataType = DataType.Guid };
-            defaultSchema.Fields[StandardField.CREATED_TIMESTAMP] = new Field { Name = StandardField.CREATED_TIMESTAMP, DataType = DataType.DateTime };
-            defaultSchema.Fields[StandardField.MODIFIED_TIMESTAMP] = new Field { Name = StandardField.MODIFIED_TIMESTAMP, DataType = DataType.DateTime };
-            defaultSchema.Fields[StandardField.FULL_TEXT] = new Field { Name = StandardField.FULL_TEXT, DataType = DataType.Text };
+            defaultSchema.Fields[MetadataField.ID] = new Field { Name = MetadataField.ID, DataType = DataType.Guid };
+            defaultSchema.Fields[MetadataField.CREATED_TIMESTAMP] = new Field { Name = MetadataField.CREATED_TIMESTAMP, DataType = DataType.DateTime };
+            defaultSchema.Fields[MetadataField.MODIFIED_TIMESTAMP] = new Field { Name = MetadataField.MODIFIED_TIMESTAMP, DataType = DataType.DateTime };
+            defaultSchema.Fields[MetadataField.FULL_TEXT] = new Field { Name = MetadataField.FULL_TEXT, DataType = DataType.Text };
             
             return defaultSchema;      
         }
 
         /// <summary>
+        /// Gets or sets the facets.
+        /// </summary>
+        /// <value>
+        /// The facets.
+        /// </value>
+        public IList<CategoryField> Facets { get; set; } = new List<CategoryField>();
+
+        /// <summary>
         /// Defines the standard metadata fields that all Documents must have.
         /// </summary>
         [Serializable]
-        public static class StandardField
+        public static class MetadataField
         {
             /// <summary>
             /// The unique ID
@@ -113,6 +124,7 @@ namespace ExpandoDB
             /// The name.
             /// </value>
             public string Name { get; set; }
+            
             /// <summary>
             /// Gets or sets the data type of the Field.
             /// </summary>
@@ -120,6 +132,7 @@ namespace ExpandoDB
             /// The data type of the Field.
             /// </value>
             public DataType DataType { get; set; }
+            
             /// <summary>
             /// Gets or sets the data type of array Fields.
             /// </summary>
@@ -135,6 +148,7 @@ namespace ExpandoDB
             /// The object schema.
             /// </value>
             public Schema ObjectSchema { get; set; }
+            
             /// <summary>
             /// Gets a value indicating whether this Field is a top level Field.
             /// </summary>
@@ -142,6 +156,7 @@ namespace ExpandoDB
             /// <c>true</c> if this instance is top level; otherwise, <c>false</c>.
             /// </value>
             public bool IsTopLevel { get { return !(Name ?? String.Empty).Contains(".") && !IsArrayElement; } }
+            
             /// <summary>
             /// Gets a value indicating whether this Field is sortable.
             /// </summary>
@@ -149,13 +164,22 @@ namespace ExpandoDB
             /// <c>true</c> if this Field is sortable; otherwise, <c>false</c>.
             /// </value>
             public bool IsSortable { get { return IsTopLevel && DataType != DataType.Array && DataType != DataType.Object; } }
+            
             /// <summary>
             /// Gets or sets a value indicating whether this Field is an array element.
             /// </summary>
             /// <value>
             /// <c>true</c> if this Field is an array element; otherwise, <c>false</c>.
             /// </value>
-            public bool IsArrayElement { get; set; }        
+            public bool IsArrayElement { get; set; }
+
+            /// <summary>
+            /// Gets or sets a value indicating whether this Field is tokenized and analyzed by Lucene. 
+            /// </summary>
+            /// <value>
+            /// <c>true</c> if this Field is tokenized and analyzed; otherwise, <c>false</c>.
+            /// </value>
+            public bool IsAnalyzed { get; set; }  // TODO: Use this field.
         }
 
         /// <summary>
@@ -196,6 +220,44 @@ namespace ExpandoDB
             /// An object value
             /// </summary>
             Object
+        }
+
+        /// <summary>
+        /// Defines a Field to be used for automatic categorization.
+        /// </summary>
+        public class CategoryField
+        {
+            /// <summary>
+            /// Gets or sets the name of the field.
+            /// </summary>
+            /// <value>
+            /// The name of the field.
+            /// </value>
+            public string FieldName { get; set; }
+
+            /// <summary>
+            /// Gets or sets a value indicating whether this Facet hierarchical.
+            /// </summary>
+            /// <value>
+            /// <c>true</c> if this Facet is hierarchical; otherwise, <c>false</c>.
+            /// </value>
+            public bool IsHierarchical { get; set; }
+
+            /// <summary>
+            /// Gets or sets the delimiter for hierarchical Facets.
+            /// </summary>
+            /// <value>
+            /// The delimiter.
+            /// </value>
+            public string Delimiter { get; set; }
+
+            /// <summary>
+            /// Gets or sets the format string to be applied when converting non-string Facet fields to string.
+            /// </summary>
+            /// <value>
+            /// The format.
+            /// </value>
+            public string FormatString { get; set; }
         }
 
     }   

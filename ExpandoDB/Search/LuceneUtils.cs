@@ -48,14 +48,14 @@ namespace ExpandoDB.Search
                 schema = Schema.CreateDefault();            
 
             var documentDictionary = document.AsDictionary();
-            if (!documentDictionary.ContainsKey(Schema.StandardField.ID))
+            if (!documentDictionary.ContainsKey(Schema.MetadataField.ID))
                 throw new InvalidOperationException("Cannot index a Document that does not have an _id.");
 
             var luceneDocument = new LuceneDocument();
 
             // Make sure the _id field is the first field added to the Lucene document
-            var keys = documentDictionary.Keys.Except(new[] { Schema.StandardField.ID }).ToList();
-            keys.Insert(0, Schema.StandardField.ID);
+            var keys = documentDictionary.Keys.Except(new[] { Schema.MetadataField.ID }).ToList();
+            keys.Insert(0, Schema.MetadataField.ID);
 
             foreach (var fieldName in keys)
             {
@@ -81,7 +81,7 @@ namespace ExpandoDB.Search
 
             // The full-text field is always auto-generated and added to the Lucene document.
             var fullText = document.ToLuceneFullTextString();
-            luceneDocument.Add(new TextField(Schema.StandardField.FULL_TEXT, fullText, FieldStore.NO));
+            luceneDocument.Add(new TextField(Schema.MetadataField.FULL_TEXT, fullText, FieldStore.NO));
 
             // Check if the document has the special _categories field,
             // which means that we need to create facets for it.
@@ -328,7 +328,7 @@ namespace ExpandoDB.Search
             var buffer = new StringBuilder();
 
             var dictionary = document.AsDictionary();
-            var keys = dictionary.Keys.Except(new[] { Schema.StandardField.ID, Schema.StandardField.CREATED_TIMESTAMP, Schema.StandardField.MODIFIED_TIMESTAMP });
+            var keys = dictionary.Keys.Except(new[] { Schema.MetadataField.ID, Schema.MetadataField.CREATED_TIMESTAMP, Schema.MetadataField.MODIFIED_TIMESTAMP });
 
             foreach (var fieldName in keys)
             {
@@ -561,7 +561,7 @@ namespace ExpandoDB.Search
         private static void AddGuidField(this List<Field> luceneFields, Schema.Field schemaField, object value)
         {
             var guidValue = ((Guid)value).ToString().ToLower();
-            var isStored = (schemaField.Name == Schema.StandardField.ID ? FieldStore.YES : FieldStore.NO);
+            var isStored = (schemaField.Name == Schema.MetadataField.ID ? FieldStore.YES : FieldStore.NO);
             var fieldName = schemaField.Name.Trim();
 
             luceneFields.Add(new StringField(fieldName, guidValue, isStored));

@@ -212,7 +212,7 @@ namespace ExpandoDB
             if (document == null)
                 throw new ArgumentNullException(nameof(document));
 
-            return document.AsDictionary().ContainsKey(Schema.StandardField.CATEGORIES);
+            return document.AsDictionary().ContainsKey(Schema.MetadataField.CATEGORIES);
         }       
 
     }

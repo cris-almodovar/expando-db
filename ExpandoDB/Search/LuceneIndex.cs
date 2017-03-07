@@ -194,7 +194,7 @@ namespace ExpandoDB.Search
             if (guid == Guid.Empty)
                 throw new ArgumentException(nameof(guid) + " cannot be empty");
 
-            var idTerm = new Term(Schema.StandardField.ID, guid.ToString().ToLower());
+            var idTerm = new Term(Schema.MetadataField.ID, guid.ToString().ToLower());
             
             _writeAllowedFlag.Wait();
             _indexWriter.DeleteDocuments(idTerm);            
@@ -215,7 +215,7 @@ namespace ExpandoDB.Search
 
             var luceneDocument = document.ToLuceneDocument(Schema, _facetBuilder);
             var id = document._id.ToString().ToLower();
-            var idTerm = new Term(Schema.StandardField.ID, id);
+            var idTerm = new Term(Schema.MetadataField.ID, id);
 
             _writeAllowedFlag.Wait();
             _indexWriter.UpdateDocument(idTerm, luceneDocument);            
@@ -240,7 +240,7 @@ namespace ExpandoDB.Search
             criteria.Validate();
 
             var result = new SearchResult<Guid>(criteria);
-            var queryParser = new LuceneQueryParser(Schema.StandardField.FULL_TEXT, _compositeAnalyzer, Schema);
+            var queryParser = new LuceneQueryParser(Schema.MetadataField.FULL_TEXT, _compositeAnalyzer, Schema);
             var query = queryParser.Parse(criteria.Query);
 
             var instance = _searcherTaxonomyManager.Acquire() as SearcherTaxonomyManagerSearcherAndTaxonomy;
@@ -302,6 +302,9 @@ namespace ExpandoDB.Search
 
         private Sort GetSortCriteria(string sortByField = null)
         {
+            // TODO: Add support for multiple sort fields
+            // TODO: Change convention for asc/desc: +[sortByField] => [sortByField]:asc
+
             if (String.IsNullOrWhiteSpace(sortByField))
                 return Sort.RELEVANCE;
                       
@@ -312,7 +315,7 @@ namespace ExpandoDB.Search
 
             var sortBySchemaField = Schema.FindField(fieldName, false);
             if (sortBySchemaField == null)
-                throw new LuceneQueryParserException($"Invalid sortBy field: '{fieldName}'.");
+                throw new LuceneQueryParserException($"Invalid sortBy field: '{fieldName}'. This field is not indexed.");
 
             // Notes: 
             // 1. The actual sort fieldname is different, e.g. 'fieldName' ==> '__fieldName_sort__'
@@ -442,7 +445,7 @@ namespace ExpandoDB.Search
 
 
         /// <summary>
-        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// Closes the <see cref="LuceneIndex"/> and deallocates resources.
         /// </summary>
         public void Dispose()
         {           

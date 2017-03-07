@@ -60,10 +60,10 @@ namespace ExpandoDB.Rest
             {
                 // If we are modifying a top-level field, make sure it's not one of the metadata fields.
                 var fieldName = operation.path.TrimStart('/');
-                if (fieldName == Schema.StandardField.ID || 
-                    fieldName == Schema.StandardField.CREATED_TIMESTAMP ||
-                    fieldName == Schema.StandardField.MODIFIED_TIMESTAMP ||
-                    fieldName == Schema.StandardField.FULL_TEXT )
+                if (fieldName == Schema.MetadataField.ID || 
+                    fieldName == Schema.MetadataField.CREATED_TIMESTAMP ||
+                    fieldName == Schema.MetadataField.MODIFIED_TIMESTAMP ||
+                    fieldName == Schema.MetadataField.FULL_TEXT )
                     throw new ArgumentException($"Cannot modify field '{fieldName}'.");
             }
         }
