@@ -518,7 +518,10 @@ namespace ExpandoDB.Search
             var stringValue = (string)value;
             var fieldName = schemaField.Name.Trim();
 
-            luceneFields.Add(new TextField(fieldName, stringValue, FieldStore.NO));
+            if (schemaField.IsAnalyzed)
+                luceneFields.Add(new TextField(fieldName, stringValue, FieldStore.NO));
+            else
+                luceneFields.Add(new StringField(fieldName, stringValue, FieldStore.NO));
 
             // Only top-level and non-array fields are sortable
             if (schemaField.IsSortable)

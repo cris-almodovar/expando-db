@@ -36,7 +36,7 @@ namespace ExpandoDB.Search
         /// <param name="getDoc">A lambda that returns the Lucene document given the doc id.</param>
         /// <exception cref="ArgumentNullException">
         /// </exception>
-        public static void PopulateWith(this SearchResult<Guid> result, TopDocs topDocs, IEnumerable<Category> categories, Func<int, LuceneDocument> getDoc)
+        public static void PopulateWith(this SearchResult<Guid> result, TopDocs topDocs, IEnumerable<FacetValue> categories, Func<int, LuceneDocument> getDoc)
         {
             if (result == null)
                 throw new ArgumentNullException(nameof(result));
@@ -73,7 +73,7 @@ namespace ExpandoDB.Search
                 }
 
                 result.Items = documentIds;
-                result.Categories = categories ?? Enumerable.Empty<Category>();
+                result.Categories = categories ?? Enumerable.Empty<FacetValue>();
                 result.PageCount = ComputePageCount(result.ItemCount, result.ItemsPerPage);
             }
         }

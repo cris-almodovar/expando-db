@@ -254,7 +254,7 @@ namespace ExpandoDB.Search
                     var sort = GetSortCriteria(criteria.SortByField);
                     var selectedFacets = criteria.SelectCategories.ToFacetFields();
                     var topDocs = (TopDocs)null;                                        
-                    var categories = (IEnumerable<Category>)null;
+                    var categories = (IEnumerable<FacetValue>)null;
 
                     if (selectedFacets.Count() == 0)
                     {
@@ -267,7 +267,7 @@ namespace ExpandoDB.Search
 
                         // Get the Facet counts from the matching Documents
                         var facetCounts = new FastTaxonomyFacetCounts(taxonomyReader, _facetBuilder.FacetsConfig, facetsCollector);                        
-                        categories = facetCounts.GetCategories(criteria.TopNCategories);
+                        categories = facetCounts.ToFacetValues(criteria.TopNCategories);
                     }
                     else
                     {
@@ -283,7 +283,7 @@ namespace ExpandoDB.Search
                         topDocs = drillSidewaysResult.Hits;                        
 
                         // Get the Facet counts from the matching Documents
-                        categories = drillSidewaysResult.Facets.GetCategories(criteria.TopNCategories, selectedFacets);
+                        categories = drillSidewaysResult.Facets.ToFacetValues(criteria.TopNCategories, selectedFacets);
                     }
 
                     // TODO: Don't pass TopDocs; pass an IEnumerable<Guid>

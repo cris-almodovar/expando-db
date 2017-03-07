@@ -213,7 +213,7 @@
     <Compile Include="DocumentUtils.cs" />
     <Compile Include="Database.cs" />
     <Compile Include="GlobalSuppressions.cs" />
-    <Compile Include="Search\Category.cs" />
+    <Compile Include="Search\FacetValue.cs" />
     <Compile Include="Search\CompositeAnalyzer.cs" />
     <Compile Include="Search\LuceneFacetBuilder.cs" />
     <Compile Include="Search\LuceneFacetUtils.cs" />

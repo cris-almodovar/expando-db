@@ -69,7 +69,7 @@ namespace ExpandoDB.Search
                     break;
 
                 case Schema.DataType.Text:                    
-                    _perFieldAnalyzers[schemaField.Name] = _fullTextAnalyzer;
+                    _perFieldAnalyzers[schemaField.Name] = schemaField.IsAnalyzed ? _fullTextAnalyzer : _keywordAnalyzer;
                     _knownDataTypes[schemaField.Name] = dataType;
                     break;
 

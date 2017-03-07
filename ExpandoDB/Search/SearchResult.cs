@@ -116,7 +116,7 @@ namespace ExpandoDB.Search
         /// <value>
         /// The categories.
         /// </value>
-        public IEnumerable<Category> Categories { get; set; }
+        public IEnumerable<FacetValue> Categories { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SearchResult{TResult}"/> class.
@@ -146,7 +146,7 @@ namespace ExpandoDB.Search
             PageCount = pageCount;     
 
             Items = new List<TResult>();
-            Categories = new List<Category>();
+            Categories = new List<FacetValue>();
         }
 
 

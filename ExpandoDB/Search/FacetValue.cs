@@ -9,9 +9,9 @@ using System.Threading.Tasks;
 namespace ExpandoDB.Search
 {
     /// <summary>
-    /// Represents a category that a Document is assigned to.
+    /// Represents the value of a Document category, including all its sub-categories.
     /// </summary>
-    public class Category  // TODO: Rename to CategoryValue
+    public class FacetValue
     {
         /// <summary>
         /// Gets or sets the name of the category.
@@ -30,12 +30,12 @@ namespace ExpandoDB.Search
         public int? Count { get; set; }
 
         /// <summary>
-        /// Gets or sets the category values (names and counts).
+        /// Gets or sets the values of sub-categories.
         /// </summary>
         /// <value>
         /// The sub category names and counts.
         /// </value>                
-        public IList<Category> Values { get; set; }
-        
+        public IList<FacetValue> Values { get; set; }
+
     }
 }

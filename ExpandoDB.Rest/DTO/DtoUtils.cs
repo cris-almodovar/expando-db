@@ -105,7 +105,7 @@ namespace ExpandoDB.Rest.DTO
         /// </summary>
         /// <param name="category">The category.</param>
         /// <returns></returns>
-        public static ExpandoObject ToExpando(this Category category)
+        public static ExpandoObject ToExpando(this FacetValue category)
         {
             dynamic dto = new ExpandoObject();
             dto.name = category.Name;
