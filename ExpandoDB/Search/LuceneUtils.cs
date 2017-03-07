@@ -37,9 +37,7 @@ namespace ExpandoDB.Search
         /// <returns></returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="InvalidOperationException">Cannot index a Document that does not have an _id.</exception>
-        /// <exception cref="SchemaException">The fieldName '{fieldName}'</exception>
-        /// <exception cref="System.ArgumentNullException"></exception>
-        /// <exception cref="System.InvalidOperationException">Cannot index a Document that does not have an _id.</exception>
+        /// <exception cref="SchemaException">The fieldName '{fieldName}'</exception>        
         public static LuceneDocument ToLuceneDocument(this Document document, Schema schema = null, LuceneFacetBuilder facetBuilder = null)
         {
             if (document == null)
@@ -86,7 +84,10 @@ namespace ExpandoDB.Search
             // Check if the document has the special _categories field,
             // which means that we need to create facets for it.
             if (document.HasCategories() && facetBuilder != null)            
-                luceneDocument = facetBuilder.RebuildDocumentWithFacets(luceneDocument, document, schema);            
+                luceneDocument = facetBuilder.RebuildDocumentWithFacets(luceneDocument, document, schema);        
+            
+            if (schema.Facets?.Count > 0)
+                luceneDocument = facetBuilder.RebuildDocumentWithFacets(luceneDocument, document, schema);
 
             return luceneDocument;
         }        

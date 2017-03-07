@@ -57,6 +57,18 @@ namespace ExpandoDB.Search
 
             var facetFields = new List<FacetField>();
 
+            if (schema.Facets?.Count > 0)
+                foreach (var facet in schema.Facets)
+                {
+                    var sourceField = document[facet.FieldName];
+                    if (sourceField == null)
+                        continue;
+
+
+
+
+                }
+
             Schema.Field categoriesField = null;
             if (schema.Fields.TryGetValue(Schema.MetadataField.CATEGORIES, out categoriesField))
             {
