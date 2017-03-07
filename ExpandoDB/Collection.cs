@@ -184,14 +184,15 @@ namespace ExpandoDB
         /// </summary>
         /// <param name="criteria">The search criteria.</param>
         /// <returns></returns>
-        public int Count(SearchCriteria criteria)
+        public int Count(SearchCriteria criteria = null)
         {
             EnsureCollectionIsNotDropped();
 
-            if (criteria == null)
-                throw new ArgumentNullException(nameof(criteria));
+            if (String.IsNullOrWhiteSpace(criteria?.Query))
+                return _luceneIndex.GetDocumentCount();
             
             criteria.TopN = 1;  // We're not interested in the docs, just the total hits.
+            //criteria.TopNCategories = 0;
             var luceneResult = _luceneIndex.Search(criteria);
             return luceneResult.TotalHits;
         }

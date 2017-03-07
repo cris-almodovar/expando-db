@@ -351,6 +351,25 @@ namespace ExpandoDB.Search
                 return new Sort(new[] { sortField });
         }
 
+        /// <summary>
+        /// Gets the total number of documents in the index.
+        /// </summary>
+        /// <returns></returns>
+        public int GetDocumentCount()
+        {
+            return _indexWriter.NumDocs();                            
+        }
+
+        /// <summary>
+        /// Deletes all documents from the index.
+        /// </summary>
+        /// <returns></returns>
+        public void DeleteAll()
+        {
+            if (!IsDisposed)
+                _indexWriter.DeleteAll();
+        }
+
 
         /// <summary>
         /// Drops this Lucene index

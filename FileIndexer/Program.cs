@@ -247,7 +247,7 @@ namespace FileIndexer
                 currentFolder = queue.Dequeue();
                 try
                 {
-                    foreach (string childFolder in Directory.GetDirectories(currentFolder))
+                    foreach (string childFolder in Directory.EnumerateDirectories(currentFolder))
                         queue.Enqueue(childFolder);
                 }
                 catch { }
@@ -260,7 +260,7 @@ namespace FileIndexer
                     {
                         if (!String.IsNullOrWhiteSpace(mask))
                         {
-                            var matchingFiles = Directory.GetFiles(currentFolder, mask);
+                            var matchingFiles = Directory.EnumerateFiles(currentFolder, mask);
                             foreach (var file in matchingFiles)
                                 fileNames.Add(file);
                         }
