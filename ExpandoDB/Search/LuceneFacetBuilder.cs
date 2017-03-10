@@ -57,17 +57,36 @@ namespace ExpandoDB.Search
 
             var facetFields = new List<FacetField>();
 
-            if (schema.Facets?.Count > 0)
-                foreach (var facet in schema.Facets)
+            var fieldsToCreateFacets = schema.Fields.Values.Where(item => item.IsTopLevel && item.IsFacet)?.ToList();
+            if (fieldsToCreateFacets?.Count > 0)
+            {
+                foreach (var schemaField in fieldsToCreateFacets)
                 {
-                    var sourceField = document[facet.FieldName];
-                    if (sourceField == null)
-                        continue;
+                    var facetSettings = schemaField.FacetSettings;
+                    var fieldValue = document[schemaField.Name];
 
-
-
-
+                    if (schemaField.DataType != Schema.DataType.Array)
+                    {
+                        var facetField = CreateFacetField(fieldValue, schemaField.DataType, facetSettings);
+                        if (facetField != null)
+                            facetFields.Add(facetField);
+                    }
+                    else
+                    {
+                        var arrayItems = fieldValue as IEnumerable<object>;
+                        if (arrayItems?.Count() > 0)
+                        {
+                            foreach (var item in arrayItems)
+                            {
+                                var facetField = CreateFacetField(item, schemaField.ArrayElementDataType, facetSettings);
+                                if (facetField != null)
+                                    facetFields.Add(facetField);
+                            }
+                        }
+                    }                    
                 }
+            }
+              
 
             Schema.Field categoriesField = null;
             if (schema.Fields.TryGetValue(Schema.MetadataField.CATEGORIES, out categoriesField))
@@ -97,6 +116,31 @@ namespace ExpandoDB.Search
             }
 
             return facetFields;
+        }
+
+
+        private FacetField CreateFacetField(object fieldValue, Schema.DataType dataType, Schema.FacetSettings facetSettings)
+        {
+            FacetField facetField = null;
+                        
+            var facetName = facetSettings.FacetName;
+
+            switch (dataType)
+            {
+                case Schema.DataType.Text:
+                    var textValue = fieldValue as string;
+                    if (!String.IsNullOrWhiteSpace(textValue))                    
+                        facetField = $"{facetName}:{textValue}".ToLuceneFacetField(facetSettings);
+                    break;
+
+                case Schema.DataType.DateTime:
+                    break;
+
+                case Schema.DataType.Boolean:
+                    break;
+            }
+
+            return facetField;
         }
 
         /// <summary>

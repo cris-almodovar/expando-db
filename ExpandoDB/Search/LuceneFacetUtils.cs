@@ -14,11 +14,15 @@ namespace ExpandoDB.Search
     public static class LuceneFacetUtils
     {
         /// <summary>
-        /// Converts the Facet value string (e.g. Author:Crispin) to a Lucene <see cref="FacetField"/> object.
+        /// Converts the Facet value string (e.g. Author:Crispin) to a Lucene <see cref="FacetField" /> object.
         /// </summary>
         /// <param name="facetValueString">The Facet value string.</param>
+        /// <param name="facetSettings">The Facet settings field.</param>
         /// <returns></returns>
-        public static FacetField ToLuceneFacetField(this string facetValueString)
+        /// <exception cref="System.ArgumentNullException">facetValueString</exception>
+        /// <exception cref="SchemaException">
+        /// </exception>
+        public static FacetField ToLuceneFacetField(this string facetValueString, Schema.FacetSettings facetSettings = null)
         {
             const string COLON = ":";
             const string ESCAPED_COLON = @"\:";

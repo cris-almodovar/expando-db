@@ -226,8 +226,8 @@ namespace ExpandoDB.Search
         /// </summary>
         /// <param name="criteria">The search criteria.</param>
         /// <returns></returns>
+        /// <exception cref="System.ArgumentNullException">criteria</exception>
         /// <exception cref="ArgumentNullException"></exception>
-        /// <exception cref="System.ArgumentNullException"></exception>
         public SearchResult<Guid> Search(SearchCriteria criteria)
         {
             if (criteria == null)

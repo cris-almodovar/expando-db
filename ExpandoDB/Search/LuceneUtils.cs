@@ -81,12 +81,14 @@ namespace ExpandoDB.Search
             var fullText = document.ToLuceneFullTextString();
             luceneDocument.Add(new TextField(Schema.MetadataField.FULL_TEXT, fullText, FieldStore.NO));
 
-            // Check if the document has the special _categories field,
-            // which means that we need to create facets for it.
-            if (document.HasCategories() && facetBuilder != null)            
-                luceneDocument = facetBuilder.RebuildDocumentWithFacets(luceneDocument, document, schema);        
+            //// Check if the document has the special _categories field,
+            //// which means that we need to create facets for it.
+            //if (document.HasCategories() && facetBuilder != null)            
+            //    luceneDocument = facetBuilder.RebuildDocumentWithFacets(luceneDocument, document, schema);        
             
-            if (schema.Facets?.Count > 0)
+            // Check if the Document has any Fields that are configured as Facets.
+            // If there are then we need to create Facets for them.
+            if (schema.Fields.Any(item => item.Value.IsFacet))
                 luceneDocument = facetBuilder.RebuildDocumentWithFacets(luceneDocument, document, schema);
 
             return luceneDocument;
@@ -505,7 +507,7 @@ namespace ExpandoDB.Search
             {
                 var sortFieldName = fieldName.ToSortFieldName();
                 luceneFields.Add(new NumericDocValuesField(sortFieldName, intValue));
-            }
+            }           
         }
 
         /// <summary>

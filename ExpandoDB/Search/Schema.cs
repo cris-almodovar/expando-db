@@ -75,14 +75,7 @@ namespace ExpandoDB
 
             return defaultSchema;
         }
-
-        /// <summary>
-        /// Gets or sets the <see cref="Facet"/> definitions.
-        /// </summary>
-        /// <value>
-        /// The facets.
-        /// </value>
-        public IList<Facet> Facets { get; set; } = new List<Facet>();
+                
 
         /// <summary>
         /// Defines the standard metadata fields that all Documents must have.
@@ -181,6 +174,24 @@ namespace ExpandoDB
             /// <c>true</c> if this Field is tokenized and analyzed; otherwise, <c>false</c>.
             /// </value>
             public bool IsAnalyzed { get; set; } = true;
+
+
+            /// <summary>
+            /// Gets a value indicating whether this Field is a Facet.
+            /// </summary>
+            /// <value>
+            ///   <c>true</c> if this Field is a Facet; otherwise, <c>false</c>.
+            /// </value>
+            public bool IsFacet { get { return FacetSettings != null; } }
+
+
+            /// <summary>
+            /// Gets or sets the Facet settings for this Field.
+            /// </summary>
+            /// <value>
+            /// The Facet settings for this Field.
+            /// </value>
+            public FacetSettings FacetSettings { get; set; }
         }
 
         /// <summary>
@@ -224,12 +235,12 @@ namespace ExpandoDB
         }
 
         /// <summary>
-        /// Defines a category which will be used to group <see cref="Document"/> objects.
+        /// Defines the configuration for a Facet, which is used to categorize <see cref="Document"/> objects in buckets.
         /// </summary>
-        public class Facet
+        public class FacetSettings
         {
             /// <summary>
-            /// Gets or sets name of the field that will be the source of values for this Facet.
+            /// Gets or sets name of the <see cref="Field"/> will be the source of values for the Facet.
             /// </summary>
             /// <value>
             /// The field name.
@@ -237,12 +248,12 @@ namespace ExpandoDB
             public string FieldName { get; set; }
 
             /// <summary>
-            /// Gets or sets the display name of this Facet, if different from the FieldName.
+            /// Gets or sets the name of this Facet, if different from the FieldName.
             /// </summary>
             /// <value>
-            /// The display name of the Facet.
+            /// The name of the Facet.
             /// </value>
-            public string DisplayName { get; set; }
+            public string FacetName { get; set; }
 
             /// <summary>
             /// Gets or sets a value indicating whether the Facet is hierarchical, e.g. "Topic:Education/Primary/Teacher Training"
