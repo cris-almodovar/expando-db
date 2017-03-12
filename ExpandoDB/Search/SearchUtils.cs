@@ -14,13 +14,31 @@ namespace ExpandoDB.Search
     public static class SearchUtils
     {
         /// <summary>
+        /// Converts the given comma-separated string to an IList
+        /// </summary>
+        /// <param name="csvString">The CSV string.</param>
+        /// <returns></returns>
+        public static IList<string> ToList(this string csvString)
+        {
+            var list = new List<string>();
+            if (!String.IsNullOrWhiteSpace(csvString))
+            {
+                var fields = csvString.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                      .Select(fieldName => fieldName.Trim());
+
+                list.AddRange(fields);
+            }
+            return list;
+        }
+
+        /// <summary>
         /// Validates the specified search criteria.
         /// </summary>
         /// <param name="criteria">The search criteria.</param>
         public static void Validate(this SearchCriteria criteria)
         {
-            if (criteria.TopN <= 0)
-                throw new ArgumentException("topN cannot be <= zero");
+            if (criteria.TopN < 0)
+                throw new ArgumentException("topN cannot be < zero");
             if (criteria.ItemsPerPage <= 0)
                 throw new ArgumentException("itemsPerPage cannot be <= zero");
             if (criteria.PageNumber <= 0)
@@ -32,11 +50,11 @@ namespace ExpandoDB.Search
         /// </summary>
         /// <param name="result">The SearchResult to be populated.</param>
         /// <param name="topDocs">The TopDocs object returned by Lucene.</param>
-        /// <param name="categories">The categories.</param>
+        /// <param name="facets">The categories.</param>
         /// <param name="getDoc">A lambda that returns the Lucene document given the doc id.</param>
         /// <exception cref="ArgumentNullException">
         /// </exception>
-        public static void PopulateWith(this SearchResult<Guid> result, TopDocs topDocs, IEnumerable<FacetValue> categories, Func<int, LuceneDocument> getDoc)
+        public static void PopulateWith(this SearchResult<Guid> result, TopDocs topDocs, IEnumerable<FacetValue> facets, Func<int, LuceneDocument> getDoc)
         {
             if (result == null)
                 throw new ArgumentNullException(nameof(result));
@@ -48,10 +66,14 @@ namespace ExpandoDB.Search
             result.ItemCount = topDocs.ScoreDocs.Length;
             result.TotalHits = topDocs.TotalHits;
 
+            var itemsPerPage = result.ItemsPerPage ?? SearchCriteria.DEFAULT_ITEMS_PER_PAGE;
+            var pageNumber = result.PageNumber ?? 1;
+            var topNFacetValues = result.TopNFacets ?? SearchCriteria.DEFAULT_TOP_N_FACETS;
+
             if (result.ItemCount > 0)
             {
-                var itemsToSkip = (result.PageNumber - 1) * result.ItemsPerPage;
-                var itemsToTake = result.ItemsPerPage;
+                var itemsToSkip = (pageNumber - 1) * itemsPerPage;
+                var itemsToTake = itemsPerPage;
 
                 var scoreDocs = topDocs.ScoreDocs
                                             .Skip(itemsToSkip)
@@ -73,8 +95,8 @@ namespace ExpandoDB.Search
                 }
 
                 result.Items = documentIds;
-                result.Categories = categories ?? Enumerable.Empty<FacetValue>();
-                result.PageCount = ComputePageCount(result.ItemCount, result.ItemsPerPage);
+                result.Facets = facets ?? Enumerable.Empty<FacetValue>();
+                result.PageCount = ComputePageCount(result.ItemCount, itemsPerPage);
             }
         }
 

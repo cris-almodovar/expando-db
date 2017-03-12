@@ -47,10 +47,10 @@ namespace ExpandoDB.Tests
         {
             var document = CreateDocument();
             var luceneDocument = document.ToLuceneDocument();
-            var idField = luceneDocument.GetField(Schema.MetadataField.ID);            
-            var id = idField.StringValue();
+            var idField = luceneDocument.GetField(Schema.MetadataField.ID).StringValue();            
+            var id = Guid.Parse(idField);
 
-            Assert.AreEqual<string>(document._id.ToString(), id);
+            Assert.AreEqual<Guid?>(document._id, id);
         }
 
         private static Document CreateDocument()
@@ -95,7 +95,7 @@ namespace ExpandoDB.Tests
             var criteria = new SearchCriteria
             {
                 Query = "hitchhiker AND galaxy",
-                SortByField = "BookId",
+                SortByFields = "BookId",
                 TopN = 10
             };           
 

@@ -10,7 +10,8 @@ namespace ExpandoDB.Rest.DTO
     /// Implements utitlity methods for ExpandoDB Data Transfer Objects (DTOs).
     /// </summary>
     public static class DtoUtils
-    {
+    { 
+
         /// <summary>
         /// Converts the given <see cref="SearchRequestDto"/> to a <see cref="SearchCriteria"/> object./>
         /// </summary>
@@ -21,13 +22,13 @@ namespace ExpandoDB.Rest.DTO
             var searchCriteria = new SearchCriteria
             {
                 Query = dto.where,
-                SortByField = dto.orderBy,
-                TopN = dto.topN ?? SearchCriteria.DEFAULT_TOP_N,
-                ItemsPerPage = dto.documentsPerPage ?? SearchCriteria.DEFAULT_ITEMS_PER_PAGE,
-                PageNumber = dto.pageNumber ?? 1, 
-                IncludeHighlight = dto.highlight ?? false,
-                SelectCategories = dto.selectCategories,
-                TopNCategories = dto.topNCategories ?? SearchCriteria.DEFAULT_TOP_N_CATEGORIES                 
+                SortByFields = dto.orderBy,
+                TopN = dto.topN,
+                ItemsPerPage = dto.documentsPerPage,
+                PageNumber = dto.pageNumber, 
+                IncludeHighlight = dto.highlight,
+                SelectFacets = dto.selectFacets,
+                TopNFacets = dto.topNFacets               
             };
 
             return searchCriteria;
@@ -80,25 +81,7 @@ namespace ExpandoDB.Rest.DTO
 
             // Document should now only contain the fields in the selectedFields list
             return document;
-        }
-
-        /// <summary>
-        /// Converts the given comma-separated string to an IList
-        /// </summary>
-        /// <param name="csvString">The CSV string.</param>
-        /// <returns></returns>
-        public static IList<string> ToList(this string csvString)
-        {
-            var list = new List<string>();
-            if (!String.IsNullOrWhiteSpace(csvString))
-            {
-                var fields = csvString.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                                      .Select(fieldName => fieldName.Trim());
-
-                list.AddRange(fields);
-            }
-            return list;
-        }       
+        }           
 
         /// <summary>
         /// Converts the given Category object to ExpandoObject.
@@ -210,15 +193,15 @@ namespace ExpandoDB.Rest.DTO
             dynamicDto.pageNumber = searchResult.PageNumber;
             dynamicDto.documentsPerPage = searchResult.ItemsPerPage;
             dynamicDto.highlight = searchResult.IncludeHighlight;
-            dynamicDto.selectCategories = searchResult.SelectCategories;
-            dynamicDto.topNCategories = searchResult.TopNCategories;
+            dynamicDto.selectCategories = searchResult.SelectFacets;
+            dynamicDto.topNCategories = searchResult.TopNFacets;
 
             var fieldsToSelect = searchRequestDto.select.ToList();
-            if (fieldsToSelect.Count > 0 && searchResult.IncludeHighlight)
+            if (fieldsToSelect.Count > 0 && searchResult.IncludeHighlight == true)
                 fieldsToSelect.Add(LuceneHighlighter.HIGHLIGHT_FIELD_NAME);
 
             dynamicDto.documents = searchResult.Items?.Select(c => c.Select(fieldsToSelect).AsExpando());
-            dynamicDto.categories = searchResult.Categories?.Select(c => c.ToExpando());
+            dynamicDto.facets = searchResult.Facets?.Select(c => c.ToExpando());
 
             dynamicDto.timestamp = DateTime.UtcNow;
             dynamicDto.elapsed = elapsed.ToString();

@@ -70,7 +70,7 @@ namespace ExpandoDB.Tests
             var criteria = new SearchCriteria
             {
                 Query = @"Rating:9",
-                SortByField = "Title"
+                SortByFields = "Title"
             };
 
             var result = _collection.SearchAsync(criteria).Result;
@@ -100,7 +100,7 @@ namespace ExpandoDB.Tests
             var criteria = new SearchCriteria
             {
                 Query = @"Author:_null_",     // LuceneField.DEFAULT_NULL_VALUE_TOKEN
-                SortByField = "Title"
+                SortByFields = "Title"
             };
 
             var result = _collection.SearchAsync(criteria).Result;

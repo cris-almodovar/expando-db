@@ -1,4 +1,5 @@
-﻿using FlexLucene.Facet;
+﻿using Common.Logging;
+using FlexLucene.Facet;
 using FlexLucene.Facet.Taxonomy;
 using System;
 using System.Collections;
@@ -16,7 +17,9 @@ namespace ExpandoDB.Search
     /// </summary>    
     public class LuceneFacetBuilder
     {
+        private const int MAX_FACET_TEXT_LENGTH = 100;
         private readonly TaxonomyWriter _taxonomyWriter;
+        private readonly ILog _log = LogManager.GetLogger(nameof(LuceneFacetBuilder));  
 
         /// <summary>
         /// Gets the facets configuration.
@@ -41,7 +44,7 @@ namespace ExpandoDB.Search
         }        
 
         /// <summary>
-        /// Creates Lucene FacetFields from the _categories field of the specified Document.
+        /// Creates Lucene FacetFields from Document Fields that are configured as Facets.
         /// </summary>
         /// <param name="document">The Document.</param>
         /// <param name="schema">The schema of the Document.</param>
@@ -55,8 +58,11 @@ namespace ExpandoDB.Search
             if (schema == null)
                 throw new ArgumentNullException(nameof(schema));
 
-            var facetFields = new List<FacetField>();
+            // We will automatically create FacetFields for Document fields that have a non-null FacetSetting property.
+            // Facet creation is only supported for top-level fields with a valid FacetSettings.
 
+            var facetFields = new List<FacetField>();
+                        
             var fieldsToCreateFacets = schema.Fields.Values.Where(item => item.IsTopLevel && item.IsFacet)?.ToList();
             if (fieldsToCreateFacets?.Count > 0)
             {
@@ -65,13 +71,7 @@ namespace ExpandoDB.Search
                     var facetSettings = schemaField.FacetSettings;
                     var fieldValue = document[schemaField.Name];
 
-                    if (schemaField.DataType != Schema.DataType.Array)
-                    {
-                        var facetField = CreateFacetField(fieldValue, schemaField.DataType, facetSettings);
-                        if (facetField != null)
-                            facetFields.Add(facetField);
-                    }
-                    else
+                    if (schemaField.DataType == Schema.DataType.Array)
                     {
                         var arrayItems = fieldValue as IEnumerable<object>;
                         if (arrayItems?.Count() > 0)
@@ -82,62 +82,84 @@ namespace ExpandoDB.Search
                                 if (facetField != null)
                                     facetFields.Add(facetField);
                             }
-                        }
+                        }                        
+                    }
+                    else
+                    {
+                        var facetField = CreateFacetField(fieldValue, schemaField.DataType, facetSettings);
+                        if (facetField != null)
+                            facetFields.Add(facetField);
                     }                    
                 }
-            }
-              
+            }             
 
-            Schema.Field categoriesField = null;
-            if (schema.Fields.TryGetValue(Schema.MetadataField.CATEGORIES, out categoriesField))
-            {
-                if (categoriesField.DataType == Schema.DataType.Array &&
-                    categoriesField.ArrayElementDataType == Schema.DataType.Text)
-                {                    
-                    var categories = document.AsDictionary()[Schema.MetadataField.CATEGORIES] as IEnumerable<object>;
-                    if (categories != null)
-                    {
-                        // Parse each category to create a FacetField, then add to facetFields list.
-                        foreach (var category in categories.Select(c => c as string).Where(c => !String.IsNullOrWhiteSpace(c)).Distinct())
-                        {
-                            var facetField = category.ToLuceneFacetField();
-                            if (facetField != null)
-                            {
-                                facetFields.Add(facetField);                                
-                                FacetsConfig.EnsureConfig(facetField);                                
-                            }
-                        }
-                    }
-                } 
-                else
-                {
-                    throw new SchemaException($"The {Schema.MetadataField.CATEGORIES} field must be list of Text values.");
-                }               
-            }
-
+            
             return facetFields;
         }
 
 
+        /// <summary>
+        /// Creates a Lucene FacetField object from the field value.
+        /// </summary>
+        /// <param name="fieldValue">The field value.</param>
+        /// <param name="dataType">Type of the data.</param>
+        /// <param name="facetSettings">The facet settings.</param>
+        /// <returns></returns>
         private FacetField CreateFacetField(object fieldValue, Schema.DataType dataType, Schema.FacetSettings facetSettings)
         {
-            FacetField facetField = null;
-                        
+            FacetField facetField = null;                        
             var facetName = facetSettings.FacetName;
+
+            if (String.IsNullOrWhiteSpace(facetName))
+                return null;
+            if (fieldValue == null)
+                return null;
 
             switch (dataType)
             {
                 case Schema.DataType.Text:
                     var textValue = fieldValue as string;
-                    if (!String.IsNullOrWhiteSpace(textValue))                    
-                        facetField = $"{facetName}:{textValue}".ToLuceneFacetField(facetSettings);
+                    if (textValue?.Length > MAX_FACET_TEXT_LENGTH)
+                    {
+                        _log.Warn($"The length of the value of Facet '{facetName}' is too long. Max length is {MAX_FACET_TEXT_LENGTH}");
+                    }
+                    else
+                    {
+                        if (!String.IsNullOrWhiteSpace(textValue))
+                            facetField = $"{facetName}:{textValue}".ToLuceneFacetField(facetSettings);
+                    }
                     break;
 
                 case Schema.DataType.DateTime:
+                    var dateFormat = facetSettings.FormatString ?? "yyyy/MMM/dd";
+                    var dateStringValue = ((DateTime)fieldValue).ToString(dateFormat);
+                    if (!String.IsNullOrWhiteSpace(dateStringValue))
+                        facetField = $"{facetName}:{dateStringValue}".ToLuceneFacetField(facetSettings);
                     break;
 
                 case Schema.DataType.Boolean:
+                    var boolStringValue = ((bool)fieldValue).ToString().ToLower();
+                    if (!String.IsNullOrWhiteSpace(boolStringValue))
+                        facetField = $"{facetName}:{boolStringValue}".ToLuceneFacetField(facetSettings);
                     break;
+                
+                case Schema.DataType.Guid:
+                    var guidValue = (Guid)fieldValue;                    
+                    if (!String.IsNullOrWhiteSpace(facetSettings.FormatString))
+                        facetField = $"{facetName}:{guidValue.ToString(facetSettings.FormatString)}".ToLuceneFacetField(facetSettings);
+                    else
+                        facetField = $"{facetName}:{guidValue.ToString()}".ToLuceneFacetField(facetSettings);
+
+                    break;
+                         
+                case Schema.DataType.Number:
+                    var numberValue = Convert.ToDouble(fieldValue);                                       
+                    if (!String.IsNullOrWhiteSpace(facetSettings.FormatString))
+                        facetField = $"{facetName}:{numberValue.ToString(facetSettings.FormatString)}".ToLuceneFacetField(facetSettings);
+                    else
+                        facetField = $"{facetName}:{numberValue.ToString()}".ToLuceneFacetField(facetSettings);
+                    break;
+                
             }
 
             return facetField;

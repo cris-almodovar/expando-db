@@ -240,10 +240,10 @@ namespace ExpandoDB
         public class FacetSettings
         {
             /// <summary>
-            /// Gets or sets name of the <see cref="Field"/> will be the source of values for the Facet.
+            /// Gets or sets the name of Field that is the source of values for this Facet.
             /// </summary>
             /// <value>
-            /// The field name.
+            /// The name of the Field.
             /// </value>
             public string FieldName { get; set; }
 
@@ -264,12 +264,12 @@ namespace ExpandoDB
             public bool IsHierarchical { get; set; }
 
             /// <summary>
-            /// Gets or sets the separator string for hierarchical Facets; e.g. the "/" character in "Topic:Education/Primary/Teacher Training"
+            /// Gets or sets the separator char for hierarchical Facets; e.g. the "/" character in "Topic:Education/Primary/Teacher Training"
             /// </summary>
             /// <value>
-            /// The separator string.
+            /// The separator char.
             /// </value>
-            public string HierarchySeparator { get; set; } = "/";
+            public string HierarchySeparator { get; set; } = @"/";
 
             /// <summary>
             /// Gets or sets the format string to be applied when converting non-string Facet fields to string.

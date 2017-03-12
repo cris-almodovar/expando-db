@@ -13,26 +13,28 @@ namespace ExpandoDB.Search
     /// </summary>
     public static class LuceneFacetUtils
     {
+        const string COLON = ":";
+        const string ESCAPED_COLON = @"\:";
+        const string ESCAPED_COLON_TEMP_REPLACEMENT_TOKEN = @"<<€€€€€€>>";
+        const string SLASH = @"/";
+
         /// <summary>
-        /// Converts the Facet value string (e.g. Author:Crispin) to a Lucene <see cref="FacetField" /> object.
+        /// Converts a single Facet filter string (e.g. Author:Crispin) to a Lucene <see cref="FacetField" /> object.
         /// </summary>
-        /// <param name="facetValueString">The Facet value string.</param>
+        /// <param name="facetFilter">The Facet filter string.</param>
         /// <param name="facetSettings">The Facet settings field.</param>
         /// <returns></returns>
-        /// <exception cref="System.ArgumentNullException">facetValueString</exception>
+        /// <exception cref="System.ArgumentNullException">facetFilter</exception>
         /// <exception cref="SchemaException">
         /// </exception>
-        public static FacetField ToLuceneFacetField(this string facetValueString, Schema.FacetSettings facetSettings = null)
-        {
-            const string COLON = ":";
-            const string ESCAPED_COLON = @"\:";
-            const string ESCAPED_COLON_TEMP_TOKEN = @"<<€€€€€€>>";
-            const string SLASH = @"/";
-            const string ESCAPED_SLASH = @"\/";
-            const string ESCAPED_SLASH_TEMP_TOKEN = @"<<$$$$$$>>";
+        public static FacetField ToLuceneFacetField(this string facetFilter, Schema.FacetSettings facetSettings)
+        {            
+            var hierarchySeparator = facetSettings?.HierarchySeparator ?? SLASH;
+            var escapedHierarchySeparator = $"\\{hierarchySeparator}";
+            var escapedHierarchySeparatorTempToken = @"<<$$$$$$>>";
 
             //-----------------------------------------------------------------------------------------------------
-            // * A Facet value string must have this format => {name}:{value}
+            // * A Facet filter string is a name-value pair that has this format => {name}:{value}
             //
             // * Sample Facet value strings:  
             //
@@ -43,46 +45,55 @@ namespace ExpandoDB.Search
             // 
             //-----------------------------------------------------------------------------------------------------
 
-            if (String.IsNullOrWhiteSpace(facetValueString))
-                throw new ArgumentNullException(nameof(facetValueString));
+            if (String.IsNullOrWhiteSpace(facetFilter))
+                throw new ArgumentNullException(nameof(facetFilter));
 
-            // Convert \/ to <<$$$$$$>> and \: to <<€€€€€€>>
-            var facetValueStringCopy = facetValueString.Trim()
-                                                       .Replace(ESCAPED_SLASH, ESCAPED_SLASH_TEMP_TOKEN)
-                                                       .Replace(ESCAPED_COLON, ESCAPED_COLON_TEMP_TOKEN);
+            // Convert any escaped hierarchy separator chars (e.g. \/) to <<$$$$$$>>
+            // and any escaped colon chars (i.e. \:) to <<€€€€€€>>
+            var facetFilterCopy = facetFilter.Trim()
+                                             .Replace(escapedHierarchySeparator, escapedHierarchySeparatorTempToken)
+                                             .Replace(ESCAPED_COLON, ESCAPED_COLON_TEMP_REPLACEMENT_TOKEN);
 
             // Split the string using ":" to get the Facet name
-            var facetName = facetValueStringCopy.Contains(COLON) ?
-                            facetValueStringCopy.Split(new[] { COLON }, StringSplitOptions.None).FirstOrDefault() :
+            var facetName = facetFilterCopy.Contains(COLON) ?
+                            facetFilterCopy.Split(new[] { COLON }, StringSplitOptions.None).FirstOrDefault() :
                             null;
 
             if (String.IsNullOrWhiteSpace(facetName))
-                throw new SchemaException($"Invalid Facet value string: '{facetValueString}'");
+                throw new SchemaException($"Invalid Facet value string: '{facetFilter}'");
 
             facetName = facetName.Trim()
-                                 .Replace(ESCAPED_SLASH_TEMP_TOKEN, SLASH)
+                                 .Replace(escapedHierarchySeparatorTempToken, hierarchySeparator)
                                  .Replace(ESCAPED_COLON, COLON);
 
-            var facetValueStartIndex = facetValueStringCopy.IndexOf(COLON, StringComparison.InvariantCulture) + 1;
-            facetValueStringCopy = facetValueStringCopy.Substring(facetValueStartIndex);
+            var facetValueStartIndex = facetFilterCopy.IndexOf(COLON, StringComparison.InvariantCulture) + 1;
+            var facetValue = facetFilterCopy.Substring(facetValueStartIndex);
 
-            // Split the string using / as separateor to get the facet values
-            var categoryParts = facetValueStringCopy.Split(new[] { SLASH }, StringSplitOptions.None);
-            if (categoryParts.Count() >= 1)
+            FacetField facetField = null;
+
+            if (facetSettings.IsHierarchical)
             {
-                var facetValues = categoryParts.Select(s => s.Trim()
-                                                             .Replace(ESCAPED_SLASH_TEMP_TOKEN, SLASH)
-                                                             .Replace(ESCAPED_COLON_TEMP_TOKEN, COLON))
-                                               .ToArray();
+                // Split the Facet value using the hierarchy separator char as separateor to get the child Facet values.
+                var facetValueParts = facetValue.Split(new[] { hierarchySeparator }, StringSplitOptions.None);
+                if (facetValueParts.Count() >= 1)
+                {
+                    var facetValues = facetValueParts.Select(s => s.Trim()
+                                                                 .Replace(escapedHierarchySeparatorTempToken, hierarchySeparator)
+                                                                 .Replace(ESCAPED_COLON_TEMP_REPLACEMENT_TOKEN, COLON))
+                                                   .ToArray();
 
-                if (facetValues.Any(s => String.IsNullOrWhiteSpace(s)))
-                    throw new SchemaException($"Invalid category string: '{facetValueString}'");
+                    if (facetValues.Any(s => String.IsNullOrWhiteSpace(s)))
+                        throw new SchemaException($"Invalid Facet filter string: '{facetFilter}'");
 
-                var facetField = new FacetField(facetName, facetValues);
-                return facetField;
+                    facetField = new FacetField(facetName, facetValues);                    
+                }
+            }
+            else
+            {
+                facetField = new FacetField(facetName, facetValue);
             }
 
-            return null;
+            return facetField;
         }
 
         /// <summary>
@@ -137,32 +148,47 @@ namespace ExpandoDB.Search
         }
 
         /// <summary>
-        /// Converts the specified comma-separated list of category strings to a list of FacetFields.
+        /// Converts the specified comma-separated list of Facet filter strings to a list of FacetFields;
+        /// sample Facet filter string: "Author:Crispin" and "Publish Date:2010" - these can be
+        /// concatenated using a comma to produce "Author:Crispin,Publish Date:2010"
         /// </summary>
-        /// <param name="categoriesCsvString">The comma-separated list of categories.</param>
+        /// <param name="facetFilters">The comma-separated list of Facet filter strings.</param>
+        /// <param name="schema">The schema.</param>
         /// <returns></returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public static IEnumerable<FacetField> ToFacetFields(this string categoriesCsvString)
+        public static IEnumerable<FacetField> ToLuceneFacetFields(this string facetFilters, Schema schema)
         {
             var facetFields = new List<FacetField>();
 
-            if (!String.IsNullOrWhiteSpace(categoriesCsvString))
+            if (!String.IsNullOrWhiteSpace(facetFilters))
             {
                 const string COMMA = ",";
                 const string ESCAPED_COMMA = @"\,";
                 const string ESCAPED_COMMA_TEMP_TOKEN = @"<<££££££>>";
 
-                var categoriesList = categoriesCsvString.Trim()
-                                                        .Replace(ESCAPED_COMMA, ESCAPED_COMMA_TEMP_TOKEN)
-                                                        .Split(new[] { COMMA }, StringSplitOptions.None);
-                if (categoriesList != null)
+                var facetFiltersList = facetFilters.Trim()
+                                                   .Replace(ESCAPED_COMMA, ESCAPED_COMMA_TEMP_TOKEN)
+                                                   .Split(new[] { COMMA }, StringSplitOptions.None)
+                                                   ?.ToList();
+                if (facetFiltersList?.Count > 0)
                 {
-                    foreach (var categoryString in categoriesList)
+                    foreach (var facetFilter in facetFiltersList)
                     {
-                        if (!String.IsNullOrWhiteSpace(categoryString))
+                        if (!String.IsNullOrWhiteSpace(facetFilter))
                         {
-                            var category = categoryString.Trim().Replace(ESCAPED_COMMA_TEMP_TOKEN, COMMA);
-                            var facetField = category.ToLuceneFacetField();
+                            var facetValueString = facetFilter.Trim().Replace(ESCAPED_COMMA_TEMP_TOKEN, COMMA);
+                            var facetName = facetValueString.Contains(COLON) ?
+                                            facetValueString.Split(new[] { COLON }, StringSplitOptions.None).FirstOrDefault() :
+                                            null;
+
+                            if (String.IsNullOrWhiteSpace(facetName))
+                                throw new SchemaException($"No Facet name specified in: '{facetValueString}'");
+
+                            var facetSettings = GetFacetSettings(facetName, schema);
+                            if (facetSettings == null)
+                                throw new SchemaException($"Invalid Facet: {facetName}");
+
+                            var facetField = facetValueString.ToLuceneFacetField(facetSettings);
                             if (facetField != null)
                                 facetFields.Add(facetField);
                         }
@@ -171,6 +197,27 @@ namespace ExpandoDB.Search
             }
 
             return facetFields;
+        }
+
+        /// <summary>
+        /// Gets the FacetSettings object for the given Facet name.
+        /// </summary>
+        /// <param name="facetName">Name of the facet.</param>
+        /// <param name="schema">The schema.</param>
+        /// <returns></returns>
+        private static Schema.FacetSettings GetFacetSettings(string facetName, Schema schema)
+        {
+            Schema.FacetSettings facetSettings = null;
+
+            if (!String.IsNullOrWhiteSpace(facetName))
+            {
+                facetSettings = (from f in schema.Fields.Values
+                                 where f.IsFacet && f.FacetSettings.FacetName == facetName
+                                 select f.FacetSettings)
+                                .FirstOrDefault();
+            }
+
+            return facetSettings;
         }
 
         /// <summary>

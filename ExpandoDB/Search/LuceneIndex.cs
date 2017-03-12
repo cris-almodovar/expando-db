@@ -233,15 +233,8 @@ namespace ExpandoDB.Search
             if (criteria == null)
                 throw new ArgumentNullException(nameof(criteria));
 
-            criteria.Query = String.IsNullOrWhiteSpace(criteria.Query) ? ALL_DOCS_QUERY : criteria.Query;
-            criteria.TopN = criteria.TopN > 0 ? criteria.TopN : SearchCriteria.DEFAULT_TOP_N;
-            criteria.ItemsPerPage = criteria.ItemsPerPage > 0 ? criteria.ItemsPerPage : SearchCriteria.DEFAULT_ITEMS_PER_PAGE;
-            criteria.PageNumber = criteria.PageNumber > 0 ? criteria.PageNumber : 1;
-            criteria.Validate();
-
-            var result = new SearchResult<Guid>(criteria);
-            var queryParser = new LuceneQueryParser(Schema.MetadataField.FULL_TEXT, _compositeAnalyzer, Schema);
-            var query = queryParser.Parse(criteria.Query);
+            criteria.Validate(); 
+            var result = new SearchResult<Guid>(criteria);            
 
             var instance = _searcherTaxonomyManager.Acquire() as SearcherTaxonomyManagerSearcherAndTaxonomy;
             if (instance != null)
@@ -250,24 +243,40 @@ namespace ExpandoDB.Search
                 var taxonomyReader = instance.TaxonomyReader;
 
                 try
-                {
-                    var sort = GetSortCriteria(criteria.SortByField);
-                    var selectedFacets = criteria.SelectCategories.ToFacetFields();
+                {                    
+                    var topN = criteria.TopN ?? SearchCriteria.DEFAULT_TOP_N;
+                    if (topN == 0)
+                        topN = 1;
+
+                    var itemsPerPage = criteria.ItemsPerPage ?? SearchCriteria.DEFAULT_ITEMS_PER_PAGE;
+                    var pageNumber = criteria.PageNumber ?? 1;
+                    var topNFacets = criteria.TopNFacets ?? SearchCriteria.DEFAULT_TOP_N_FACETS;
+
+                    var sort = GetSortCriteria(criteria.SortByFields);
+                    var selectedFacets = criteria.SelectFacets.ToLuceneFacetFields(Schema);
                     var topDocs = (TopDocs)null;                                        
-                    var categories = (IEnumerable<FacetValue>)null;
+                    var facets = (IEnumerable<FacetValue>)null;
+
+                    var queryParser = new LuceneQueryParser(Schema.MetadataField.FULL_TEXT, _compositeAnalyzer, Schema);
+                    var queryString = String.IsNullOrWhiteSpace(criteria.Query) ? ALL_DOCS_QUERY : criteria.Query;
+                    var query = queryParser.Parse(queryString);
 
                     if (selectedFacets.Count() == 0)
                     {
-                        // We are not going to do a drill-down on specific facets.
-                        // Instead we will just take the top N facets from the matching Documents.
+                        // We are NOT going to do a drill-down on specific Facets.
+                        // Instead we will take the top N Facet values from all Facets.
+
                         var facetsCollector = new FacetsCollector();
 
                         // Get the matching Documents
-                        topDocs = FacetsCollector.Search(searcher, query, criteria.TopN, sort, facetsCollector);
+                        topDocs = FacetsCollector.Search(searcher, query, topN, sort, facetsCollector);
 
-                        // Get the Facet counts from the matching Documents
-                        var facetCounts = new FastTaxonomyFacetCounts(taxonomyReader, _facetBuilder.FacetsConfig, facetsCollector);                        
-                        categories = facetCounts.ToFacetValues(criteria.TopNCategories);
+                        if (topNFacets > 0)
+                        {
+                            // Get the Facet counts from the matching Documents
+                            var facetCounts = new FastTaxonomyFacetCounts(taxonomyReader, _facetBuilder.FacetsConfig, facetsCollector);
+                            facets = facetCounts.ToFacetValues(topNFacets);
+                        }
                     }
                     else
                     {
@@ -277,17 +286,23 @@ namespace ExpandoDB.Search
                             drillDownQuery.Add(facetField.Dim, facetField.Path);                        
 
                         var drillSideways = new DrillSideways(searcher, _facetBuilder.FacetsConfig, taxonomyReader);
-                        var drillSidewaysResult = drillSideways.Search(drillDownQuery, null, null, criteria.TopN, sort, false, false);
+                        var drillSidewaysResult = drillSideways.Search(drillDownQuery, null, null, topN, sort, false, false);
 
                         // Get the matching documents
-                        topDocs = drillSidewaysResult.Hits;                        
+                        topDocs = drillSidewaysResult.Hits;
 
-                        // Get the Facet counts from the matching Documents
-                        categories = drillSidewaysResult.Facets.ToFacetValues(criteria.TopNCategories, selectedFacets);
+                        if (topNFacets > 0)
+                        {
+                            // Get the Facet counts from the matching Documents
+                            facets = drillSidewaysResult.Facets.ToFacetValues(topNFacets, selectedFacets);
+                        }
                     }
 
+                    if (criteria.TopN == 0)
+                        topDocs.ScoreDocs = new ScoreDoc[0];
+
                     // TODO: Don't pass TopDocs; pass an IEnumerable<Guid>
-                    result.PopulateWith(topDocs, categories, id => searcher.Doc(id));                    
+                    result.PopulateWith(topDocs, facets, id => searcher.Doc(id));                    
                 }
                 finally
                 {
@@ -300,58 +315,73 @@ namespace ExpandoDB.Search
             return result;
         }
 
-        private Sort GetSortCriteria(string sortByField = null)
-        {
-            // TODO: Add support for multiple sort fields
-            // TODO: Change convention for asc/desc: +[sortByField] => [sortByField]:asc
+        private Sort GetSortCriteria(string sortByFields = null)
+        {            
+            // Convention for asc/desc: "Author:desc,ID:asc"
 
-            if (String.IsNullOrWhiteSpace(sortByField))
+            if (String.IsNullOrWhiteSpace(sortByFields))
                 return Sort.RELEVANCE;
-                      
-            var fieldName = sortByField.Trim().TrimStart('+');
-            var isDescending = fieldName.StartsWith("-", StringComparison.InvariantCulture);
-            if (isDescending)
-                fieldName = fieldName.TrimStart('-');
 
-            var sortBySchemaField = Schema.FindField(fieldName, false);
-            if (sortBySchemaField == null)
-                throw new LuceneQueryParserException($"Invalid sortBy field: '{fieldName}'. This field is not indexed.");
+            var sortByFieldsList = sortByFields.ToList();
+            var luceneSortFields = new List<SortField>();
 
-            // Notes: 
-            // 1. The actual sort fieldname is different, e.g. 'fieldName' ==> '__fieldName_sort__'
-            // 2. If a document does not have a value for the sort field, a default 'missing value' is assigned
-            //    so that the document always appears last in the resultset.
-
-            var sortFieldName = fieldName.ToSortFieldName();
-            SortField sortField = null;
-
-            switch (sortBySchemaField.DataType)
+            foreach (var sortByField in sortByFieldsList)
             {
-                case Schema.DataType.Number:
-                    sortField = new SortField(sortFieldName, SortFieldType.DOUBLE, isDescending);
-                    sortField.SetMissingValue(isDescending ? LuceneUtils.DOUBLE_MIN_VALUE : LuceneUtils.DOUBLE_MAX_VALUE);
-                    break;
+                var fieldName = sortByField;
+                var sortDirection = "asc";
+                if (sortByField.Contains(":"))
+                {
+                    var indexOfColon = sortByField.IndexOf(':');
+                    fieldName = sortByField.Substring(0, indexOfColon).Trim();
+                    sortDirection = sortByField.Substring(indexOfColon + 1)?.Trim()?.ToLower();
+                    if (sortDirection != "asc" && sortDirection != "desc")
+                        throw new LuceneQueryParserException($"Invalid sortBy expression: {sortByField}");
+                }
 
-                case Schema.DataType.DateTime:
-                case Schema.DataType.Boolean:
-                    sortField = new SortField(sortFieldName, SortFieldType.LONG, isDescending);
-                    sortField.SetMissingValue(isDescending ? LuceneUtils.LONG_MIN_VALUE : LuceneUtils.LONG_MAX_VALUE);
-                    break;
+                var isDescending = sortDirection == "desc";
+                var sortBySchemaField = Schema.FindField(fieldName, false);
+                if (sortBySchemaField == null)
+                    throw new LuceneQueryParserException($"Invalid sortBy field: '{fieldName}'. This field is not indexed.");
 
-                case Schema.DataType.Text:
-                case Schema.DataType.Guid:
-                    sortField = new SortField(sortFieldName, SortFieldType.STRING, isDescending);
-                    sortField.SetMissingValue(isDescending ?  SortField.STRING_FIRST : SortField.STRING_LAST );
-                    break;
+                // Notes: 
+                // 1. The actual sort fieldname is different, e.g. 'fieldName' ==> '__fieldName_sort__'
+                // 2. If a document does not have a value for the sort field, a default 'missing value' is assigned
+                //    so that the document always appears last in the resultset.
 
-                default:
-                    throw new LuceneQueryParserException($"Invalid sortBy field: '{fieldName}'. Only Number, DateTime, Boolean, Text, and GUID fields can be used for sorting.");
+                var sortFieldName = fieldName.ToSortFieldName();
+                SortField sortField = null;
+
+                switch (sortBySchemaField.DataType)
+                {
+                    case Schema.DataType.Number:
+                        sortField = new SortField(sortFieldName, SortFieldType.DOUBLE, isDescending);
+                        sortField.SetMissingValue(isDescending ? LuceneUtils.DOUBLE_MIN_VALUE : LuceneUtils.DOUBLE_MAX_VALUE);
+                        break;
+
+                    case Schema.DataType.DateTime:
+                    case Schema.DataType.Boolean:
+                        sortField = new SortField(sortFieldName, SortFieldType.LONG, isDescending);
+                        sortField.SetMissingValue(isDescending ? LuceneUtils.LONG_MIN_VALUE : LuceneUtils.LONG_MAX_VALUE);
+                        break;
+
+                    case Schema.DataType.Text:
+                    case Schema.DataType.Guid:
+                        sortField = new SortField(sortFieldName, SortFieldType.STRING, isDescending);
+                        sortField.SetMissingValue(isDescending ? SortField.STRING_FIRST : SortField.STRING_LAST);
+                        break;
+
+                    default:
+                        throw new LuceneQueryParserException($"Invalid sortBy field: '{fieldName}'. Only Number, DateTime, Boolean, Text, and GUID fields can be used for sorting.");
+                }
+
+                if (sortField != null)
+                    luceneSortFields.Add(sortField);
             }
 
-            if (sortField == null)
+            if (luceneSortFields?.Count == 0)
                 return Sort.RELEVANCE;
             else   
-                return new Sort(new[] { sortField });
+                return new Sort(luceneSortFields.ToArray());
         }
 
         /// <summary>

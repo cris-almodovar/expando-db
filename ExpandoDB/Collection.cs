@@ -136,13 +136,13 @@ namespace ExpandoDB
             if (searchResult.ItemCount > 0)
             {
                 searchResult.Items = await _documentStorage.GetAsync(Name, luceneResult.Items.ToList()).ConfigureAwait(false);
-                searchResult.Categories = luceneResult.Categories;
+                searchResult.Facets = luceneResult.Facets;
             }
 
             // NOTE: At this point the Items collection only contains the compressed binary form of the Document objects.
             // The Items collection will be deserialized to Document objects only when enumerated.
 
-            if (criteria.IncludeHighlight)                            
+            if (criteria.IncludeHighlight == true)                            
                 searchResult.Items = searchResult.Items.GenerateHighlights(criteria);            
 
             return searchResult;

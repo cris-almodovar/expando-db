@@ -61,7 +61,7 @@ namespace ExpandoDB.Tests
         [TestCategory("Database tests")]
         public void Can_search_for_documents()
         {
-            var criteria = new SearchCriteria { Query = "Author:Douglas", SortByField = "-Title", TopN = 1 };
+            var criteria = new SearchCriteria { Query = "Author:Douglas", SortByFields = "Title:desc", TopN = 1 };
             var result = _db["books"].SearchAsync(criteria).Result;
 
             Assert.AreEqual<int?>(1, result.ItemCount);
@@ -81,7 +81,7 @@ namespace ExpandoDB.Tests
             _db = new Database(_dataPath);
             Thread.Sleep(1000);
 
-            var criteria = new SearchCriteria { Query = "Author:Douglas", SortByField = "-Title", TopN = 1 };
+            var criteria = new SearchCriteria { Query = "Author:Douglas", SortByFields = "Title:desc", TopN = 1 };
             var result = _db["books"].SearchAsync(criteria).Result;
 
             Assert.AreEqual<int?>(1, result.ItemCount);

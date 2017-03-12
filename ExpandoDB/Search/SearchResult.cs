@@ -11,29 +11,30 @@ namespace ExpandoDB.Search
     public class SearchResult<TResult>
     {
         /// <summary>
-        /// Gets or sets the Lucene query expression
+        /// Gets or sets the Lucene query expression that was used to search
+        /// for matching documents.
         /// </summary>
         /// <value>
-        /// The Lucene query expression
+        /// A Lucene query expression.
         /// </value>
         public string Query { get; set; }
 
         /// <summary>
-        /// Gets or sets the Document field to be used for sorting. By default, the sort order is ascending; 
-        /// to sort in descending order, prefix the field with '-' (minus sign).
+        /// Gets or sets the requested comma separated list of fields to be used to sort
+        /// the matching documents.
         /// </summary>
         /// <value>
-        /// The field to be used for sorting
+        /// The order by list.
         /// </value>
-        public string SortByField { get; set; }
+        public string SortByFields { get; set; }
 
         /// <summary>
-        /// Gets or sets the maximum number of items to be returned by the search query.
+        /// Gets or sets the requested number of documents to return; default is 100.
         /// </summary>
         /// <value>
-        /// The maximum number of items to be returned by the search query.
+        /// The number of documents to return.
         /// </value>
-        public int TopN { get; set; }
+        public int? TopN { get; set; }
 
         /// <summary>
         /// Gets or sets the number of items returned by the search operation. This is normally
@@ -54,56 +55,55 @@ namespace ExpandoDB.Search
         public int TotalHits { get; set; }
 
         /// <summary>
-        /// Gets or sets the number of pages of the search result.
+        /// Gets or sets the number of pages in the resultset.
         /// </summary>
         /// <value>
-        /// The number of pages of the search result.
+        /// The number of pages in the resultset.
         /// </value>
         public int PageCount { get; set; }
 
         /// <summary>
-        /// Gets or sets the current page number within the result set.
+        /// Gets or sets the requested page to return, in the multi-page resultset; default is 1.
         /// </summary>
         /// <value>
-        /// The current page number.
+        /// The page number to return.
         /// </value>
-        public int PageNumber { get; set; }
+        public int? PageNumber { get; set; }
 
         /// <summary>
-        /// Gets or sets the number of items in one page of the result set.
+        /// Gets or sets the requested number of items to return per page of the resultset; default is 10.
         /// </summary>
         /// <value>
-        /// The number of items in one page of the result set.
+        /// The number of documents per page.
         /// </value>
-        public int ItemsPerPage { get; set; }
+        public int? ItemsPerPage { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether text matches are highlighted.
+        /// Gets or sets the requested value indicating whether to include a highlight field in each matching document.
         /// </summary>
         /// <value>
-        ///   <c>true</c> if text matches are highlighted; otherwise, <c>false</c>.
+        /// A value indicating whether to include a highlight field in each matching document.
         /// </value>
-        public bool IncludeHighlight { get; set; }    
+        public bool? IncludeHighlight { get; set; }
 
         /// <summary>
-        /// Gets or sets a comma-separated list of categories that the user has selected;
-        /// these categories will be used to drill-sideways to.
+        /// Gets or sets a comma separated list of Facet values (e.g. Author:Crispin) that will be used to drill-sideways thru the Document Facets.
         /// </summary>
         /// <value>
-        /// The categories.
+        /// A comma separated list of Facet values
         /// </value>
-        public string SelectCategories { get; set; }
+        public string SelectFacets { get; set; }
 
         /// <summary>
-        /// Gets or sets the maximum number of categories to be returned by the search query.
+        /// Gets or sets the requested number of Facet values to return; default is 10.
         /// </summary>
         /// <value>
-        /// The maximum number of categories to be returned by the search query.
+        /// The number of Facet values to return.
         /// </value>
-        public int TopNCategories { get; set; }
+        public int? TopNFacets { get; set; }
         
         /// <summary>
-        /// Gets or sets the items.
+        /// Gets or sets the matching items.
         /// </summary>
         /// <value>
         /// The items.
@@ -111,12 +111,12 @@ namespace ExpandoDB.Search
         public IEnumerable<TResult> Items { get; set; }
 
         /// <summary>
-        /// Gets or sets the categories of the items in the search results.
+        /// Gets or sets the Facets of the items in the search results.
         /// </summary>
         /// <value>
         /// The categories.
         /// </value>
-        public IEnumerable<FacetValue> Categories { get; set; }
+        public IEnumerable<FacetValue> Facets { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SearchResult{TResult}"/> class.
@@ -132,21 +132,21 @@ namespace ExpandoDB.Search
                 throw new ArgumentNullException(nameof(criteria));
 
             Query = criteria.Query;
-            SortByField = criteria.SortByField;
+            SortByFields = criteria.SortByFields;
             TopN = criteria.TopN;
             ItemsPerPage = criteria.ItemsPerPage;
             IncludeHighlight = criteria.IncludeHighlight;
             PageNumber = criteria.PageNumber;
 
-            SelectCategories = criteria.SelectCategories;
-            TopNCategories = criteria.TopNCategories;            
+            SelectFacets = criteria.SelectFacets;
+            TopNFacets = criteria.TopNFacets;            
 
             ItemCount = itemCount;
             TotalHits = totalHits;
             PageCount = pageCount;     
 
             Items = new List<TResult>();
-            Categories = new List<FacetValue>();
+            Facets = new List<FacetValue>();
         }
 
 

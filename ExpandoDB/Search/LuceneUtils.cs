@@ -10,6 +10,7 @@ using JavaDouble = java.lang.Double;
 using JavaLong = java.lang.Long;
 using JavaInteger = java.lang.Integer;
 using FlexLucene.Facet;
+using Common.Logging;
 
 namespace ExpandoDB.Search
 {
@@ -27,6 +28,8 @@ namespace ExpandoDB.Search
         internal static readonly JavaLong LONG_MIN_VALUE = new JavaLong(Int64.MinValue);
         internal static readonly JavaLong LONG_MAX_VALUE = new JavaLong(Int64.MaxValue);
         private static readonly System.Text.RegularExpressions.Regex _queryParserIllegalCharsRegex = new System.Text.RegularExpressions.Regex(QUERY_PARSER_ILLEGAL_CHARS);
+        private static readonly ILog _log = LogManager.GetLogger(nameof(LuceneUtils));
+
 
         /// <summary>
         /// Converts a <see cref="Document" /> object to a <see cref="LuceneDocument" /> object.
@@ -59,7 +62,10 @@ namespace ExpandoDB.Search
             {
                 // Validate fieldName - must not contain space or Lucene QueryParser illegal characters.
                 if (_queryParserIllegalCharsRegex.IsMatch(fieldName))
-                    throw new SchemaException($"The fieldName '{fieldName}' contains illegal characters.");
+                {
+                    _log.Warn($"The fieldName '{fieldName}' contains illegal characters. This field will NOT be indexed.");
+                    continue;
+                }
 
                 Schema.Field schemaField = null;
                 if (!schema.Fields.TryGetValue(fieldName, out schemaField))
@@ -81,15 +87,20 @@ namespace ExpandoDB.Search
             var fullText = document.ToLuceneFullTextString();
             luceneDocument.Add(new TextField(Schema.MetadataField.FULL_TEXT, fullText, FieldStore.NO));
 
-            //// Check if the document has the special _categories field,
-            //// which means that we need to create facets for it.
-            //if (document.HasCategories() && facetBuilder != null)            
-            //    luceneDocument = facetBuilder.RebuildDocumentWithFacets(luceneDocument, document, schema);        
-            
+
             // Check if the Document has any Fields that are configured as Facets.
             // If there are then we need to create Facets for them.
             if (schema.Fields.Any(item => item.Value.IsFacet))
-                luceneDocument = facetBuilder.RebuildDocumentWithFacets(luceneDocument, document, schema);
+            {
+                try
+                {
+                    luceneDocument = facetBuilder.RebuildDocumentWithFacets(luceneDocument, document, schema);
+                }
+                catch (Exception ex)
+                {
+                    _log.Warn($"An error occurred while creating Facets for document: {document._id}. Details: {ex.Message}");
+                }
+            }
 
             return luceneDocument;
         }        
@@ -110,50 +121,53 @@ namespace ExpandoDB.Search
             var fieldName = schemaField.Name.Trim();            
             var fieldDataType = GetFieldDataType(value);
 
-            schemaField.ValidateDataType(fieldDataType);           
-
-            switch (fieldDataType)
+            var isValid = schemaField.ValidateDataType(fieldDataType);
+            if (isValid)
             {
-                case Schema.DataType.Number:                    
-                    luceneFields.AddNumberField(schemaField, value);
-                    break;
 
-                case Schema.DataType.Boolean:                    
-                    luceneFields.AddBooleanField(schemaField, value);
-                    break;
+                switch (fieldDataType)
+                {
+                    case Schema.DataType.Number:
+                        luceneFields.AddNumberField(schemaField, value);
+                        break;
 
-                case Schema.DataType.Text:                    
-                    luceneFields.AddTextField(schemaField, value);
-                    break;
+                    case Schema.DataType.Boolean:
+                        luceneFields.AddBooleanField(schemaField, value);
+                        break;
 
-                case Schema.DataType.DateTime:                    
-                    luceneFields.AddDateTimeField(schemaField, value);
-                    break;
+                    case Schema.DataType.Text:
+                        luceneFields.AddTextField(schemaField, value);
+                        break;
 
-                case Schema.DataType.Guid:                    
-                    luceneFields.AddGuidField(schemaField, value);
-                    break;
+                    case Schema.DataType.DateTime:
+                        luceneFields.AddDateTimeField(schemaField, value);
+                        break;
 
-                case Schema.DataType.Array:          
-                    var list = value as IList;
-                    luceneFields.AddRange(list.ToLuceneFields(schemaField));
-                    break;
+                    case Schema.DataType.Guid:
+                        luceneFields.AddGuidField(schemaField, value);
+                        break;
 
-                case Schema.DataType.Object:
-                    var dictionary = value as IDictionary<string, object>;
-                    luceneFields.AddRange(dictionary.ToLuceneFields(schemaField));
-                    break;
+                    case Schema.DataType.Array:
+                        var list = value as IList;
+                        luceneFields.AddRange(list.ToLuceneFields(schemaField));
+                        break;
 
-                case Schema.DataType.Null: 
-                    luceneFields.AddNullField(schemaField);
-                    break;
+                    case Schema.DataType.Object:
+                        var dictionary = value as IDictionary<string, object>;
+                        luceneFields.AddRange(dictionary.ToLuceneFields(schemaField));
+                        break;
+
+                    case Schema.DataType.Null:
+                        luceneFields.AddNullField(schemaField);
+                        break;
+                }
             }
 
             return luceneFields;
         }
         
 
-        private static void ValidateDataType(this Schema.Field schemaField, Schema.DataType newDataType)
+        private static bool ValidateDataType(this Schema.Field schemaField, Schema.DataType newDataType)
         { 
             if (schemaField.DataType == Schema.DataType.Null)
             {
@@ -164,9 +178,12 @@ namespace ExpandoDB.Search
                 if (schemaField.DataType != newDataType && newDataType != Schema.DataType.Null)
                 {
                     var message = $"Cannot change the data type of the field '{schemaField.Name}' from {schemaField.DataType} to {newDataType}.";
-                    throw new SchemaException(message);
+                    _log.Warn(message);
+                    return false;
                 }
             }
+
+            return true;
         }
 
         private static Schema.DataType GetFieldDataType(object value)
