@@ -284,6 +284,20 @@ namespace ExpandoDB.Storage
             await _storageEngine.DropAsync(collectionName);
         }
 
+        /// <summary>
+        /// Truncates the collection
+        /// </summary>
+        /// <param name="collectionName">Name of the collection.</param>
+        /// <returns></returns>
+        /// <exception cref="System.ArgumentException"></exception>
+        public async Task TruncateAsync(string collectionName)
+        {
+            if (String.IsNullOrWhiteSpace(collectionName))
+                throw new ArgumentException($"{nameof(collectionName)} cannot be null or empty");            
+
+            await _storageEngine.TruncateAsync(collectionName);
+        }
+
         #region IDisposable Support
         /// <summary>
         /// Gets a value indicating whether this instance is disposed.

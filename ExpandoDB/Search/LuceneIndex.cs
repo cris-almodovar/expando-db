@@ -250,16 +250,16 @@ namespace ExpandoDB.Search
 
                     var itemsPerPage = criteria.ItemsPerPage ?? SearchCriteria.DEFAULT_ITEMS_PER_PAGE;
                     var pageNumber = criteria.PageNumber ?? 1;
-                    var topNFacets = criteria.TopNFacets ?? SearchCriteria.DEFAULT_TOP_N_FACETS;
-
-                    var sort = GetSortCriteria(criteria.SortByFields);
-                    var selectedFacets = criteria.SelectFacets.ToLuceneFacetFields(Schema);
-                    var topDocs = (TopDocs)null;                                        
-                    var facets = (IEnumerable<FacetValue>)null;
+                    var topNFacets = criteria.TopNFacets ?? SearchCriteria.DEFAULT_TOP_N_FACETS;                    
 
                     var queryParser = new LuceneQueryParser(Schema.MetadataField.FULL_TEXT, _compositeAnalyzer, Schema);
                     var queryString = String.IsNullOrWhiteSpace(criteria.Query) ? ALL_DOCS_QUERY : criteria.Query;
                     var query = queryParser.Parse(queryString);
+
+                    var sort = GetSortCriteria(criteria.SortByFields);
+                    var selectedFacets = criteria.SelectFacets.ToLuceneFacetFields(Schema);
+                    var topDocs = (TopDocs)null;
+                    var facets = (IEnumerable<FacetValue>)null;
 
                     if (selectedFacets.Count() == 0)
                     {
@@ -280,7 +280,7 @@ namespace ExpandoDB.Search
                     }
                     else
                     {
-                        // Perform a drill-sideways query
+                        // Perform a drill-down / drill-sideways query
                         var drillDownQuery = new DrillDownQuery(_facetBuilder.FacetsConfig, query);
                         foreach (var facetField in selectedFacets)
                             drillDownQuery.Add(facetField.Dim, facetField.Path);                        
@@ -394,10 +394,10 @@ namespace ExpandoDB.Search
         }
 
         /// <summary>
-        /// Deletes all documents from the index.
+        /// Deletes all documents from the Lucene index.
         /// </summary>
         /// <returns></returns>
-        public void DeleteAll()
+        public void Truncate()
         {
             if (!IsDisposed)
                 _indexWriter.DeleteAll();

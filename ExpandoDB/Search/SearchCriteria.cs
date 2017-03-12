@@ -13,7 +13,7 @@ namespace ExpandoDB.Search
         internal const int DEFAULT_TOP_N = 100;
 
         /// <summary>
-        /// The defaul value for the TopNCategories property.
+        /// The defaul value for the TopNFacets property.
         /// </summary>
         internal const int DEFAULT_TOP_N_FACETS = 0;
 
@@ -64,7 +64,7 @@ namespace ExpandoDB.Search
         public int? PageNumber { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether to include a highlight field in each document.
+        /// Gets or sets a value indicating whether to include a highlight field in each document; default is false.
         /// </summary>
         /// <value>
         /// A value indicating whether to include a highlight field in each document.
@@ -73,7 +73,8 @@ namespace ExpandoDB.Search
 
 
         /// <summary>
-        /// Gets or sets a comma separated list of Facet values (e.g. Author:Crispin) that will be used to drill-sideways thru the Document Facets.
+        /// Gets or sets a comma separated list of Facet values (e.g. Author:Crispin) that will be used to drill-sideways 
+        /// into the resultset.
         /// </summary>
         /// <value>
         /// A comma separated list of Facet values
@@ -82,7 +83,7 @@ namespace ExpandoDB.Search
 
 
         /// <summary>
-        /// Gets or sets the number of Facet values to return; default is 10.
+        /// Gets or sets the number of Facet values to return; default is 0.
         /// </summary>
         /// <value>
         /// The number of Facet values to return.

@@ -191,8 +191,9 @@ namespace ExpandoDB
             if (String.IsNullOrWhiteSpace(criteria?.Query))
                 return _luceneIndex.GetDocumentCount();
             
-            criteria.TopN = 1;  // We're not interested in the docs, just the total hits.
-            //criteria.TopNCategories = 0;
+            criteria.TopN = 0;  // We're not interested in the docs, just the total hits.
+            criteria.TopNFacets = 0;
+
             var luceneResult = _luceneIndex.Search(criteria);
             return luceneResult.TotalHits;
         }
@@ -249,7 +250,21 @@ namespace ExpandoDB
             await _luceneIndex.DropAsync().ConfigureAwait(false);
             
             return IsDropped;
-        }       
+        }
+
+        /// <summary>
+        /// Truncates this Document Collection.
+        /// </summary>
+        /// <returns></returns>        
+        public async Task<bool> TruncateAsync()
+        {
+            EnsureCollectionIsNotDropped();            
+
+            await _documentStorage.TruncateAsync(Name).ConfigureAwait(false);
+            _luceneIndex.Truncate();
+
+            return true;
+        }
 
         /// <summary>
         /// Raises an exception if the Document Collection has already been dropped.

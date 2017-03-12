@@ -73,6 +73,7 @@
     <Compile Include="Bootstrapper.cs" />
     <Compile Include="DbService.cs" />
     <Compile Include="DTO\CountRequestDto.cs" />
+    <Compile Include="DTO\DeleteCollectionDto.cs" />
     <Compile Include="DTO\DocumentRequestDto.cs" />
     <Compile Include="DTO\DtoUtils.cs" />
     <Compile Include="DTO\PatchOperationDto.cs" />
@@ -94,7 +95,9 @@
     <Content Include="api-spec\lib\underscore-min.map">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <None Include="app.config" />
+    <None Include="app.config">
+      <SubType>Designer</SubType>
+    </None>
     <Content Include="api-spec\swagger.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

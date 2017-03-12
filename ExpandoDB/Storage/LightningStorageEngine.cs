@@ -262,6 +262,32 @@ namespace ExpandoDB.Storage
             return result;
         }
 
+        /// <summary>
+        /// Truncates the specified Lightning database.
+        /// </summary>
+        /// <param name="database">The Lightning database to truncate.</param>
+        /// <returns></returns>
+        public async Task<int> TruncateAsync(string database)
+        {
+            if (_cancellationToken.IsCancellationRequested)
+                return 0;
+
+            var operation = new WriteOperation
+            {
+                Type = WriteOperationType.TruncateDatabase,
+                Database = database,
+                TaskCompletionSource = new TaskCompletionSource<int>()
+            };
+
+            if (!_writeOperationsQueue.IsCompleted)
+                _writeOperationsQueue.Add(operation);
+            else
+                operation.TaskCompletionSource.TrySetCanceled();
+
+            var result = await operation.TaskCompletionSource.Task.ConfigureAwait(false);       
+            return result;
+        }
+
         private void BackgroundWriter()
         {
             try
@@ -320,6 +346,11 @@ namespace ExpandoDB.Storage
 
                                 case WriteOperationType.DropDatabase:
                                     txn.DropDatabase(db);
+                                    result = 1;
+                                    break;
+
+                                case WriteOperationType.TruncateDatabase:
+                                    txn.TruncateDatabase(db);
                                     result = 1;
                                     break;
 
@@ -632,6 +663,10 @@ namespace ExpandoDB.Storage
         /// <summary>
         /// The drop database
         /// </summary>
-        DropDatabase
+        DropDatabase,
+        /// <summary>
+        /// The truncate database
+        /// </summary>
+        TruncateDatabase
     }
 }

@@ -44,7 +44,8 @@ namespace ExpandoDB.Rest.DTO
             var searchCriteria = new SearchCriteria
             {
                 Query = dto.where,
-                TopN = 1  // We're not interested in the docs, just the total hits.
+                TopN = 0,  // We're not interested in the docs, just the total hits.
+                TopNFacets = 0
             };
 
             return searchCriteria;
@@ -272,14 +273,14 @@ namespace ExpandoDB.Rest.DTO
         }
 
         /// <summary>
-        /// Builds a response DTO for the DELETE (Drop) Collection request.
+        /// Builds a response DTO for the DELETE Collection request.
         /// </summary>
         /// <param name="dbService">The database service.</param>
         /// <param name="collectionName">Name of the collection.</param>
         /// <param name="isDropped">if set to <c>true</c> the Collection was dropped.</param>
         /// <param name="elapsed">The elapsed time.</param>
         /// <returns></returns>
-        public static ExpandoObject BuildDropResposeDto(this DbService dbService, string collectionName, bool isDropped, TimeSpan elapsed)
+        public static ExpandoObject BuildDeleteCollectionResposeDto(this DbService dbService, string collectionName, bool isDropped, TimeSpan elapsed)
         {
             dynamic dynamicDto = new ExpandoObject();
 

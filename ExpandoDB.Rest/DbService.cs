@@ -46,7 +46,7 @@ namespace ExpandoDB.Rest
             Put["/{collection}/{id:guid}", true] = OnReplaceDocumentAsync;                       
             Patch["/{collection}/{id:guid}", true] = OnPatchDocumentAsync;
             Delete["/{collection}/{id:guid}", true] = OnDeleteDocumentAsync;
-            Delete["/{collection}", true] = OnDropCollectionAsync;
+            Delete["/{collection}", true] = OnDeleteCollectionAsync;
         }
 
         /// <summary>
@@ -366,20 +366,20 @@ namespace ExpandoDB.Rest
         }
 
         /// <summary>
-        /// Deletes the entire Document Collection.
+        /// Deletes all Documents from the Collection, optionally dropping both data and index.
         /// </summary>
         /// <param name="req">The req.</param>
         /// <param name="token">The token.</param>
         /// <returns></returns>
         /// <exception cref="System.ArgumentException">collection cannot be null or blank</exception>
-        private async Task<object> OnDropCollectionAsync(dynamic req, CancellationToken token)
+        private async Task<object> OnDeleteCollectionAsync(dynamic req, CancellationToken token)
         {
             var stopwatch = new Stopwatch();
             stopwatch.Start();
 
             var collectionName = (string)req["collection"];
             if (String.IsNullOrWhiteSpace(collectionName))
-                throw new ArgumentException("collection cannot be null or blank");
+                throw new ArgumentException("collection cannot be null or blank");            
 
             if (collectionName == Schema.COLLECTION_NAME)
                 throw new InvalidOperationException($"Cannot drop the {Schema.COLLECTION_NAME} collection.");
@@ -387,11 +387,19 @@ namespace ExpandoDB.Rest
             if (!_database.ContainsCollection(collectionName))
                 return HttpStatusCode.NotFound;
 
-            var isDropped = await _database.DropCollectionAsync(collectionName).ConfigureAwait(false);            
+            var collection = _database[collectionName];
+            var requestDto = this.Bind<DeleteCollectionDto>();
+            var drop = requestDto.drop ?? false;
+            var isDropped = false;
+
+            if (drop)
+                isDropped = await _database.DropCollectionAsync(collectionName).ConfigureAwait(false);
+            else
+                await collection.TruncateAsync().ConfigureAwait(false);     
 
             stopwatch.Stop();
 
-            var responseDto = this.BuildDropResposeDto(collectionName, isDropped, stopwatch.Elapsed);
+            var responseDto = this.BuildDeleteCollectionResposeDto(collectionName, isDropped, stopwatch.Elapsed);
             return Response.AsJson(responseDto);
         }        
     }    

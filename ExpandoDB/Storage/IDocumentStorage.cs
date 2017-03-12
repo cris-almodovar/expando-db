@@ -82,10 +82,17 @@ namespace ExpandoDB.Storage
         Task<bool> ExistsAsync(string collectionName, Guid guid);
 
         /// <summary>
-        /// Drops the underlying table that stores the data for the collection.
+        /// Drops the collection.
         /// </summary>
         /// <param name="collectionName">Name of the collection.</param>
         /// <returns></returns>
         Task DropAsync(string collectionName);
+
+        /// <summary>
+        /// Truncates the collection.
+        /// </summary>
+        /// <param name="collectionName">Name of the collection.</param>
+        /// <returns></returns>
+        Task TruncateAsync(string collectionName);
     }
 }
