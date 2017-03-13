@@ -13,6 +13,7 @@ using ExpandoDB.Serialization;
 using Nancy.Metrics;
 using Metrics;
 using System.Dynamic;
+using System.Collections;
 
 namespace ExpandoDB.Rest
 {
@@ -39,10 +40,11 @@ namespace ExpandoDB.Rest
 
             Get["/_schemas"] = OnGetDatabaseSchema;
             Get["/_schemas/{collection}"] = OnGetCollectionSchema;
-            
+            Put["/_schemas/{collection}"] = OnReplaceCollectionSchema;
+
             Post["/_schemas/{collection}/fields"] = OnInsertSchemaField;
             Get["/_schemas/{collection}/fields/{fieldName}"] = OnGetSchemaField;
-            Patch["/_schemas/{collection}/fields/{fieldName}"] = OnPatchSchemaField;            
+            Put["/_schemas/{collection}/fields/{fieldName}/facetSettings"] = OnReplaceSchemaFieldFacetSettings;            
 
             Post["/{collection}", true] = OnInsertDocumentAsync;            
             Get["/{collection}", true] = OnSearchDocumentsAsync;
@@ -56,6 +58,8 @@ namespace ExpandoDB.Rest
 
             Delete["/{collection}", true] = OnDeleteCollectionAsync;
         }
+
+        
 
 
         /// <summary>
@@ -90,59 +94,8 @@ namespace ExpandoDB.Rest
 
             var responseDto = this.BuildInsertResponseDto(collectionName, docId, stopwatch.Elapsed);
             return Response.AsJson(responseDto);
-        }        
-
-        /// <summary>
-        /// Returns the schema of a Document Collection; a schema is simply a set of fields and their corresponding data types.
-        /// </summary>
-        /// <param name="req">The request object.</param>
-        /// <returns></returns>
-        /// <exception cref="System.ArgumentException">collection cannot be null or blank</exception>
-        private object OnGetCollectionSchema(dynamic req)
-        {
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
-
-            var collectionName = (string)req["collection"];
-            if (String.IsNullOrWhiteSpace(collectionName))
-                throw new ArgumentException("collection cannot be null or blank");
-
-            if (collectionName == Schema.COLLECTION_NAME)
-                throw new InvalidOperationException($"Cannot get the Schema of the '{Schema.COLLECTION_NAME}' collection.");
-
-            if (!_database.ContainsCollection(collectionName))
-                return HttpStatusCode.NotFound;
-
-            var collection = _database[collectionName];
-            var schema = collection.Schema;           
-
-            stopwatch.Stop();
-
-            var responseDto = this.BuildSchemaResponseDto(schema, stopwatch.Elapsed);
-            return Response.AsJson(responseDto);
-        }
-
-        /// <summary>
-        /// Returns the schemas of all Document Collections in the database; a schema is simply a set of fields and their corresponding data types.
-        /// </summary>
-        /// <param name="req">The request object.</param>
-        /// <returns></returns>        
-        private object OnGetDatabaseSchema(dynamic req)
-        {
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
-
-            var schemas = from collectionName in _database.GetCollectionNames().Except(new[] { Schema.COLLECTION_NAME }).OrderBy(n => n)
-                          let schema = _database[collectionName]?.Schema
-                          where schema != null
-                          select schema;  
-
-            stopwatch.Stop();
-
-            var responseDto = this.BuildSchemaResponseDto(schemas, stopwatch.Elapsed);
-            return Response.AsJson(responseDto);
-        }
-
+        }  
+        
         /// <summary>
         /// Searches a Document Collection for Documents that match a query expression.
         /// </summary>
@@ -412,7 +365,15 @@ namespace ExpandoDB.Rest
             return Response.AsJson(responseDto);
         }
 
-        private dynamic OnInsertSchemaField(dynamic req)
+
+        /// <summary>
+        /// Creates a Schema for a Document Collection; if the Collection does not exist yet, it is auto-created.
+        /// This operation is only valid for Collections that do not yet have a Schema, or Collections that only have
+        /// the default empty Schema.
+        /// </summary>
+        /// <param name="req">The req.</param>
+        /// <returns></returns>        
+        private dynamic OnReplaceCollectionSchema(dynamic req)
         {
             var stopwatch = new Stopwatch();
             stopwatch.Start();
@@ -421,12 +382,103 @@ namespace ExpandoDB.Rest
             if (String.IsNullOrWhiteSpace(collectionName))
                 throw new ArgumentException("collection cannot be null or blank");
 
-            var fieldName = (string)req["fieldName"];
-            if (String.IsNullOrWhiteSpace(fieldName))
-                throw new ArgumentException("fieldName cannot be null or blank");
+            if (collectionName.StartsWith("_", StringComparison.InvariantCulture))
+                throw new InvalidOperationException($"Cannot change the Schema of system Collection '{collectionName}'.");
 
-            if (collectionName == Schema.COLLECTION_NAME)
-                throw new InvalidOperationException($"Cannot get the Schema of the '{Schema.COLLECTION_NAME}' collection.");
+            var collection = _database[collectionName];
+            var schema = collection.Schema;
+
+            if (!schema.IsDefault())
+                throw new InvalidOperationException($"The Schema of Collection '{collectionName}' is not empty, and hence cannot  be changed.");
+
+            var excludedFields = new[] { "collection" };
+            var dictionary = this.Bind<DynamicDictionary>(excludedFields).ToDictionary();
+
+            var fields = dictionary["Fields"] as IList;
+            if (fields != null)
+            {
+                foreach (var field in fields)
+                {
+                    var fieldDictionary = field as IDictionary<string, object>;
+                    if (fieldDictionary != null)
+                    {
+                        var schemaField = new Schema.Field().PopulateWith(fieldDictionary);
+                        schema.Fields.TryAdd(schemaField.Name, schemaField);
+                    }
+                }
+            }
+
+            stopwatch.Stop();
+
+            var responseDto = this.BuildUpdateResponseDto(collectionName, 1, stopwatch.Elapsed);
+            return Response.AsJson(responseDto);
+        }
+
+
+        /// <summary>
+        /// Returns the schema of a Document Collection; a schema is simply a set of fields and their corresponding data types.
+        /// </summary>
+        /// <param name="req">The request object.</param>
+        /// <returns></returns>
+        /// <exception cref="System.ArgumentException">collection cannot be null or blank</exception>
+        private object OnGetCollectionSchema(dynamic req)
+        {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            var collectionName = (string)req["collection"];
+            if (String.IsNullOrWhiteSpace(collectionName))
+                throw new ArgumentException("collection cannot be null or blank");
+
+            if (collectionName.StartsWith("_", StringComparison.InvariantCulture))
+                throw new InvalidOperationException($"Cannot get the Schema of system Collection '{collectionName}'.");
+
+            if (!_database.ContainsCollection(collectionName))
+                return HttpStatusCode.NotFound;
+
+            var collection = _database[collectionName];
+            var schema = collection.Schema;
+
+            stopwatch.Stop();
+
+            var responseDto = this.BuildSchemaResponseDto(schema, stopwatch.Elapsed);
+            return Response.AsJson(responseDto);
+        }
+                
+
+        /// <summary>
+        /// Returns the schemas of all Document Collections in the database; a schema is simply a set of fields and their corresponding data types.
+        /// </summary>
+        /// <param name="req">The request object.</param>
+        /// <returns></returns>        
+        private object OnGetDatabaseSchema(dynamic req)
+        {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            var schemas = from collectionName in _database.GetCollectionNames().Except(new[] { Schema.COLLECTION_NAME }).OrderBy(n => n)
+                          let schema = _database[collectionName]?.Schema
+                          where schema != null
+                          select schema;
+
+            stopwatch.Stop();
+
+            var responseDto = this.BuildSchemaResponseDto(schemas, stopwatch.Elapsed);
+            return Response.AsJson(responseDto);
+        }
+
+
+        private dynamic OnInsertSchemaField(dynamic req)
+        {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            var collectionName = (string)req["collection"];
+            if (String.IsNullOrWhiteSpace(collectionName))
+                throw new ArgumentException("collection cannot be null or blank");            
+
+            if (collectionName.StartsWith("_", StringComparison.InvariantCulture))
+                throw new InvalidOperationException($"Cannot change the Schema of system Collection '{collectionName}'.");
 
             if (!_database.ContainsCollection(collectionName))
                 return HttpStatusCode.NotFound;
@@ -438,8 +490,15 @@ namespace ExpandoDB.Rest
             var dictionary = this.Bind<DynamicDictionary>(excludedFields).ToDictionary();
             var schemaField = new Schema.Field().PopulateWith(dictionary);
 
+            if (schema.Fields.ContainsKey(schemaField.Name))
+                throw new InvalidOperationException($"The field '{schemaField.Name}' already exists in Schema '{schema.Name}'");
 
-            return null;
+            schema.Fields.TryAdd(schemaField.Name, schemaField);
+
+            stopwatch.Stop();
+
+            var responseDto = this.BuildUpdateResponseDto(collectionName, 1, stopwatch.Elapsed);
+            return Response.AsJson(responseDto);
         }
 
         private dynamic OnGetSchemaField(dynamic req)
@@ -476,9 +535,47 @@ namespace ExpandoDB.Rest
             return Response.AsJson(responseDto);
         }
 
-        private dynamic OnPatchSchemaField(dynamic arg)
+        private dynamic OnReplaceSchemaFieldFacetSettings(dynamic req)
         {
-            throw new NotImplementedException();
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            var collectionName = (string)req["collection"];
+            if (String.IsNullOrWhiteSpace(collectionName))
+                throw new ArgumentException("collection cannot be null or blank");
+
+            var fieldName = (string)req["fieldName"];
+            if (String.IsNullOrWhiteSpace(fieldName))
+                throw new ArgumentException("fieldName cannot be null or blank");
+
+            if (collectionName.StartsWith("_", StringComparison.InvariantCulture))
+                throw new InvalidOperationException($"Cannot change the Schema of system Collection '{collectionName}'.");
+
+            if (!_database.ContainsCollection(collectionName))
+                return HttpStatusCode.NotFound;
+
+            var collection = _database[collectionName];
+            var schema = collection.Schema;
+
+            Schema.Field schemaField = null;
+            schema.Fields.TryGetValue(fieldName, out schemaField);
+
+            if (schemaField == null)
+                return HttpStatusCode.NotFound;            
+
+            if (schemaField.FacetSettings != null)
+                throw new InvalidOperationException($"The field '{fieldName}' already has a FacetSettings object.");
+
+            var excludedFields = new[] { "collection" };
+            var dictionary = this.Bind<DynamicDictionary>(excludedFields).ToDictionary();
+            var facetSettings = new Schema.FacetSettings().PopulateWith(dictionary);
+
+            schemaField.FacetSettings = facetSettings;
+
+            stopwatch.Stop();
+
+            var responseDto = this.BuildUpdateResponseDto(collectionName, 1, stopwatch.Elapsed);
+            return Response.AsJson(responseDto);
         }
     }    
 }

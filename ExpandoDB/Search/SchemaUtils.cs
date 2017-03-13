@@ -149,7 +149,16 @@ namespace ExpandoDB.Search
                 throw new ArgumentNullException(nameof(dictionary));
 
             field.Name = dictionary["Name"] as string;
-            field.DataType = (Schema.DataType)dictionary["DataType"];
+
+            if (dictionary["DataType"] is Schema.DataType)
+                field.DataType = (Schema.DataType)dictionary["DataType"];
+            else
+            {
+                Schema.DataType dataType;
+                if (Enum.TryParse<Schema.DataType>(dictionary["DataType"] as string, out dataType))
+                    field.DataType = dataType;
+            }
+
             field.ArrayElementDataType = (Schema.DataType)dictionary["ArrayElementDataType"];
             field.IsArrayElement = (bool)dictionary["IsArrayElement"];
             field.IsAnalyzed = (bool)dictionary["IsAnalyzed"];

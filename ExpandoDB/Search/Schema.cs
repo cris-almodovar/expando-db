@@ -171,7 +171,6 @@ namespace ExpandoDB
             /// </value>
             public bool IsAnalyzed { get; set; } = true;
 
-
             /// <summary>
             /// Gets a value indicating whether this Field is a Facet.
             /// </summary>
