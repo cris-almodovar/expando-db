@@ -291,5 +291,25 @@ namespace ExpandoDB.Rest.DTO
 
             return dynamicDto;
         }
+
+        /// <summary>
+        /// Builds a response DTO for the GET Schema Field request.
+        /// </summary>
+        /// <param name="dbService">The database service.</param>
+        /// <param name="collectionName">The collection.</param>
+        /// <param name="schemaField">The schema field.</param>
+        /// <param name="elapsed">The elapsed time.</param>
+        /// <returns></returns>
+        public static ExpandoObject BuildSchemaFieldResponseDto(this DbService dbService, Schema.Field schemaField, string collectionName, TimeSpan elapsed)
+        {
+            dynamic dynamicDto = new ExpandoObject();
+
+            dynamicDto.from = collectionName;
+            dynamicDto.field = schemaField.ToDictionary().ToExpando();
+            dynamicDto.timestamp = DateTime.UtcNow;
+            dynamicDto.elapsed = elapsed.ToString();
+
+            return dynamicDto;
+        }
     }    
 }

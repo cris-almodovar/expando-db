@@ -98,11 +98,7 @@ namespace ExpandoDB
             /// <summary>
             /// The _full_text_ field; this field is hidden.
             /// </summary>
-            public const string FULL_TEXT = "_full_text_";
-            /// <summary>
-            /// The _categories field; this field is an IList
-            /// </summary>
-            public const string CATEGORIES = "_categories";
+            public const string FULL_TEXT = "_full_text_";           
         }
 
         /// <summary>
@@ -238,17 +234,9 @@ namespace ExpandoDB
         /// Defines the configuration for a Facet, which is used to categorize <see cref="Document"/> objects in buckets.
         /// </summary>
         public class FacetSettings
-        {
+        {            
             /// <summary>
-            /// Gets or sets the name of Field that is the source of values for this Facet.
-            /// </summary>
-            /// <value>
-            /// The name of the Field.
-            /// </value>
-            public string FieldName { get; set; }
-
-            /// <summary>
-            /// Gets or sets the name of this Facet, if different from the FieldName.
+            /// Gets or sets the name of this Facet.
             /// </summary>
             /// <value>
             /// The name of the Facet.
@@ -280,7 +268,7 @@ namespace ExpandoDB
             /// <value>
             /// The format.
             /// </value>
-            public string FormatString { get; set; }
+            public string FormatString { get; set; } = "";
         }
 
     }

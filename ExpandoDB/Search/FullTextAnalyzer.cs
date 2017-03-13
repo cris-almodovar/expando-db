@@ -15,7 +15,8 @@ namespace ExpandoDB.Search
     /// </summary>
     public class FullTextAnalyzer : Analyzer
     {
-        internal const string DEFAULT_SEPARATOR_CHARS = @"[\s,:;.()?!@#%^&*|/\\+÷°±{}\[\]<>\-`~'""$£€¢¥©®™•§†‡–—¶]"; 
+        internal const string DEFAULT_SEPARATOR_CHARS = @"[\s,:;.()?!@#%^&*|/\\+÷°±{}\[\]<>\-`~'""$£€¢¥©®™•§†‡–—¶]";
+        internal const string DEFAULT_ENGLISH_STOPWORDS = "a,am,an,and,any,are,arent,as,at,be,been,but,by,co,did,do,does,for,if,in,into,is,it,no,not,of,on,or,s,such,t,that,the,their,then,there,these,they,this,to,was,will,with,www,wont,shall,shant";
         private readonly string _separatorChars;
         private readonly bool _enableStemming;
         private readonly bool _ignoreCase;
@@ -49,7 +50,10 @@ namespace ExpandoDB.Search
 
             var pattern = Pattern.compile(_separatorChars);
             var tokenizer = new PatternTokenizer(pattern, -1);
-            var stream = _ignoreCase ? new FlexLucene.Analysis.LowerCaseFilter(tokenizer) as TokenStream : tokenizer as TokenStream;
+            var stream = _ignoreCase ? new FlexLucene.Analysis.LowerCaseFilter(tokenizer) as TokenStream 
+                                     : tokenizer as TokenStream;
+
+            stream = new FlexLucene.Analysis.Core.StopFilter(stream, DEFAULT_ENGLISH_STOPWORDS.Split(',').ToCharArraySet());
 
             if (_enableStemming)
                 stream = new PorterStemFilter(stream);

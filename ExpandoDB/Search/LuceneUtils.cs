@@ -11,6 +11,7 @@ using JavaLong = java.lang.Long;
 using JavaInteger = java.lang.Integer;
 using FlexLucene.Facet;
 using Common.Logging;
+using FlexLucene.Analysis;
 
 namespace ExpandoDB.Search
 {
@@ -606,6 +607,19 @@ namespace ExpandoDB.Search
         {
             var fieldName = schemaField.Name.Trim().ToNullFieldName();
             luceneFields.Add(new IntPoint(fieldName, INDEX_NULL_VALUE));            
+        }
+
+        /// <summary>
+        /// Converts the sequence of string values to a CharArraySet
+        /// </summary>
+        /// <param name="values">The values.</param>
+        /// <returns></returns>
+        public static CharArraySet ToCharArraySet(this IEnumerable<string> values)
+        {
+            var charArraySet = new CharArraySet(10, false);
+            values.ToList().ForEach(item => charArraySet.add(item));
+
+            return charArraySet;
         }
     }
 }

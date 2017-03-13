@@ -78,9 +78,29 @@ namespace ExpandoDB.Search
             dictionary["DataType"] = field.DataType;
             dictionary["ArrayElementDataType"] = field.ArrayElementDataType;
             dictionary["IsArrayElement"] = field.IsArrayElement;
+            dictionary["IsAnalyzed"] = field.IsAnalyzed;
+
+            if (field.FacetSettings != null)
+                dictionary["FacetSettings"] = field.FacetSettings.ToDictionary();
 
             if (field.ObjectSchema != null)
                 dictionary["ObjectSchema"] = field.ObjectSchema.ToDictionary();
+
+            return dictionary;
+        }
+
+        /// <summary>
+        /// Converts the Schema FacetSettings object to a dictionary.
+        /// </summary>
+        /// <param name="facetSettings">The facet settings.</param>
+        /// <returns></returns>
+        internal static IDictionary<string, object> ToDictionary(this Schema.FacetSettings facetSettings)
+        {
+            var dictionary = new Dictionary<string, object>();
+            dictionary["FacetName"] = facetSettings.FacetName;
+            dictionary["IsHierarchical"] = facetSettings.IsHierarchical;
+            dictionary["HierarchySeparator"] = facetSettings.HierarchySeparator ?? "";
+            dictionary["FormatString"] = facetSettings.FormatString ?? "";
 
             return dictionary;
         }
@@ -132,6 +152,7 @@ namespace ExpandoDB.Search
             field.DataType = (Schema.DataType)dictionary["DataType"];
             field.ArrayElementDataType = (Schema.DataType)dictionary["ArrayElementDataType"];
             field.IsArrayElement = (bool)dictionary["IsArrayElement"];
+            field.IsAnalyzed = (bool)dictionary["IsAnalyzed"];
 
             if (dictionary.ContainsKey("ObjectSchema"))
             {
@@ -140,7 +161,35 @@ namespace ExpandoDB.Search
                     field.ObjectSchema = new Schema().PopulateWith(schemaDictionary);
             }
 
+            if (dictionary.ContainsKey("FacetSettings"))
+            {
+                var facetSettingsDictionary = dictionary["FacetSettings"] as IDictionary<string, object>;
+                if (facetSettingsDictionary != null)
+                    field.FacetSettings = new Schema.FacetSettings().PopulateWith(facetSettingsDictionary);
+            }
+
             return field;
+        }
+
+
+        /// <summary>
+        /// Populates the Schema.FacetSettings object with values from the given dictionary.
+        /// </summary>
+        /// <param name="facetSettings">The facet settings.</param>
+        /// <param name="dictionary">The dictionary.</param>
+        /// <returns></returns>
+        /// <exception cref="System.ArgumentNullException">dictionary</exception>
+        internal static Schema.FacetSettings PopulateWith(this Schema.FacetSettings facetSettings, IDictionary<string, object> dictionary)
+        {
+            if (dictionary == null)
+                throw new ArgumentNullException(nameof(dictionary));
+
+            facetSettings.FacetName = dictionary["FacetName"] as string;
+            facetSettings.IsHierarchical = (bool)dictionary["IsHierarchical"];
+            facetSettings.HierarchySeparator = dictionary["HierarchySeparator"] as string;
+            facetSettings.FormatString = dictionary["FormatString"] as string;                        
+
+            return facetSettings;
         }
 
         /// <summary>

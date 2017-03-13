@@ -39,15 +39,24 @@ namespace ExpandoDB.Rest
 
             Get["/_schemas"] = OnGetDatabaseSchema;
             Get["/_schemas/{collection}"] = OnGetCollectionSchema;
+            
+            Post["/_schemas/{collection}/fields"] = OnInsertSchemaField;
+            Get["/_schemas/{collection}/fields/{fieldName}"] = OnGetSchemaField;
+            Patch["/_schemas/{collection}/fields/{fieldName}"] = OnPatchSchemaField;            
+
             Post["/{collection}", true] = OnInsertDocumentAsync;            
-            Get["/{collection}", true] = OnSearchDocumentsAsync;            
+            Get["/{collection}", true] = OnSearchDocumentsAsync;
+
             Get["/{collection}/count"] = OnGetCount;
+
             Get["/{collection}/{id:guid}", true] = OnGetDocumentAsync;
             Put["/{collection}/{id:guid}", true] = OnReplaceDocumentAsync;                       
             Patch["/{collection}/{id:guid}", true] = OnPatchDocumentAsync;
             Delete["/{collection}/{id:guid}", true] = OnDeleteDocumentAsync;
+
             Delete["/{collection}", true] = OnDeleteCollectionAsync;
         }
+
 
         /// <summary>
         /// Inserts a new Document object into a Document Collection.
@@ -401,6 +410,75 @@ namespace ExpandoDB.Rest
 
             var responseDto = this.BuildDeleteCollectionResposeDto(collectionName, isDropped, stopwatch.Elapsed);
             return Response.AsJson(responseDto);
-        }        
+        }
+
+        private dynamic OnInsertSchemaField(dynamic req)
+        {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            var collectionName = (string)req["collection"];
+            if (String.IsNullOrWhiteSpace(collectionName))
+                throw new ArgumentException("collection cannot be null or blank");
+
+            var fieldName = (string)req["fieldName"];
+            if (String.IsNullOrWhiteSpace(fieldName))
+                throw new ArgumentException("fieldName cannot be null or blank");
+
+            if (collectionName == Schema.COLLECTION_NAME)
+                throw new InvalidOperationException($"Cannot get the Schema of the '{Schema.COLLECTION_NAME}' collection.");
+
+            if (!_database.ContainsCollection(collectionName))
+                return HttpStatusCode.NotFound;
+
+            var collection = _database[collectionName];
+            var schema = collection.Schema;
+
+            var excludedFields = new[] { "collection" };
+            var dictionary = this.Bind<DynamicDictionary>(excludedFields).ToDictionary();
+            var schemaField = new Schema.Field().PopulateWith(dictionary);
+
+
+            return null;
+        }
+
+        private dynamic OnGetSchemaField(dynamic req)
+        {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            var collectionName = (string)req["collection"];
+            if (String.IsNullOrWhiteSpace(collectionName))
+                throw new ArgumentException("collection cannot be null or blank");
+
+            var fieldName = (string)req["fieldName"];
+            if (String.IsNullOrWhiteSpace(fieldName))
+                throw new ArgumentException("fieldName cannot be null or blank");
+
+            if (collectionName == Schema.COLLECTION_NAME)
+                throw new InvalidOperationException($"Cannot get the Schema of the '{Schema.COLLECTION_NAME}' collection.");
+
+            if (!_database.ContainsCollection(collectionName))
+                return HttpStatusCode.NotFound;
+
+            var collection = _database[collectionName];
+            var schema = collection.Schema;
+
+            Schema.Field schemaField = null;
+            schema.Fields.TryGetValue(fieldName, out schemaField);
+
+            if (schemaField == null)
+                return HttpStatusCode.NotFound;
+
+            stopwatch.Stop();
+
+            var responseDto = this.BuildSchemaFieldResponseDto(schemaField, collectionName, stopwatch.Elapsed);
+            return Response.AsJson(responseDto);
+        }
+
+        private dynamic OnPatchSchemaField(dynamic arg)
+        {
+            throw new NotImplementedException();
+        }
     }    
 }

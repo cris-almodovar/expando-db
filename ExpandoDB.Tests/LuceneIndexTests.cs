@@ -111,7 +111,7 @@ namespace ExpandoDB.Tests
         public void Can_tokenize_text()
         {
             var text = "The quick brown fox jumped over the lazy dog.";
-            var expected = new[] { "the", "quick", "brown", "fox", "jump", "over", "the", "lazi", "dog" };
+            var expected = new[] { "quick", "brown", "fox", "jump", "over", "lazi", "dog" };
             var actual = FullTextAnalyzer.Tokenize(text).ToArray();
 
             Assert.IsTrue(expected.SequenceEqual(actual));           
