@@ -113,7 +113,16 @@ namespace ExpandoDB.Search
         /// <returns></returns>
         internal static Schema PopulateWith(this Schema schema, IDictionary<string, object> dictionary)
         {
+            if (dictionary == null)
+                throw new ArgumentNullException(nameof(dictionary));
+
             schema._id = dictionary.ContainsKey(Schema.MetadataField.ID) ? (Guid?)dictionary[Schema.MetadataField.ID] : null;
+
+            if (!dictionary.ContainsKey("Name"))
+                throw new SchemaException("Schema.Name is mandatory.");
+            if (!dictionary.ContainsKey("Fields"))
+                throw new SchemaException("Schema.Fields is mandatory.");
+
             schema.Name = dictionary["Name"] as string;
 
             var fields = dictionary["Fields"] as IList;
@@ -129,9 +138,11 @@ namespace ExpandoDB.Search
                     }
                 }
             }
-
-            schema._createdTimestamp = (DateTime?)dictionary[Schema.MetadataField.CREATED_TIMESTAMP];
-            schema._modifiedTimestamp = (DateTime?)dictionary[Schema.MetadataField.MODIFIED_TIMESTAMP];
+            
+            if (dictionary.ContainsKey(Schema.MetadataField.CREATED_TIMESTAMP))
+                schema._createdTimestamp = (DateTime?)dictionary[Schema.MetadataField.CREATED_TIMESTAMP];
+            if (dictionary.ContainsKey(Schema.MetadataField.MODIFIED_TIMESTAMP))
+                schema._modifiedTimestamp = (DateTime?)dictionary[Schema.MetadataField.MODIFIED_TIMESTAMP];
 
             return schema;
         }
@@ -148,6 +159,13 @@ namespace ExpandoDB.Search
             if (dictionary == null)
                 throw new ArgumentNullException(nameof(dictionary));
 
+            if (!dictionary.ContainsKey("Name"))
+                throw new SchemaException("Schema.Field.Name is mandatory.");
+            if (!dictionary.ContainsKey("DataType"))
+                throw new SchemaException("Schema.Field.DataType is mandatory.");
+            if (!dictionary.ContainsKey("IsArrayElement"))
+                throw new SchemaException("Schema.Field.IsArrayElement is mandatory.");
+
             field.Name = dictionary["Name"] as string;
 
             if (dictionary["DataType"] is Schema.DataType)
@@ -159,9 +177,41 @@ namespace ExpandoDB.Search
                     field.DataType = dataType;
             }
 
-            field.ArrayElementDataType = (Schema.DataType)dictionary["ArrayElementDataType"];
-            field.IsArrayElement = (bool)dictionary["IsArrayElement"];
-            field.IsAnalyzed = (bool)dictionary["IsAnalyzed"];
+            if (dictionary["IsArrayElement"] is bool)
+                field.IsArrayElement = (bool)dictionary["IsArrayElement"];
+            else
+            {
+                bool isArrayElement;
+                if (Boolean.TryParse(dictionary["IsArrayElement"] as string, out isArrayElement))
+                    field.IsArrayElement = isArrayElement;
+            }
+
+            if (field.IsArrayElement && !dictionary.ContainsKey("ArrayElementDataType"))
+                throw new SchemaException("Schema.Field.ArrayElementDataType is mandatory.");
+
+            if (dictionary.ContainsKey("ArrayElementDataType"))
+            {
+                if (dictionary["ArrayElementDataType"] is Schema.DataType)
+                    field.ArrayElementDataType = (Schema.DataType)dictionary["ArrayElementDataType"];
+                else
+                {
+                    Schema.DataType dataType;
+                    if (Enum.TryParse<Schema.DataType>(dictionary["ArrayElementDataType"] as string, out dataType))
+                        field.ArrayElementDataType = dataType;
+                }
+            }
+
+            if (dictionary.ContainsKey("IsAnalyzed"))
+            {
+                if (dictionary["IsAnalyzed"] is bool)
+                    field.IsAnalyzed = (bool)dictionary["IsAnalyzed"];
+                else
+                {
+                    bool isAnalyzed;
+                    if (Boolean.TryParse(dictionary["IsAnalyzed"] as string, out isAnalyzed))
+                        field.IsAnalyzed = isAnalyzed;
+                }
+            }
 
             if (dictionary.ContainsKey("ObjectSchema"))
             {
@@ -169,7 +219,7 @@ namespace ExpandoDB.Search
                 if (schemaDictionary != null)
                     field.ObjectSchema = new Schema().PopulateWith(schemaDictionary);
             }
-
+            
             if (dictionary.ContainsKey("FacetSettings"))
             {
                 var facetSettingsDictionary = dictionary["FacetSettings"] as IDictionary<string, object>;
@@ -193,10 +243,28 @@ namespace ExpandoDB.Search
             if (dictionary == null)
                 throw new ArgumentNullException(nameof(dictionary));
 
+            if (!dictionary.ContainsKey("FacetName"))
+                throw new SchemaException("Schema.FacetSettings.FacetName is mandatory.");
+
             facetSettings.FacetName = dictionary["FacetName"] as string;
-            facetSettings.IsHierarchical = (bool)dictionary["IsHierarchical"];
-            facetSettings.HierarchySeparator = dictionary["HierarchySeparator"] as string;
-            facetSettings.FormatString = dictionary["FormatString"] as string;                        
+
+            if (dictionary.ContainsKey("IsHierarchical"))
+            {
+                if (dictionary["IsHierarchical"] is bool)
+                    facetSettings.IsHierarchical = (bool)dictionary["IsHierarchical"];
+                else
+                {
+                    bool isHierarchical;
+                    if (Boolean.TryParse(dictionary["IsHierarchical"] as string, out isHierarchical))
+                        facetSettings.IsHierarchical = isHierarchical;
+                }
+            }
+            
+            if (dictionary.ContainsKey("HierarchySeparator"))
+                facetSettings.HierarchySeparator = dictionary["HierarchySeparator"] as string;
+
+            if (dictionary.ContainsKey("FormatString"))
+                facetSettings.FormatString = dictionary["FormatString"] as string;                        
 
             return facetSettings;
         }

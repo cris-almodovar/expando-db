@@ -88,10 +88,9 @@ namespace ExpandoDB.Search
                     facetField = new FacetField(facetName, facetValues);                    
                 }
             }
-            else
-            {
-                facetField = new FacetField(facetName, facetValue);
-            }
+            
+            if (facetField == null && !String.IsNullOrWhiteSpace(facetValue))            
+                facetField = new FacetField(facetName, facetValue);            
 
             return facetField;
         }

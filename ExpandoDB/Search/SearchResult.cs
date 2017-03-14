@@ -133,13 +133,13 @@ namespace ExpandoDB.Search
 
             Query = criteria.Query;
             SortByFields = criteria.SortByFields;
-            TopN = criteria.TopN;
-            ItemsPerPage = criteria.ItemsPerPage;
+            TopN = criteria.TopN ?? SearchCriteria.DEFAULT_TOP_N;
+            ItemsPerPage = criteria.ItemsPerPage ?? SearchCriteria.DEFAULT_ITEMS_PER_PAGE;
             IncludeHighlight = criteria.IncludeHighlight;
-            PageNumber = criteria.PageNumber;
+            PageNumber = criteria.PageNumber ?? 1;
 
             SelectFacets = criteria.SelectFacets;
-            TopNFacets = criteria.TopNFacets;            
+            TopNFacets = criteria.TopNFacets ?? SearchCriteria.DEFAULT_TOP_N_FACETS;            
 
             ItemCount = itemCount;
             TotalHits = totalHits;

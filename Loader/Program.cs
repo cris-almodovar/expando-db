@@ -20,7 +20,7 @@ namespace Loader
     {
         static void Main()
         {
-            var expandoDbUrl = ConfigurationManager.AppSettings["ExpandoDbUrl"] ?? "http://localhost:9000/db";
+            var expandoDbUrl = ConfigurationManager.AppSettings["ExpandoDbUrl"] ?? "http://localhost:9000";
             var restClient = new RestClient(expandoDbUrl);
 
             Console.WriteLine("ExpandoDB URL: " + expandoDbUrl);
@@ -40,6 +40,33 @@ namespace Loader
 
             var stopwatch = new Stopwatch();
             stopwatch.Start();
+
+            var dropRequest = new RestRequest("/db/reuters?drop=true", Method.DELETE);
+            restClient.Execute(dropRequest);
+
+            var schemaRequest = new RestRequest("db/_schemas/reuters", Method.PUT);
+            var schema = new
+            {
+                Name = "reuters",
+                Fields = new List<object>
+                {
+                    new
+                    {
+                        Name = "date",
+                        DataType = "DateTime",
+                        IsArrayElement = false,
+                        FacetSettings = new
+                        {
+                            FacetName = "Publish Date",
+                            IsHierarchical = true,
+                            FormatString = "yyyy/MM/dd"
+                        }
+                    }
+                }
+            };
+
+            schemaRequest.AddJsonBody(schema);
+            var response = restClient.Execute(schemaRequest);
             
             var options = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
             Parallel.ForEach(sgmlFiles, options, filePath =>
@@ -73,17 +100,12 @@ namespace Loader
                                 var date = reuters["DATE"].InnerText;
                                 var text = reuters["TEXT"];
                                 var title = text["TITLE"]?.InnerText;
-                                var body = text["BODY"]?.InnerText;
-
-                                var categories = new List<string>();                                
+                                var body = text["BODY"]?.InnerText;                                                             
 
                                 DateTime dateTime;
-                                if (DateTime.TryParse(date, out dateTime))
-                                {
-                                    const string dateFormat = "yyyy/MMM/dd";
-                                    categories.Add($"Date:{dateTime.ToString(dateFormat)}");
-                                }
+                                DateTime.TryParse(date, out dateTime);
 
+                                var themes = new List<string>();
                                 var topicsNode = reuters["TOPICS"];                                
                                 if (topicsNode != null)
                                 {
@@ -91,7 +113,7 @@ namespace Loader
                                         if (!String.IsNullOrWhiteSpace(childNode.InnerText))
                                         {
                                             var theme = childNode.InnerText.Replace(@"/", @"\/");
-                                            categories.Add($"Theme:{theme}");
+                                            themes.Add(theme);
                                         }
                                 }
 
@@ -100,12 +122,12 @@ namespace Loader
                                     date = dateTime > DateTime.MinValue ? (DateTime?)dateTime : null,
                                     title = title,
                                     text = body,
-                                    _categories = categories
+                                    themes = themes
                                 };
 
                                 var restRequest = new RestRequest
                                 {
-                                    Resource = "/reuters",
+                                    Resource = "db/reuters",
                                     Method = Method.POST,
                                     DateFormat = DateFormat.ISO_8601
                                 };

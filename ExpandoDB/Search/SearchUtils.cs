@@ -69,6 +69,7 @@ namespace ExpandoDB.Search
             var itemsPerPage = result.ItemsPerPage ?? SearchCriteria.DEFAULT_ITEMS_PER_PAGE;
             var pageNumber = result.PageNumber ?? 1;
             var topNFacetValues = result.TopNFacets ?? SearchCriteria.DEFAULT_TOP_N_FACETS;
+            var documentIds = new List<Guid>();
 
             if (result.ItemCount > 0)
             {
@@ -79,8 +80,7 @@ namespace ExpandoDB.Search
                                             .Skip(itemsToSkip)
                                             .Take(itemsToTake)
                                             .ToList();
-
-                var documentIds = new List<Guid>();
+                                
                 for (var i = 0; i < scoreDocs.Count; i++)
                 {
                     var sd = scoreDocs[i];
@@ -92,12 +92,12 @@ namespace ExpandoDB.Search
                     var idValue = idField.StringValue();
 
                     documentIds.Add(Guid.Parse(idValue));
-                }
-
-                result.Items = documentIds;
-                result.Facets = facets ?? Enumerable.Empty<FacetValue>();
-                result.PageCount = ComputePageCount(result.ItemCount, itemsPerPage);
+                }                
             }
+
+            result.Items = documentIds;
+            result.Facets = facets ?? Enumerable.Empty<FacetValue>();
+            result.PageCount = ComputePageCount(result.ItemCount, itemsPerPage);
         }
 
         private static int ComputePageCount(int hitCount, int itemsPerPage)

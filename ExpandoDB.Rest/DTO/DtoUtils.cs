@@ -183,7 +183,7 @@ namespace ExpandoDB.Rest.DTO
             dynamic dynamicDto = new ExpandoObject();
 
             dynamicDto.select = searchRequestDto.select;
-            dynamicDto.topN = searchResult.TopN;
+            dynamicDto.topN = searchResult.TopN ?? SearchCriteria.DEFAULT_TOP_N;
             dynamicDto.from = collectionName;
             dynamicDto.where = searchRequestDto.where;
             dynamicDto.orderBy = searchRequestDto.orderBy;
@@ -191,11 +191,11 @@ namespace ExpandoDB.Rest.DTO
             dynamicDto.documentCount = searchResult.ItemCount;
             dynamicDto.totalHits = searchResult.TotalHits;
             dynamicDto.pageCount = searchResult.PageCount;
-            dynamicDto.pageNumber = searchResult.PageNumber;
-            dynamicDto.documentsPerPage = searchResult.ItemsPerPage;
+            dynamicDto.pageNumber = searchResult.PageNumber ?? 1;
+            dynamicDto.documentsPerPage = searchResult.ItemsPerPage ?? SearchCriteria.DEFAULT_ITEMS_PER_PAGE;
             dynamicDto.highlight = searchResult.IncludeHighlight;
-            dynamicDto.selectCategories = searchResult.SelectFacets;
-            dynamicDto.topNCategories = searchResult.TopNFacets;
+            dynamicDto.selectFacets = searchResult.SelectFacets;
+            dynamicDto.topNFacets = searchResult.TopNFacets ?? SearchCriteria.DEFAULT_TOP_N_FACETS;
 
             var fieldsToSelect = searchRequestDto.select.ToList();
             if (fieldsToSelect.Count > 0 && searchResult.IncludeHighlight == true)
