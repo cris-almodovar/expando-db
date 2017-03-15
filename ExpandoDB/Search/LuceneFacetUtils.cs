@@ -57,7 +57,7 @@ namespace ExpandoDB.Search
             // Split the string using ":" to get the Facet name
             var facetName = facetFilterCopy.Contains(COLON) ?
                             facetFilterCopy.Split(new[] { COLON }, StringSplitOptions.None).FirstOrDefault() :
-                            null;
+                            facetFilterCopy;
 
             if (String.IsNullOrWhiteSpace(facetName))
                 throw new SchemaException($"Invalid Facet value string: '{facetFilter}'");
@@ -66,8 +66,8 @@ namespace ExpandoDB.Search
                                  .Replace(escapedHierarchySeparatorTempToken, hierarchySeparator)
                                  .Replace(ESCAPED_COLON, COLON);
 
-            var facetValueStartIndex = facetFilterCopy.IndexOf(COLON, StringComparison.InvariantCulture) + 1;
-            var facetValue = facetFilterCopy.Substring(facetValueStartIndex);
+            var facetValueStartIndex = facetFilterCopy.Contains(COLON) ? facetFilterCopy.IndexOf(COLON, StringComparison.InvariantCulture) + 1 : -1;
+            var facetValue = facetValueStartIndex >= 0 ? facetFilterCopy.Substring(facetValueStartIndex) : String.Empty;
 
             FacetField facetField = null;
 
@@ -77,20 +77,25 @@ namespace ExpandoDB.Search
                 var facetValueParts = facetValue.Split(new[] { hierarchySeparator }, StringSplitOptions.None);
                 if (facetValueParts.Count() >= 1)
                 {
-                    var facetValues = facetValueParts.Select(s => s.Trim()
-                                                                 .Replace(escapedHierarchySeparatorTempToken, hierarchySeparator)
-                                                                 .Replace(ESCAPED_COLON_TEMP_REPLACEMENT_TOKEN, COLON))
-                                                   .ToArray();
+                    var facetChildValues = facetValueParts.Select(s => s.Trim()
+                                                                        .Replace(escapedHierarchySeparatorTempToken, hierarchySeparator)
+                                                                        .Replace(ESCAPED_COLON_TEMP_REPLACEMENT_TOKEN, COLON))
+                                                          .ToArray();
 
-                    if (facetValues.Any(s => String.IsNullOrWhiteSpace(s)))
+                    if (facetChildValues.Any(s => String.IsNullOrWhiteSpace(s)))
                         throw new SchemaException($"Invalid Facet filter string: '{facetFilter}'");
 
-                    facetField = new FacetField(facetName, facetValues);                    
+                    facetField = new FacetField(facetName, facetChildValues);                    
                 }
             }
-            
-            if (facetField == null && !String.IsNullOrWhiteSpace(facetValue))            
-                facetField = new FacetField(facetName, facetValue);            
+
+            if (facetField == null)
+            {
+                if (!String.IsNullOrWhiteSpace(facetValue))
+                    facetField = new FacetField(facetName, facetValue);
+                else
+                    throw new SchemaException($"Invalid Facet filter string: '{facetFilter}'");
+            }
 
             return facetField;
         }
@@ -122,24 +127,25 @@ namespace ExpandoDB.Search
         /// </summary>
         /// <param name="facetsConfig">The facets configuration.</param>
         /// <param name="facetField">The facet field.</param>
-        public static void EnsureConfig(this FacetsConfig facetsConfig, FacetField facetField)
+        /// <param name="facetSettings">The facet settings.</param>        
+        public static void EnsureConfig(this FacetsConfig facetsConfig, FacetField facetField, Schema.FacetSettings facetSettings)
         {
             if (facetsConfig == null)
                 throw new ArgumentNullException(nameof(facetsConfig));
             if (facetField == null)
                 throw new ArgumentNullException(nameof(facetField));
 
-            var facetName = facetField.Dim;
+            var facetName = facetSettings.FacetName;
 
             if (!facetsConfig.Contains(facetName))
             {
                 // Configure the FacetField if not already configured.
-                // By default set it to hierarchical, and multi-valued.
+                // By default set it to multi-valued.
                 lock (facetsConfig)
                 {
                     if (!facetsConfig.Contains(facetName))
                     {
-                        facetsConfig.SetHierarchical(facetName, true);
+                        facetsConfig.SetHierarchical(facetName, facetSettings.IsHierarchical);
                         facetsConfig.SetMultiValued(facetName, true);
                     }
                 }
@@ -178,7 +184,7 @@ namespace ExpandoDB.Search
                             var facetValueString = facetFilter.Trim().Replace(ESCAPED_COMMA_TEMP_TOKEN, COMMA);
                             var facetName = facetValueString.Contains(COLON) ?
                                             facetValueString.Split(new[] { COLON }, StringSplitOptions.None).FirstOrDefault() :
-                                            null;
+                                            facetValueString;
 
                             if (String.IsNullOrWhiteSpace(facetName))
                                 throw new SchemaException($"No Facet name specified in: '{facetValueString}'");

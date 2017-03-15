@@ -162,9 +162,7 @@ namespace ExpandoDB.Search
             if (!dictionary.ContainsKey("Name"))
                 throw new SchemaException("Schema.Field.Name is mandatory.");
             if (!dictionary.ContainsKey("DataType"))
-                throw new SchemaException("Schema.Field.DataType is mandatory.");
-            if (!dictionary.ContainsKey("IsArrayElement"))
-                throw new SchemaException("Schema.Field.IsArrayElement is mandatory.");
+                throw new SchemaException("Schema.Field.DataType is mandatory.");            
 
             field.Name = dictionary["Name"] as string;
 
@@ -177,16 +175,21 @@ namespace ExpandoDB.Search
                     field.DataType = dataType;
             }
 
-            if (dictionary["IsArrayElement"] is bool)
-                field.IsArrayElement = (bool)dictionary["IsArrayElement"];
-            else
+            if (dictionary.ContainsKey("IsArrayElement"))
             {
-                bool isArrayElement;
-                if (Boolean.TryParse(dictionary["IsArrayElement"] as string, out isArrayElement))
-                    field.IsArrayElement = isArrayElement;
+                if (dictionary["IsArrayElement"] is bool)
+                {
+                    field.IsArrayElement = (bool)dictionary["IsArrayElement"];
+                }
+                else
+                {
+                    bool isArrayElement;
+                    if (Boolean.TryParse(dictionary["IsArrayElement"] as string, out isArrayElement))
+                        field.IsArrayElement = isArrayElement;
+                }
             }
 
-            if (field.IsArrayElement && !dictionary.ContainsKey("ArrayElementDataType"))
+            if (field.DataType == Schema.DataType.Array && !dictionary.ContainsKey("ArrayElementDataType"))
                 throw new SchemaException("Schema.Field.ArrayElementDataType is mandatory.");
 
             if (dictionary.ContainsKey("ArrayElementDataType"))
@@ -204,7 +207,9 @@ namespace ExpandoDB.Search
             if (dictionary.ContainsKey("IsAnalyzed"))
             {
                 if (dictionary["IsAnalyzed"] is bool)
+                {
                     field.IsAnalyzed = (bool)dictionary["IsAnalyzed"];
+                }
                 else
                 {
                     bool isAnalyzed;
