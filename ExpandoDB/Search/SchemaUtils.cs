@@ -31,7 +31,7 @@ namespace ExpandoDB.Search
         public static Document ToDocument(this Schema schema)
         {            
             var document = new Document();
-            document._id = schema._id ?? Guid.NewGuid();
+            document._id = schema._id ?? SequentialGuid.NewGuid();
 
             dynamic expando = document.AsExpando();
             expando.Name = schema.Name;            

@@ -70,14 +70,14 @@ namespace ExpandoDB
         {
             if (!_expandoDictionary.ContainsKey(Schema.MetadataField.ID))
             {
-                _expandoDictionary[Schema.MetadataField.ID] = Guid.NewGuid();
+                _expandoDictionary[Schema.MetadataField.ID] = SequentialGuid.NewGuid();
                 return;
             }
 
             var idValue = _expandoDictionary[Schema.MetadataField.ID];
             if (idValue == null)
             {
-                _expandoDictionary[Schema.MetadataField.ID] = Guid.NewGuid();
+                _expandoDictionary[Schema.MetadataField.ID] = SequentialGuid.NewGuid();
                 return;
             }
 
@@ -85,7 +85,7 @@ namespace ExpandoDB
             if (idType == typeof(Guid))
             {
                 if ((Guid)idValue == Guid.Empty)                
-                    _expandoDictionary[Schema.MetadataField.ID] = Guid.NewGuid();
+                    _expandoDictionary[Schema.MetadataField.ID] = SequentialGuid.NewGuid();
                 
                 return;
             }

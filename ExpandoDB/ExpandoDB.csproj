@@ -215,6 +215,7 @@
     <Compile Include="DocumentUtils.cs" />
     <Compile Include="Database.cs" />
     <Compile Include="GlobalSuppressions.cs" />
+    <Compile Include="SequentialGuid.cs" />
     <Compile Include="Search\FacetValue.cs" />
     <Compile Include="Search\CompositeAnalyzer.cs" />
     <Compile Include="Search\LuceneFacetBuilder.cs" />
@@ -256,6 +257,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

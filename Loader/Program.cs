@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Xml;
 using System.Linq;
 using System.IO.Compression;
+using System.Globalization;
 
 namespace Loader
 {
@@ -59,7 +60,7 @@ namespace Loader
                         {
                             FacetName = "Publish Date",
                             IsHierarchical = true,
-                            FormatString = "yyyy/MM/dd"
+                            FormatString = "yyyy/MMM/dd"
                         }
                     }
                 }

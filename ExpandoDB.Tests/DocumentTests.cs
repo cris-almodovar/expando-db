@@ -24,7 +24,7 @@ namespace ExpandoDB.Tests
         public void id_accepts_guid_only()
         {
             dynamic document = new Document();
-            document._id = Guid.NewGuid();
+            document._id = SequentialGuid.NewGuid();
 
             // This will raise an InvalidOperationException
             document._id = 100;
@@ -44,7 +44,7 @@ namespace ExpandoDB.Tests
         public void Document_allows_string_number_datetime_guid_list_and_dictionary()
         {
             dynamic document = new Document();
-            document._id = Guid.NewGuid();
+            document._id = SequentialGuid.NewGuid();
             document.IntegerValue = 12345;
             document.DecimalValue = 10.50m;
             document.FloatValue = 0.110f;
