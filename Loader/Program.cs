@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using System.Xml;
 using System.Linq;
 using System.IO.Compression;
-using System.Globalization;
+using System.Threading;
 
 namespace Loader
 {
@@ -45,6 +45,8 @@ namespace Loader
             var dropRequest = new RestRequest("/db/reuters?drop=true", Method.DELETE);
             restClient.Execute(dropRequest);
 
+            Thread.Sleep(TimeSpan.FromSeconds(5));
+
             var schemaRequest = new RestRequest("db/_schemas/reuters", Method.PUT);
             var schema = new
             {
@@ -54,21 +56,32 @@ namespace Loader
                     new
                     {
                         Name = "date",
-                        DataType = "DateTime",
-                        IsArrayElement = false,
+                        DataType = "DateTime",                        
                         FacetSettings = new
                         {
                             FacetName = "Publish Date",
                             IsHierarchical = true,
+                            HierarchySeparator = "/",
                             FormatString = "yyyy/MMM/dd"
                         }
-                    }
+                    },
+                    new
+                    {
+                        Name = "themes",
+                        DataType = "Array",
+                        ArrayElementDataType = "Text",
+                        FacetSettings = new
+                        {
+                            FacetName = "Themes",
+                            IsHierarchical = false
+                        }
+                    },
                 }
             };
 
             schemaRequest.AddJsonBody(schema);
             var response = restClient.Execute(schemaRequest);
-            
+
             var options = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
             Parallel.ForEach(sgmlFiles, options, filePath =>
             {
@@ -152,6 +165,7 @@ namespace Loader
 
             stopwatch.Stop();
             Console.WriteLine("Finished importing files. Elapsed = " + stopwatch.Elapsed);
+            Console.ReadLine();
         }        
     }
 

@@ -41,16 +41,14 @@ namespace ExpandoDB.Search
 
             _taxonomyWriter = taxonomyWriter;
             FacetsConfig = new FacetsConfig();                        
-        }        
+        }
 
         /// <summary>
         /// Creates Lucene FacetFields from Document Fields that are configured as Facets.
         /// </summary>
         /// <param name="document">The Document.</param>
         /// <param name="schema">The schema of the Document.</param>
-        /// <returns></returns>
-        /// <exception cref="ArgumentNullException">
-        /// </exception>
+        /// <returns></returns>       
         private IEnumerable<FacetField> CreateFacetFields(Document document, Schema schema)
         {
             if (document == null)
@@ -80,7 +78,10 @@ namespace ExpandoDB.Search
                             {
                                 var facetField = CreateFacetField(item, schemaField.ArrayElementDataType, facetSettings);
                                 if (facetField != null)
+                                {
                                     facetFields.Add(facetField);
+                                    FacetsConfig.EnsureConfig(facetField, facetSettings);
+                                }
                             }
                         }                        
                     }
@@ -88,7 +89,10 @@ namespace ExpandoDB.Search
                     {
                         var facetField = CreateFacetField(fieldValue, schemaField.DataType, facetSettings);
                         if (facetField != null)
+                        {
                             facetFields.Add(facetField);
+                            FacetsConfig.EnsureConfig(facetField, facetSettings);
+                        }
                     }                    
                 }
             }             
