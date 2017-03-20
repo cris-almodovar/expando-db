@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
+using System.Text;
 using LuceneDocument = FlexLucene.Document.Document;
 
 namespace ExpandoDB
@@ -198,6 +199,43 @@ namespace ExpandoDB
 
             var dictionary = new Dictionary<string, object>(document.AsDictionary());
             return dictionary;
-        }      
+        }
+
+        /// <summary>
+        /// Computes the MD5 hash of the given string value; 
+        /// the hash is returned as a byte array.
+        /// </summary>
+        /// <param name="value">The string value.</param>
+        /// <returns></returns>
+        public static byte[] ComputeMd5Hash(this string value)
+        {
+            if (String.IsNullOrWhiteSpace(value))
+                throw new ArgumentException(nameof(value));
+
+            using (var md5 = System.Security.Cryptography.MD5.Create())
+            {
+                byte[] data = Encoding.UTF8.GetBytes(value);
+                byte[] hash = md5.ComputeHash(data);                                
+                
+                return hash;
+            }
+        }
+
+        /// <summary>
+        /// Computes the MD5 hash of the given string; 
+        /// the hash is returned as a hexadecimal string.
+        /// </summary>
+        /// <param name="value">The string value.</param>
+        /// <returns></returns>
+        public static string ComputeMd5HashAsString(this string value)
+        {
+            byte[] hash = value.ComputeMd5Hash();
+            var buffer = new System.Text.StringBuilder();
+            for (int i = 0; i < hash.Length; i++)
+                  buffer.Append(hash[i].ToString("x2"));
+
+            // Return the hexadecimal string.
+            return buffer.ToString();            
+        }
     }
 }

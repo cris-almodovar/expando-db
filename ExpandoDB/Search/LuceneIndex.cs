@@ -177,7 +177,7 @@ namespace ExpandoDB.Search
                 throw new ArgumentNullException(nameof(document));
 
             if (document._id == null || document._id.Value == Guid.Empty)
-                document._id = SequentialGuid.NewGuid();
+                document._id = DocumentId.NewGuid();
 
             var luceneDocument = document.ToLuceneDocument(Schema, _facetBuilder);
 

@@ -56,7 +56,7 @@ namespace ExpandoDB.Tests
         private static Document CreateDocument()
         {
             var document = new Document();
-            document._id = SequentialGuid.NewGuid();
+            document._id = DocumentId.NewGuid();
             document._createdTimestamp = DateTime.UtcNow;
 
             dynamic book = document;

@@ -109,7 +109,7 @@ namespace ExpandoDB
             }
 
             if (document._id == null || document._id.Value == Guid.Empty)
-                document._id = SequentialGuid.NewGuid();          
+                document._id = DocumentId.NewGuid();          
 
             _luceneIndex.Insert(document);       
             await _documentStorage.InsertAsync(Name, document).ConfigureAwait(false);

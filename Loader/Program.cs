@@ -37,15 +37,15 @@ namespace Loader
             
             var sgmlFiles = Directory.GetFiles(datasetFolder, "*.sgm");
 
-            Console.WriteLine(String.Format("Importing {0} sgml files from folder: '{1}'.", sgmlFiles.Length, Path.GetFullPath(datasetFolder)));
-
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
-
             var dropRequest = new RestRequest("/db/reuters?drop=true", Method.DELETE);
             restClient.Execute(dropRequest);
 
             Thread.Sleep(TimeSpan.FromSeconds(5));
+
+            Console.WriteLine(String.Format("Importing {0} sgml files from folder: '{1}'.", sgmlFiles.Length, Path.GetFullPath(datasetFolder)));
+
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();            
 
             var schemaRequest = new RestRequest("db/_schemas/reuters", Method.PUT);
             var schema = new

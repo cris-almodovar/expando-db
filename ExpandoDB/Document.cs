@@ -70,14 +70,14 @@ namespace ExpandoDB
         {
             if (!_expandoDictionary.ContainsKey(Schema.MetadataField.ID))
             {
-                _expandoDictionary[Schema.MetadataField.ID] = SequentialGuid.NewGuid();
+                _expandoDictionary[Schema.MetadataField.ID] = DocumentId.NewGuid();
                 return;
             }
 
             var idValue = _expandoDictionary[Schema.MetadataField.ID];
             if (idValue == null)
             {
-                _expandoDictionary[Schema.MetadataField.ID] = SequentialGuid.NewGuid();
+                _expandoDictionary[Schema.MetadataField.ID] = DocumentId.NewGuid();
                 return;
             }
 
@@ -85,7 +85,7 @@ namespace ExpandoDB
             if (idType == typeof(Guid))
             {
                 if ((Guid)idValue == Guid.Empty)                
-                    _expandoDictionary[Schema.MetadataField.ID] = SequentialGuid.NewGuid();
+                    _expandoDictionary[Schema.MetadataField.ID] = DocumentId.NewGuid();
                 
                 return;
             }
@@ -396,10 +396,10 @@ namespace ExpandoDB
             if (thisJson.Length != otherJson.Length)
                 return false;
 
-            var thisHash = ComputeMd5Hash(thisJson);
-            var otherHash = other.ComputeMd5Hash(otherJson);
+            var thisHash = thisJson.ComputeMd5HashAsString();
+            var otherHash = otherJson.ComputeMd5HashAsString();
 
-            return string.Compare(thisHash, otherHash, StringComparison.Ordinal) == 0;
+            return String.Compare(thisHash, otherHash, StringComparison.Ordinal) == 0;
         }
 
         /// <summary>
@@ -461,32 +461,9 @@ namespace ExpandoDB
         /// </returns>
         public override int GetHashCode()
         {
-            return ComputeMd5Hash().GetHashCode();
-        }
-
-        /// <summary>
-        /// Computes the MD5 hash of the JSON representation of this Document
-        /// </summary>
-        /// <param name="json">The json.</param>
-        /// <returns></returns>
-        internal string ComputeMd5Hash(string json = null)
-        {
-            using (var md5 = System.Security.Cryptography.MD5.Create())
-            {
-                if (String.IsNullOrWhiteSpace(json))
-                    json = DynamicJsonSerializer.Serialize(this);
-
-                byte[] data = Encoding.UTF8.GetBytes(json);
-                byte[] hash = md5.ComputeHash(data);
-
-                var buffer = new System.Text.StringBuilder();
-                for (int i = 0; i < hash.Length; i++)
-                    buffer.Append(hash[i].ToString("x2"));
-
-                // Return the hexadecimal string.
-                return buffer.ToString();
-            }
-        }
+            var json = DynamicJsonSerializer.Serialize(this);
+            return json.ComputeMd5HashAsString().GetHashCode();
+        }       
 
     }
 }

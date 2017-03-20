@@ -8,7 +8,7 @@ namespace ExpandoDB.Tests
         public static Document CreateBook(string title, string author, DateTime? publishDate, int? rating, string description)
         {
             var document = new Document();
-            document._id = SequentialGuid.NewGuid();
+            document._id = DocumentId.NewGuid();
             document._createdTimestamp = DateTime.UtcNow;
 
             dynamic book = document;

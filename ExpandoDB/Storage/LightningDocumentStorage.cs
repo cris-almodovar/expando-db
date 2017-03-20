@@ -74,7 +74,7 @@ namespace ExpandoDB.Storage
                 throw new ArgumentNullException(nameof(document));
 
             if (document._id == null || document._id.Value == Guid.Empty)
-                document._id = SequentialGuid.NewGuid();
+                document._id = DocumentId.NewGuid();
 
             document._createdTimestamp = document._modifiedTimestamp = DateTime.UtcNow;
             document.ConvertDatesToUtc();
