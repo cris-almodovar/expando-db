@@ -562,7 +562,7 @@ namespace ExpandoDB.Search
         private static void AddDateTimeField(this List<Field> luceneFields, Schema.Field schemaField, object value)
         {
             var dateTimeValue = (DateTime)value;
-            var dateTimeTicks = dateTimeValue.Ticks;
+            var dateTimeTicks = dateTimeValue.ToUniversalTime().Ticks;
             var fieldName = schemaField.Name.Trim();
 
             luceneFields.Add(new LongPoint(fieldName, dateTimeTicks));
