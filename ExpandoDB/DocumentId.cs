@@ -63,7 +63,7 @@ namespace ExpandoDB
         /// </summary>
         public static Guid NewGuid()
         {
-            var unixTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + 0x0edb000000000000;
+            var unixTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + 0x0db0000000000000;
             var counter = Interlocked.Increment(ref _counter) & 0x00ffffff;  // Increment the counter, but take only the 3 least significant bytes            
             var counterBytes = new byte[]
             {
