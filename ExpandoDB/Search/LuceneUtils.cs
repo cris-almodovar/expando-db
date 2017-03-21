@@ -73,7 +73,7 @@ namespace ExpandoDB.Search
                 {
                     schemaField = new Schema.Field
                     {
-                        Name = fieldName
+                        Name = fieldName                               
                     };
                     schema.Fields.TryAdd(fieldName, schemaField);
                 }
@@ -125,7 +125,6 @@ namespace ExpandoDB.Search
             var isValid = schemaField.ValidateDataType(fieldDataType);
             if (isValid)
             {
-
                 switch (fieldDataType)
                 {
                     case Schema.DataType.Number:
@@ -136,7 +135,7 @@ namespace ExpandoDB.Search
                         luceneFields.AddBooleanField(schemaField, value);
                         break;
 
-                    case Schema.DataType.Text:
+                    case Schema.DataType.Text:                        
                         luceneFields.AddTextField(schemaField, value);
                         break;
 
@@ -173,6 +172,7 @@ namespace ExpandoDB.Search
             if (schemaField.DataType == Schema.DataType.Null)
             {
                 schemaField.DataType = newDataType;
+                schemaField.IsTokenized = (newDataType == Schema.DataType.Text);
             }
             else
             {
@@ -182,7 +182,7 @@ namespace ExpandoDB.Search
                     _log.Warn(message);
                     return false;
                 }
-            }
+            }            
 
             return true;
         }
@@ -235,7 +235,7 @@ namespace ExpandoDB.Search
 
         private static List<Field> ToLuceneFields(this IList list, Schema.Field schemaField)
         {
-            var luceneFields = new List<Field>();
+            var luceneFields = new List<Field>(); 
             if (list.Count > 0)
             {
                 Schema.Field arrayElementSchemaField = null;
@@ -246,9 +246,14 @@ namespace ExpandoDB.Search
                         continue;
 
                     if (schemaField.ArrayElementDataType == Schema.DataType.Null)
+                    {
                         schemaField.ArrayElementDataType = GetFieldDataType(element);
+                        schemaField.IsTokenized = (schemaField.ArrayElementDataType == Schema.DataType.Text);
+                    }
                     else if (schemaField.ArrayElementDataType != GetFieldDataType(element))
+                    {
                         throw new SchemaException($"All the elements of the '{schemaField.Name}' array must be of type '{schemaField.ArrayElementDataType}'");
+                    }                    
 
                     switch (schemaField.ArrayElementDataType)
                     {
@@ -539,7 +544,7 @@ namespace ExpandoDB.Search
             var stringValue = (string)value;
             var fieldName = schemaField.Name.Trim();
 
-            if (schemaField.IsAnalyzed)
+            if (schemaField.IsTokenized)
                 luceneFields.Add(new TextField(fieldName, stringValue, FieldStore.NO));
             else
                 luceneFields.Add(new StringField(fieldName, stringValue, FieldStore.NO));

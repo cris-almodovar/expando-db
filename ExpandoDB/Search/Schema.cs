@@ -71,7 +71,7 @@ namespace ExpandoDB
             defaultSchema.Fields[MetadataField.ID] = new Field { Name = MetadataField.ID, DataType = DataType.Guid };
             defaultSchema.Fields[MetadataField.CREATED_TIMESTAMP] = new Field { Name = MetadataField.CREATED_TIMESTAMP, DataType = DataType.DateTime };
             defaultSchema.Fields[MetadataField.MODIFIED_TIMESTAMP] = new Field { Name = MetadataField.MODIFIED_TIMESTAMP, DataType = DataType.DateTime };
-            defaultSchema.Fields[MetadataField.FULL_TEXT] = new Field { Name = MetadataField.FULL_TEXT, DataType = DataType.Text };
+            defaultSchema.Fields[MetadataField.FULL_TEXT] = new Field { Name = MetadataField.FULL_TEXT, DataType = DataType.Text, IsTokenized = true };
 
             return defaultSchema;
         }
@@ -161,7 +161,7 @@ namespace ExpandoDB
             /// <value>
             /// <c>true</c> if this Field is an array element; otherwise, <c>false</c>.
             /// </value>
-            public bool IsArrayElement { get; set; }
+            internal bool IsArrayElement { get; set; }
 
             /// <summary>
             /// Gets or sets a value indicating whether a Text field is tokenized and analyzed by Lucene. 
@@ -169,7 +169,7 @@ namespace ExpandoDB
             /// <value>
             /// <c>true</c> if this Field is tokenized and analyzed; otherwise, <c>false</c>.
             /// </value>
-            public bool IsAnalyzed { get; set; } = true;
+            public bool IsTokenized { get; set; }
 
             /// <summary>
             /// Gets a value indicating whether this Field is a Facet.
@@ -177,7 +177,7 @@ namespace ExpandoDB
             /// <value>
             ///   <c>true</c> if this Field is a Facet; otherwise, <c>false</c>.
             /// </value>
-            public bool IsFacet { get { return FacetSettings != null; } }
+            internal bool IsFacet { get { return FacetSettings != null; } }
 
 
             /// <summary>

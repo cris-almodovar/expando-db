@@ -39,12 +39,13 @@ namespace ExpandoDB.Rest
             // Note that all handlers except OnGetCount() and OnGetCollectionSchema() are async.
 
             Get["/_schemas"] = OnGetDatabaseSchema;
-            Get["/_schemas/{collection}"] = OnGetCollectionSchema;
-            Put["/_schemas/{collection}"] = OnReplaceCollectionSchema;
+            Get["/{collection}/_schema"] = OnGetCollectionSchema;
 
-            Post["/_schemas/{collection}/fields"] = OnInsertSchemaField;
-            Get["/_schemas/{collection}/fields/{fieldName}"] = OnGetSchemaField;
-            Put["/_schemas/{collection}/fields/{fieldName}/facetSettings"] = OnReplaceSchemaFieldFacetSettings;            
+            Put["/{collection}/_schema"] = OnReplaceCollectionSchema;
+            Post["/{collection}/_schema/fields"] = OnInsertSchemaField;
+            Get["/{collection}/_schema/fields/{fieldName}"] = OnGetSchemaField;
+            Put["/{collection}/_schema/fields/{fieldName}"] = OnReplaceSchemaField;
+            Put["/{collection}/_schema/fields/{fieldName}/facetSettings"] = OnReplaceSchemaFieldFacetSettings;            
 
             Post["/{collection}", true] = OnInsertDocumentAsync;            
             Get["/{collection}", true] = OnSearchDocumentsAsync;
@@ -58,8 +59,6 @@ namespace ExpandoDB.Rest
 
             Delete["/{collection}", true] = OnDeleteCollectionAsync;
         }
-
-        
 
 
         /// <summary>
@@ -394,6 +393,7 @@ namespace ExpandoDB.Rest
             var excludedFields = new[] { "collection" };
             var dictionary = this.Bind<DynamicDictionary>(excludedFields).ToDictionary();
 
+            // We can only populate the Fields collection.            
             var fields = dictionary["Fields"] as IList;
             if (fields != null)
             {
@@ -447,7 +447,8 @@ namespace ExpandoDB.Rest
                 
 
         /// <summary>
-        /// Returns the schemas of all Document Collections in the database; a schema is simply a set of fields and their corresponding data types.
+        /// Returns the schemas of all Document Collections in the Database; 
+        /// a Schema is simply a list of Fields and their corresponding Data Types.
         /// </summary>
         /// <param name="req">The request object.</param>
         /// <returns></returns>        
@@ -533,6 +534,72 @@ namespace ExpandoDB.Rest
 
             var responseDto = this.BuildSchemaFieldResponseDto(schemaField, collectionName, stopwatch.Elapsed);
             return Response.AsJson(responseDto);
+        }
+
+        /// <summary>
+        /// Replaces the properties of the named Field.
+        /// </summary>
+        /// <param name="req">The req.</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotImplementedException"></exception>
+        private dynamic OnReplaceSchemaField(dynamic req)
+        {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            var collectionName = (string)req["collection"];
+            if (String.IsNullOrWhiteSpace(collectionName))
+                throw new ArgumentException("collection cannot be null or blank");
+
+            var fieldName = (string)req["fieldName"];
+            if (String.IsNullOrWhiteSpace(fieldName))
+                throw new ArgumentException("fieldName cannot be null or blank");
+
+            if (collectionName.StartsWith("_", StringComparison.InvariantCulture))
+                throw new InvalidOperationException($"Cannot change the Schema of system Collection '{collectionName}'.");
+
+            if (!_database.ContainsCollection(collectionName))
+                return HttpStatusCode.NotFound;
+
+            var collection = _database[collectionName];
+            var schema = collection.Schema;
+
+            Schema.Field schemaField = null;
+            schema.Fields.TryGetValue(fieldName, out schemaField);
+
+            if (schemaField == null)
+                return HttpStatusCode.NotFound;
+
+            var excludedFields = new[] { "collection" };
+            var dictionary = this.Bind<DynamicDictionary>(excludedFields).ToDictionary();
+            var newSchemaField = new Schema.Field().PopulateWith(dictionary);
+
+            // We can only update the Data Type if it is not yet set.
+            if (newSchemaField.DataType != schemaField.DataType && schemaField.DataType != Schema.DataType.Null)
+                throw new SchemaException($"Cannot change the Data Type of '{schemaField.Name}' from {schemaField.DataType} to {newSchemaField.DataType}");
+
+            // We can update the IsTokenized property.
+            if (dictionary.ContainsKey("IsTokenized"))
+            {
+                if (schemaField.DataType == Schema.DataType.Text ||
+                    (schemaField.DataType == Schema.DataType.Array && schemaField.ArrayElementDataType == Schema.DataType.Text))
+                    schemaField.IsTokenized = newSchemaField.IsTokenized;
+            }
+
+            // We can replace the FacetSettings if it is not yet set.
+            if (dictionary.ContainsKey("FacetSettings"))
+            {
+                if (schemaField.FacetSettings != null)
+                    throw new InvalidOperationException($"The field '{fieldName}' already has a FacetSettings object.");
+
+                schemaField.FacetSettings = newSchemaField.FacetSettings;
+            }
+
+            stopwatch.Stop();
+
+            var responseDto = this.BuildUpdateResponseDto(collectionName, 1, stopwatch.Elapsed);
+            return Response.AsJson(responseDto);
+
         }
 
         private dynamic OnReplaceSchemaFieldFacetSettings(dynamic req)

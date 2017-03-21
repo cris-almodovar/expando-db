@@ -47,7 +47,7 @@ namespace Loader
             var stopwatch = new Stopwatch();
             stopwatch.Start();            
 
-            var schemaRequest = new RestRequest("db/_schemas/reuters", Method.PUT);
+            var schemaRequest = new RestRequest("db/reuters/_schema", Method.PUT);
             var schema = new
             {
                 Name = "reuters",
@@ -67,12 +67,13 @@ namespace Loader
                     },
                     new
                     {
-                        Name = "themes",
+                        Name = "keywords",
                         DataType = "Array",
                         ArrayElementDataType = "Text",
+                        IsTokenized = true,
                         FacetSettings = new
                         {
-                            FacetName = "Themes",
+                            FacetName = "Keywords",
                             IsHierarchical = false
                         }
                     },
@@ -119,7 +120,7 @@ namespace Loader
                                 DateTime dateTime;
                                 DateTime.TryParse(date, out dateTime);
 
-                                var themes = new List<string>();
+                                var keywords = new List<string>();
                                 var topicsNode = reuters["TOPICS"];                                
                                 if (topicsNode != null)
                                 {
@@ -127,7 +128,7 @@ namespace Loader
                                         if (!String.IsNullOrWhiteSpace(childNode.InnerText))
                                         {
                                             var theme = childNode.InnerText.Replace(@"/", @"\/");
-                                            themes.Add(theme);
+                                            keywords.Add(theme);
                                         }
                                 }
 
@@ -136,7 +137,7 @@ namespace Loader
                                     date = dateTime > DateTime.MinValue ? (DateTime?)dateTime : null,
                                     title = title,
                                     text = body,
-                                    themes = themes
+                                    keywords = keywords
                                 };
 
                                 var restRequest = new RestRequest

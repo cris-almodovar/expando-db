@@ -76,9 +76,8 @@ namespace ExpandoDB.Search
             var dictionary = new Dictionary<string, object>();
             dictionary["Name"] = field.Name;
             dictionary["DataType"] = field.DataType;
-            dictionary["ArrayElementDataType"] = field.ArrayElementDataType;
-            dictionary["IsArrayElement"] = field.IsArrayElement;
-            dictionary["IsAnalyzed"] = field.IsAnalyzed;
+            dictionary["ArrayElementDataType"] = field.ArrayElementDataType;            
+            dictionary["IsTokenized"] = field.IsTokenized;
 
             if (field.FacetSettings != null)
                 dictionary["FacetSettings"] = field.FacetSettings.ToDictionary();
@@ -204,17 +203,17 @@ namespace ExpandoDB.Search
                 }
             }
 
-            if (dictionary.ContainsKey("IsAnalyzed"))
+            if (dictionary.ContainsKey("IsTokenized"))
             {
-                if (dictionary["IsAnalyzed"] is bool)
+                if (dictionary["IsTokenized"] is bool)
                 {
-                    field.IsAnalyzed = (bool)dictionary["IsAnalyzed"];
+                    field.IsTokenized = (bool)dictionary["IsTokenized"];
                 }
                 else
                 {
                     bool isAnalyzed;
-                    if (Boolean.TryParse(dictionary["IsAnalyzed"] as string, out isAnalyzed))
-                        field.IsAnalyzed = isAnalyzed;
+                    if (Boolean.TryParse(dictionary["IsTokenized"] as string, out isAnalyzed))
+                        field.IsTokenized = isAnalyzed;
                 }
             }
 
