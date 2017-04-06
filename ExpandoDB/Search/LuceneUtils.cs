@@ -235,7 +235,7 @@ namespace ExpandoDB.Search
 
         private static List<Field> ToLuceneFields(this IList list, Schema.Field schemaField)
         {
-            var luceneFields = new List<Field>(); 
+            var luceneFields = new List<Field>();
             if (list.Count > 0)
             {
                 Schema.Field arrayElementSchemaField = null;
@@ -253,7 +253,7 @@ namespace ExpandoDB.Search
                     else if (schemaField.ArrayElementDataType != GetFieldDataType(element))
                     {
                         throw new SchemaException($"All the elements of the '{schemaField.Name}' array must be of type '{schemaField.ArrayElementDataType}'");
-                    }                    
+                    }
 
                     switch (schemaField.ArrayElementDataType)
                     {
@@ -276,7 +276,7 @@ namespace ExpandoDB.Search
 
                         case Schema.DataType.Array:
                             throw new SchemaException("JSON with nested arrays are currently not supported.");
-                            //break;
+                        //break;
 
                         case Schema.DataType.Object:
                             var dictionary = element as IDictionary<string, object>;
@@ -284,6 +284,21 @@ namespace ExpandoDB.Search
                                 luceneFields.AddRange(dictionary.ToLuceneFields(schemaField));
                             break;
                     }
+                }
+
+                switch (schemaField.ArrayElementDataType)
+                {  
+                    case Schema.DataType.Text:
+                    case Schema.DataType.Number:                        
+                        var docValueFieldName = schemaField.Name.ToDocValueFieldName();
+                        foreach (var item in list)
+                        {
+                            var value = item.ToString();
+                            luceneFields.Add(new SortedSetDocValuesField(docValueFieldName, new BytesRef(value)));
+                            
+                        }  
+
+                        break;
                 }
             }
 
@@ -469,13 +484,13 @@ namespace ExpandoDB.Search
         }        
 
         /// <summary>
-        /// Converts the given Lucene field name to a special field name for use in sorting.
+        /// Converts the given Lucene field name to a special field name for use in sorting, grouping.
         /// </summary>
         /// <param name="fieldName">Name of the field.</param>
         /// <returns></returns>
-        public static string ToSortFieldName(this string fieldName)
+        public static string ToDocValueFieldName(this string fieldName)
         {
-            return $"__{fieldName}_sort__";
+            return $"__{fieldName}_docval__";
 
         }
 
@@ -506,8 +521,8 @@ namespace ExpandoDB.Search
             // Only top-level and non-array fields are sortable
             if (schemaField.IsSortable)
             {
-                var sortFieldName = fieldName.ToSortFieldName();
-                luceneFields.Add(new DoubleDocValuesField(sortFieldName, doubleValue));
+                var sortFieldName = fieldName.ToDocValueFieldName(); 
+                luceneFields.Add(new DoubleDocValuesField(sortFieldName, doubleValue)); 
             }
         }
 
@@ -528,8 +543,9 @@ namespace ExpandoDB.Search
             // Only top-level and non-array fields are sortable
             if (schemaField.IsSortable)
             {
-                var sortFieldName = fieldName.ToSortFieldName();
-                luceneFields.Add(new NumericDocValuesField(sortFieldName, intValue));
+                var sortFieldName = fieldName.ToDocValueFieldName();
+                luceneFields.Add(new NumericDocValuesField(sortFieldName, intValue)); 
+                
             }           
         }
 
@@ -553,7 +569,7 @@ namespace ExpandoDB.Search
             if (schemaField.IsSortable)
             {
                 var stringValueForSorting = (stringValue.Length > SORT_FIELD_MAX_TEXT_LENGTH ? stringValue.Substring(0, SORT_FIELD_MAX_TEXT_LENGTH) : stringValue).Trim().ToLowerInvariant();
-                var sortFieldName = fieldName.ToSortFieldName();
+                var sortFieldName = fieldName.ToDocValueFieldName();
                 luceneFields.Add(new SortedDocValuesField(sortFieldName, new BytesRef(stringValueForSorting)));
             }
         }
@@ -575,7 +591,7 @@ namespace ExpandoDB.Search
             // Only top-level and non-array fields are sortable
             if (schemaField.IsSortable)
             {
-                var sortFieldName = fieldName.ToSortFieldName();
+                var sortFieldName = fieldName.ToDocValueFieldName();
                 luceneFields.Add(new NumericDocValuesField(sortFieldName, dateTimeTicks));
             }
         }
@@ -598,7 +614,7 @@ namespace ExpandoDB.Search
             // Only top-level and non-array fields are sortable
             if (schemaField.IsSortable)
             {
-                var sortFieldName = fieldName.ToSortFieldName();
+                var sortFieldName = fieldName.ToDocValueFieldName();
                 luceneFields.Add(new SortedDocValuesField(sortFieldName, new BytesRef(guidValue)));
             }
         }

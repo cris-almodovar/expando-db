@@ -15,6 +15,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Linq;
 using FlexLucene.Codecs.Lucene60;
+using FlexLucene.Document;
+using FlexLucene.Util;
 
 namespace ExpandoDB.Search
 {
@@ -259,7 +261,9 @@ namespace ExpandoDB.Search
                     var sort = GetSortCriteria(criteria.SortByFields);
                     var selectedFacets = criteria.SelectFacets.ToLuceneFacetFields(Schema);
                     var topDocs = (TopDocs)null;
-                    var facets = (IEnumerable<FacetValue>)null;
+                    var facets = (IEnumerable<FacetValue>)null;                   
+
+                    // TODO: Remove this - var vals = MultiDocValues.GetSortedSetValues(searcher.GetIndexReader(), "keywords".ToDocValueFieldName());
 
                     if (selectedFacets.Count() == 0)
                     {
@@ -300,6 +304,28 @@ namespace ExpandoDB.Search
 
                     if (criteria.TopN == 0)
                         topDocs.ScoreDocs = new ScoreDoc[0];
+
+
+                    //foreach (var sd in topDocs.ScoreDocs)
+                    //{
+                    //    var docId = sd.Doc;
+                    //    vals.SetDocument(docId);
+
+                    //    long ord = SortedSetDocValues.NO_MORE_ORDS;
+                    //    do
+                    //    {
+                    //        ord = vals.NextOrd();
+                    //        if (ord != SortedSetDocValues.NO_MORE_ORDS)
+                    //        {
+                    //            var str = vals.LookupOrd(ord).Utf8ToString();
+                    //            System.Diagnostics.Debug.WriteLine(str);
+                    //        }
+                    //    }
+                    //    while (ord != SortedSetDocValues.NO_MORE_ORDS);
+                        
+                    //    System.Diagnostics.Debug.WriteLine("---------");
+
+                    //}
 
                     // TODO: Don't pass TopDocs; pass an IEnumerable<Guid>
                     result.PopulateWith(topDocs, facets, id => searcher.Doc(id));                    
@@ -348,7 +374,7 @@ namespace ExpandoDB.Search
                 // 2. If a document does not have a value for the sort field, a default 'missing value' is assigned
                 //    so that the document always appears last in the resultset.
 
-                var sortFieldName = fieldName.ToSortFieldName();
+                var sortFieldName = fieldName.ToDocValueFieldName();
                 SortField sortField = null;
 
                 switch (sortBySchemaField.DataType)
