@@ -89,5 +89,8 @@ namespace ExpandoDB.Search
         /// The number of Facet values to return.
         /// </value>
         public int? TopNFacets { get; set; }
+
+
+        public string GroupByFields { get; set; }
     }
 }
