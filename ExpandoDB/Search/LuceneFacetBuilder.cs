@@ -119,51 +119,59 @@ namespace ExpandoDB.Search
             if (fieldValue == null)
                 return null;
 
-            switch (dataType)
+            try
             {
-                case Schema.DataType.Text:
-                    var textValue = fieldValue as string;
-                    if (textValue?.Length > MAX_FACET_TEXT_LENGTH)
-                    {
-                        _log.Warn($"The length of the value of Facet '{facetName}' is too long. Max length is {MAX_FACET_TEXT_LENGTH}");
-                    }
-                    else
-                    {
-                        if (!String.IsNullOrWhiteSpace(textValue))
-                            facetField = $"{facetName}:{textValue}".ToLuceneFacetField(facetSettings);
-                    }
-                    break;
+                switch (dataType)
+                {
+                    case Schema.DataType.Text:
+                        var textValue = fieldValue as string;
+                        if (textValue?.Length > MAX_FACET_TEXT_LENGTH)
+                        {
+                            _log.Warn($"The length of the value of Facet '{facetName}' is too long. Max length is {MAX_FACET_TEXT_LENGTH}");
+                        }
+                        else
+                        {
+                            if (!String.IsNullOrWhiteSpace(textValue))
+                                facetField = $"{facetName}:{textValue}".ToLuceneFacetField(facetSettings);
+                        }
+                        break;
 
-                case Schema.DataType.DateTime:
-                    var dateFormat = facetSettings.FormatString ?? "yyyy/MMM/dd";
-                    var dateStringValue = ((DateTime)fieldValue).ToString(dateFormat);
-                    if (!String.IsNullOrWhiteSpace(dateStringValue))
-                        facetField = $"{facetName}:{dateStringValue}".ToLuceneFacetField(facetSettings);
-                    break;
+                    case Schema.DataType.DateTime:
+                        var dateFormat = facetSettings.FormatString ?? "yyyy/MMM/dd";
+                        var dateStringValue = ((DateTime)fieldValue).ToString(dateFormat);
+                        if (!String.IsNullOrWhiteSpace(dateStringValue))
+                            facetField = $"{facetName}:{dateStringValue}".ToLuceneFacetField(facetSettings);
+                        break;
 
-                case Schema.DataType.Boolean:
-                    var boolStringValue = ((bool)fieldValue).ToString().ToLower();
-                    if (!String.IsNullOrWhiteSpace(boolStringValue))
-                        facetField = $"{facetName}:{boolStringValue}".ToLuceneFacetField(facetSettings);
-                    break;
-                
-                case Schema.DataType.Guid:
-                    var guidValue = (Guid)fieldValue;                    
-                    if (!String.IsNullOrWhiteSpace(facetSettings.FormatString))
-                        facetField = $"{facetName}:{guidValue.ToString(facetSettings.FormatString)}".ToLuceneFacetField(facetSettings);
-                    else
-                        facetField = $"{facetName}:{guidValue.ToString()}".ToLuceneFacetField(facetSettings);
+                    case Schema.DataType.Boolean:
+                        var boolStringValue = ((bool)fieldValue).ToString().ToLower();
+                        if (!String.IsNullOrWhiteSpace(boolStringValue))
+                            facetField = $"{facetName}:{boolStringValue}".ToLuceneFacetField(facetSettings);
+                        break;
 
-                    break;
-                         
-                case Schema.DataType.Number:
-                    var numberValue = Convert.ToDouble(fieldValue);                                       
-                    if (!String.IsNullOrWhiteSpace(facetSettings.FormatString))
-                        facetField = $"{facetName}:{numberValue.ToString(facetSettings.FormatString)}".ToLuceneFacetField(facetSettings);
-                    else
-                        facetField = $"{facetName}:{numberValue.ToString()}".ToLuceneFacetField(facetSettings);
-                    break;
-                
+                    case Schema.DataType.Guid:
+                        var guidValue = (Guid)fieldValue;
+                        if (!String.IsNullOrWhiteSpace(facetSettings.FormatString))
+                            facetField = $"{facetName}:{guidValue.ToString(facetSettings.FormatString)}".ToLuceneFacetField(facetSettings);
+                        else
+                            facetField = $"{facetName}:{guidValue.ToString()}".ToLuceneFacetField(facetSettings);
+
+                        break;
+
+                    case Schema.DataType.Number:
+                        var numberValue = Convert.ToDouble(fieldValue);
+                        if (!String.IsNullOrWhiteSpace(facetSettings.FormatString))
+                            facetField = $"{facetName}:{numberValue.ToString(facetSettings.FormatString)}".ToLuceneFacetField(facetSettings);
+                        else
+                            facetField = $"{facetName}:{numberValue.ToString()}".ToLuceneFacetField(facetSettings);
+                        break;
+
+                }
+            }
+            catch (Exception ex)
+            {
+                facetField = null;
+                _log.Error(ex);
             }
 
             return facetField;
