@@ -268,7 +268,8 @@ namespace ExpandoDB.Search
                                 {
                                     Name = schemaField.Name,
                                     DataType = schemaField.ArrayElementDataType,
-                                    IsArrayElement = true
+                                    IsArrayElement = true,
+                                    ParentField = schemaField
                                 };
                             }
                             luceneFields.AddRange(element.ToLuceneFields(arrayElementSchemaField ?? schemaField));

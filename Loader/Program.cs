@@ -119,6 +119,9 @@ namespace Loader
 
                                 DateTime dateTime;
                                 DateTime.TryParse(date, out dateTime);
+                                var yearMonth = dateTime > DateTime.MinValue ?
+                                                $"{dateTime.ToString("yyyy/MM")}" :
+                                                String.Empty;
 
                                 var keywords = new List<string>();
                                 var topicsNode = reuters["TOPICS"];                                
@@ -135,6 +138,7 @@ namespace Loader
                                 var document = new
                                 {
                                     date = dateTime > DateTime.MinValue ? (DateTime?)dateTime : null,
+                                    yearMonth = yearMonth,
                                     title = title,
                                     text = body,
                                     keywords = keywords

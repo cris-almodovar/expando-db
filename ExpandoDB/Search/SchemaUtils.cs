@@ -211,9 +211,9 @@ namespace ExpandoDB.Search
                 }
                 else
                 {
-                    bool isAnalyzed;
-                    if (Boolean.TryParse(dictionary["IsTokenized"] as string, out isAnalyzed))
-                        field.IsTokenized = isAnalyzed;
+                    bool isTokenized;
+                    if (Boolean.TryParse(dictionary["IsTokenized"] as string, out isTokenized))
+                        field.IsTokenized = isTokenized;
                 }
             }
 

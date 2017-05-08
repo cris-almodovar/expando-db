@@ -274,14 +274,17 @@ namespace ExpandoDB.Storage
         public async Task DropAsync(string collectionName)
         {
             if (String.IsNullOrWhiteSpace(collectionName))
-                throw new ArgumentException($"{nameof(collectionName)} cannot be null or empty");            
+                throw new ArgumentException($"{nameof(collectionName)} cannot be null or empty");
 
-            lock (_initializedDatabases)
-            {                
-                _initializedDatabases.Remove(collectionName);                
-            }            
+            if (_initializedDatabases.Contains(collectionName))
+            {
+                lock (_initializedDatabases)
+                {
+                    _initializedDatabases.Remove(collectionName);
+                }
 
-            await _storageEngine.DropAsync(collectionName);
+                await _storageEngine.DropAsync(collectionName);
+            }
         }
 
         /// <summary>

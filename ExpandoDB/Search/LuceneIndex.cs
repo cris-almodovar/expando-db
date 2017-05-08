@@ -261,9 +261,7 @@ namespace ExpandoDB.Search
                     var sort = GetSortCriteria(criteria.SortByFields);
                     var selectedFacets = criteria.SelectFacets.ToLuceneFacetFields(Schema);
                     var topDocs = (TopDocs)null;
-                    var facets = (IEnumerable<FacetValue>)null;                   
-
-                    // TODO: Remove this - var vals = MultiDocValues.GetSortedSetValues(searcher.GetIndexReader(), "keywords".ToDocValueFieldName());
+                    var facets = (IEnumerable<FacetValue>)null; 
 
                     if (selectedFacets.Count() == 0)
                     {
@@ -303,29 +301,7 @@ namespace ExpandoDB.Search
                     }
 
                     if (criteria.TopN == 0)
-                        topDocs.ScoreDocs = new ScoreDoc[0];
-
-
-                    //foreach (var sd in topDocs.ScoreDocs)
-                    //{
-                    //    var docId = sd.Doc;
-                    //    vals.SetDocument(docId);
-
-                    //    long ord = SortedSetDocValues.NO_MORE_ORDS;
-                    //    do
-                    //    {
-                    //        ord = vals.NextOrd();
-                    //        if (ord != SortedSetDocValues.NO_MORE_ORDS)
-                    //        {
-                    //            var str = vals.LookupOrd(ord).Utf8ToString();
-                    //            System.Diagnostics.Debug.WriteLine(str);
-                    //        }
-                    //    }
-                    //    while (ord != SortedSetDocValues.NO_MORE_ORDS);
-                        
-                    //    System.Diagnostics.Debug.WriteLine("---------");
-
-                    //}
+                        topDocs.ScoreDocs = new ScoreDoc[0];                    
 
                     // TODO: Don't pass TopDocs; pass an IEnumerable<Guid>
                     result.PopulateWith(topDocs, facets, id => searcher.Doc(id));                    

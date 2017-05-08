@@ -212,6 +212,7 @@
     <Compile Include="Config.cs" />
     <Compile Include="Collection.cs" />
     <Compile Include="Document.cs" />
+    <Compile Include="DocumentIdCursor.cs" />
     <Compile Include="DocumentUtils.cs" />
     <Compile Include="Database.cs" />
     <Compile Include="GlobalSuppressions.cs" />
