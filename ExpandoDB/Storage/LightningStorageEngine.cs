@@ -20,7 +20,7 @@ namespace ExpandoDB.Storage
     {
         private const long MAX_MAP_SIZE = 1000000000000;  // Limit on the size of the memory mapped file = 1TB.
         private const int MAX_DATABASES = 100;            // Limit on the number of named Ligtning databases. NOTE: In Lightning, a "database" is analogous to an RDBMS "table".
-        private const int MAX_READERS = 1024;             // Limit on the number of reader threads. 
+        private const int MAX_READERS = 32768;            // Limit on the number of reader threads. 
         private readonly LightningEnvironment _environment;
         private readonly ConcurrentDictionary<string, LightningDatabase> _openDatabases;        
         private readonly BlockingCollection<WriteOperation> _writeOperationsQueue;
@@ -55,8 +55,8 @@ namespace ExpandoDB.Storage
                 MaxDatabases = MAX_DATABASES,               
                 MapSize = MAX_MAP_SIZE,                
                 MaxReaders = MAX_READERS                
-            };            
-
+            };
+           
             _environment = new LightningEnvironment(DataPath, config);
 
             var openFlags = EnvironmentOpenFlags.WriteMap | 

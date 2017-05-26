@@ -178,14 +178,15 @@ namespace ExpandoDB.Serialization
                 return typeof(long);
             if (converter.CanConvertTo(typeof(double)))
                 return typeof(double);
+            if (converter.CanConvertTo(typeof(string)))
+                return typeof(string);
             if (converter.CanConvertTo(typeof(DateTime)))
                 return typeof(DateTime);
             if (converter.CanConvertTo(typeof(IDictionary<string, object>)))
                 return typeof(IDictionary<string, object>);
             if (converter.CanConvertTo(typeof(IEnumerable)))
                 return typeof(IEnumerable);
-            if (converter.CanConvertTo(typeof(string)))
-                return typeof(string);
+            
 
             throw new SerializationException("Unsupported data type: " + value.GetType().Name);
         }

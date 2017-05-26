@@ -162,12 +162,12 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
-    <Reference Include="TikaOnDotNet, Version=1.14.1.0, Culture=neutral, PublicKeyToken=fd70f0f601f583f3, processorArchitecture=MSIL">
-      <HintPath>..\packages\TikaOnDotnet.TextExtractor.1.14.1\lib\TikaOnDotNet.dll</HintPath>
+    <Reference Include="TikaOnDotNet, Version=1.14.2.0, Culture=neutral, PublicKeyToken=fd70f0f601f583f3, processorArchitecture=MSIL">
+      <HintPath>..\packages\TikaOnDotnet.TextExtractor.1.14.2\lib\TikaOnDotNet.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="TikaOnDotNet.TextExtraction, Version=1.14.1.0, Culture=neutral, PublicKeyToken=fd70f0f601f583f3, processorArchitecture=MSIL">
-      <HintPath>..\packages\TikaOnDotnet.TextExtractor.1.14.1\lib\TikaOnDotNet.TextExtraction.dll</HintPath>
+    <Reference Include="TikaOnDotNet.TextExtraction, Version=1.14.2.0, Culture=neutral, PublicKeyToken=fd70f0f601f583f3, processorArchitecture=MSIL">
+      <HintPath>..\packages\TikaOnDotnet.TextExtractor.1.14.2\lib\TikaOnDotNet.TextExtraction.dll</HintPath>
       <Private>True</Private>
     </Reference>
   </ItemGroup>
