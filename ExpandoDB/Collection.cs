@@ -148,6 +148,22 @@ namespace ExpandoDB
         }
 
         /// <summary>
+        /// Opens the cursor.
+        /// </summary>
+        /// <param name="criteria">The criteria.</param>
+        /// <returns></returns>
+        public DocumentCursor OpenCursor(CursorSearchCriteria criteria)
+        {
+            EnsureCollectionIsNotDropped();
+
+            if (criteria == null)
+                throw new ArgumentNullException(nameof(criteria));
+
+            var docIdCursor = _luceneIndex.OpenCursor(criteria);
+            return new DocumentCursor(docIdCursor, this);
+        }
+
+        /// <summary>
         /// Gets the Document identified by the specified guid.
         /// </summary>
         /// <param name="guid">The Document's unique identifier.</param>
@@ -165,7 +181,7 @@ namespace ExpandoDB
 
             var document = await _documentStorage.GetAsync(Name, guid).ConfigureAwait(false); 
             return document;
-        }
+        }       
 
         /// <summary>
         /// Gets all Documents from the collection.

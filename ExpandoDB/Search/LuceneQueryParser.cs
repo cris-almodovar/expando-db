@@ -7,6 +7,7 @@ using LuceneDouble = java.lang.Double;
 using LuceneLong = java.lang.Long;
 using LuceneInteger = java.lang.Integer;
 using FlexLucene.Document;
+using System.Collections.Generic;
 
 namespace ExpandoDB.Search
 {
@@ -16,6 +17,11 @@ namespace ExpandoDB.Search
     /// <seealso cref="FlexLucene.Queryparser.Classic.QueryParser" />
     public class LuceneQueryParser : QueryParser
     {
+        /// <summary>
+        /// All docs query
+        /// </summary>
+        public const string ALL_DOCS_QUERY = "*:*";
+
         private readonly Schema _schema;
 
         /// <summary>
@@ -38,7 +44,84 @@ namespace ExpandoDB.Search
                 throw new ArgumentNullException(nameof(schema));
 
             _schema = schema;
-        }       
+        }
+
+        /// <summary>
+        /// Gets the sort criteria.
+        /// </summary>
+        /// <param name="sortByFields">The sort by fields.</param>
+        /// <param name="schema">The schema.</param>
+        /// <returns></returns>
+        /// <exception cref="LuceneQueryParserException">
+        /// </exception>
+        public Sort GetSortCriteria(string sortByFields, Schema schema)
+        {
+            // Convention for asc/desc: "Author:desc,ID:asc"
+
+            if (String.IsNullOrWhiteSpace(sortByFields))
+                return Sort.RELEVANCE;
+
+            var sortByFieldsList = sortByFields.ToList();
+            var luceneSortFields = new List<SortField>();
+
+            foreach (var sortByField in sortByFieldsList)
+            {
+                var fieldName = sortByField;
+                var sortDirection = "asc";
+                if (sortByField.Contains(":"))
+                {
+                    var indexOfColon = sortByField.IndexOf(':');
+                    fieldName = sortByField.Substring(0, indexOfColon).Trim();
+                    sortDirection = sortByField.Substring(indexOfColon + 1)?.Trim()?.ToLower();
+                    if (sortDirection != "asc" && sortDirection != "desc")
+                        throw new LuceneQueryParserException($"Invalid sortBy expression: {sortByField}");
+                }
+
+                var isDescending = sortDirection == "desc";
+                var sortBySchemaField = schema.FindField(fieldName, false);
+                if (sortBySchemaField == null)
+                    throw new LuceneQueryParserException($"Invalid sortBy field: '{fieldName}'. This field is not indexed.");
+
+                // Notes: 
+                // 1. The actual sort fieldname is different, e.g. 'fieldName' ==> '__fieldName_sort__'
+                // 2. If a document does not have a value for the sort field, a default 'missing value' is assigned
+                //    so that the document always appears last in the resultset.
+
+                var sortFieldName = fieldName.ToDocValueFieldName();
+                SortField sortField = null;
+
+                switch (sortBySchemaField.DataType)
+                {
+                    case Schema.DataType.Number:
+                        sortField = new SortField(sortFieldName, SortFieldType.DOUBLE, isDescending);
+                        sortField.SetMissingValue(isDescending ? LuceneUtils.DOUBLE_MIN_VALUE : LuceneUtils.DOUBLE_MAX_VALUE);
+                        break;
+
+                    case Schema.DataType.DateTime:
+                    case Schema.DataType.Boolean:
+                        sortField = new SortField(sortFieldName, SortFieldType.LONG, isDescending);
+                        sortField.SetMissingValue(isDescending ? LuceneUtils.LONG_MIN_VALUE : LuceneUtils.LONG_MAX_VALUE);
+                        break;
+
+                    case Schema.DataType.Text:
+                    case Schema.DataType.Guid:
+                        sortField = new SortField(sortFieldName, SortFieldType.STRING, isDescending);
+                        sortField.SetMissingValue(isDescending ? SortField.STRING_FIRST : SortField.STRING_LAST);
+                        break;
+
+                    default:
+                        throw new LuceneQueryParserException($"Invalid sortBy field: '{fieldName}'. Only Number, DateTime, Boolean, Text, and GUID fields can be used for sorting.");
+                }
+
+                if (sortField != null)
+                    luceneSortFields.Add(sortField);
+            }
+
+            if (luceneSortFields?.Count == 0)
+                return Sort.RELEVANCE;
+            else
+                return new Sort(luceneSortFields.ToArray());
+        }
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         protected override Query GetRangeQuery(string fieldName, string part1, string part2, bool startInclusive, bool endInclusive)

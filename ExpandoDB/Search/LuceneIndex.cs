@@ -25,8 +25,7 @@ namespace ExpandoDB.Search
     /// </summary>
     /// <seealso cref="System.IDisposable" />
     public class LuceneIndex : IDisposable
-    {        
-        private const string ALL_DOCS_QUERY = "*:*";        
+    {       
         private readonly Directory _indexDirectory;
         private readonly Directory _taxonomyDirectory;
         private readonly Analyzer _compositeAnalyzer;
@@ -57,6 +56,22 @@ namespace ExpandoDB.Search
         /// The index path.
         /// </value>
         public string IndexPath { get; private set; }
+
+        /// <summary>
+        /// Gets the analyzer.
+        /// </summary>
+        /// <value>
+        /// The analyzer.
+        /// </value>
+        public Analyzer Analyzer { get { return _compositeAnalyzer; } }
+
+        /// <summary>
+        /// Gets the searcher taxonomy manager.
+        /// </summary>
+        /// <value>
+        /// The searcher taxonomy manager.
+        /// </value>
+        public SearcherTaxonomyManager SearcherTaxonomyManager {  get { return _searcherTaxonomyManager;  } }
 
 
         /// <summary>
@@ -255,10 +270,10 @@ namespace ExpandoDB.Search
                     var topNFacets = criteria.TopNFacets ?? SearchCriteria.DEFAULT_TOP_N_FACETS;                    
 
                     var queryParser = new LuceneQueryParser(Schema.MetadataField.FULL_TEXT, _compositeAnalyzer, Schema);
-                    var queryString = String.IsNullOrWhiteSpace(criteria.Query) ? ALL_DOCS_QUERY : criteria.Query;
+                    var queryString = String.IsNullOrWhiteSpace(criteria.Query) ? LuceneQueryParser.ALL_DOCS_QUERY : criteria.Query;
                     var query = queryParser.Parse(queryString);
 
-                    var sort = GetSortCriteria(criteria.SortByFields);
+                    var sort = queryParser.GetSortCriteria(criteria.SortByFields, Schema);
                     var selectedFacets = criteria.SelectFacets.ToLuceneFacetFields(Schema);
                     var topDocs = (TopDocs)null;
                     var facets = (IEnumerable<FacetValue>)null; 
@@ -317,77 +332,24 @@ namespace ExpandoDB.Search
             return result;
         }
 
-        private Sort GetSortCriteria(string sortByFields = null)
-        {            
-            // Convention for asc/desc: "Author:desc,ID:asc"
+        /// <summary>
+        /// Opens the cursor.
+        /// </summary>
+        /// <param name="criteria">The search criteria.</param>
+        /// <returns></returns>
+        public DocumentIdCursor OpenCursor(CursorSearchCriteria criteria)
+        {
+            if (criteria == null)
+                throw new ArgumentNullException(nameof(criteria));
 
-            if (String.IsNullOrWhiteSpace(sortByFields))
-                return Sort.RELEVANCE;
-
-            var sortByFieldsList = sortByFields.ToList();
-            var luceneSortFields = new List<SortField>();
-
-            foreach (var sortByField in sortByFieldsList)
-            {
-                var fieldName = sortByField;
-                var sortDirection = "asc";
-                if (sortByField.Contains(":"))
-                {
-                    var indexOfColon = sortByField.IndexOf(':');
-                    fieldName = sortByField.Substring(0, indexOfColon).Trim();
-                    sortDirection = sortByField.Substring(indexOfColon + 1)?.Trim()?.ToLower();
-                    if (sortDirection != "asc" && sortDirection != "desc")
-                        throw new LuceneQueryParserException($"Invalid sortBy expression: {sortByField}");
-                }
-
-                var isDescending = sortDirection == "desc";
-                var sortBySchemaField = Schema.FindField(fieldName, false);
-                if (sortBySchemaField == null)
-                    throw new LuceneQueryParserException($"Invalid sortBy field: '{fieldName}'. This field is not indexed.");
-
-                // Notes: 
-                // 1. The actual sort fieldname is different, e.g. 'fieldName' ==> '__fieldName_sort__'
-                // 2. If a document does not have a value for the sort field, a default 'missing value' is assigned
-                //    so that the document always appears last in the resultset.
-
-                var sortFieldName = fieldName.ToDocValueFieldName();
-                SortField sortField = null;
-
-                switch (sortBySchemaField.DataType)
-                {
-                    case Schema.DataType.Number:
-                        sortField = new SortField(sortFieldName, SortFieldType.DOUBLE, isDescending);
-                        sortField.SetMissingValue(isDescending ? LuceneUtils.DOUBLE_MIN_VALUE : LuceneUtils.DOUBLE_MAX_VALUE);
-                        break;
-
-                    case Schema.DataType.DateTime:
-                    case Schema.DataType.Boolean:
-                        sortField = new SortField(sortFieldName, SortFieldType.LONG, isDescending);
-                        sortField.SetMissingValue(isDescending ? LuceneUtils.LONG_MIN_VALUE : LuceneUtils.LONG_MAX_VALUE);
-                        break;
-
-                    case Schema.DataType.Text:
-                    case Schema.DataType.Guid:
-                        sortField = new SortField(sortFieldName, SortFieldType.STRING, isDescending);
-                        sortField.SetMissingValue(isDescending ? SortField.STRING_FIRST : SortField.STRING_LAST);
-                        break;
-
-                    default:
-                        throw new LuceneQueryParserException($"Invalid sortBy field: '{fieldName}'. Only Number, DateTime, Boolean, Text, and GUID fields can be used for sorting.");
-                }
-
-                if (sortField != null)
-                    luceneSortFields.Add(sortField);
-            }
-
-            if (luceneSortFields?.Count == 0)
-                return Sort.RELEVANCE;
-            else   
-                return new Sort(luceneSortFields.ToArray());
+            var docIdCursor = new DocumentIdCursor(criteria, this);
+            return docIdCursor;
         }
 
+        
+
         /// <summary>
-        /// Gets the total number of documents in the index.
+        /// Gets the current total number of documents in the index.
         /// </summary>
         /// <returns></returns>
         public int GetDocumentCount()

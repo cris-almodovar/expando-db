@@ -110,6 +110,9 @@ namespace ExpandoDB.Tests
             var actual = firstItem.Title as string;
 
             Assert.AreEqual<string>(expected, actual);
+
+
+            
         }
     }
 }
