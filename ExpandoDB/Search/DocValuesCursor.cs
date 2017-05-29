@@ -12,11 +12,14 @@ namespace ExpandoDB.Search
     /// <summary>
     /// 
     /// </summary>    
-    public class DocumentIdCursor : IDisposable, IEnumerable<Guid>
+    public class DocValuesCursor : IDisposable, IEnumerable<Dictionary<string, object>>
     {       
         private readonly SearcherTaxonomyManager _manager;
         private readonly SearcherTaxonomyManagerSearcherAndTaxonomy _searcherAndTaxonomyInstance;
         private readonly TopDocs _topDocs;
+
+        private readonly DocValuesFieldReader _docValuesFieldReader;
+        private readonly IList<string> _docValueFields;
 
         /// <summary>
         /// Gets or sets the total hits.
@@ -35,12 +38,23 @@ namespace ExpandoDB.Search
         public int Count { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DocumentIdCursor" /> class.
+        /// Initializes a new instance of the <see cref="DocValuesCursor" /> class.
         /// </summary>
         /// <param name="criteria">The criteria.</param>
         /// <param name="index">The index.</param>
-        internal DocumentIdCursor(CursorSearchCriteria criteria, LuceneIndex index)
-        {            
+        internal DocValuesCursor(CursorSearchCriteria criteria, LuceneIndex index)
+        {
+            var fields = new HashSet<string>(new[] { "_id" });
+            if (!String.IsNullOrWhiteSpace(criteria.SelectFields))
+            {
+                criteria.SelectFields.Trim().Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries)
+                        .Select(v => v.Trim())
+                        .ToList()
+                        .ForEach(v => fields.Add(v));
+
+                _docValueFields = fields.ToList();
+            }
+
             _manager = index.SearcherTaxonomyManager;
             _searcherAndTaxonomyInstance = _manager.Acquire() as SearcherTaxonomyManagerSearcherAndTaxonomy;           
 
@@ -50,7 +64,9 @@ namespace ExpandoDB.Search
             var query = queryParser.Parse(queryString);
             var sort = queryParser.GetSortCriteria(criteria.SortByFields, index.Schema);
 
-            _topDocs = _searcherAndTaxonomyInstance.Searcher.Search(query, topN, sort);
+            var searcher = _searcherAndTaxonomyInstance.Searcher;
+            _topDocs = searcher.Search(query, topN, sort);
+            _docValuesFieldReader = new DocValuesFieldReader(searcher.GetIndexReader(), index.Schema, _docValueFields);
 
             TotalHits = _topDocs.TotalHits;
             Count = _topDocs.ScoreDocs.Length;
@@ -65,19 +81,16 @@ namespace ExpandoDB.Search
         /// An enumerator that can be used to iterate through the collection.
         /// </returns>
         /// <exception cref="System.NotImplementedException"></exception>
-        public IEnumerator<Guid> GetEnumerator()
+        public IEnumerator<Dictionary<string, object>> GetEnumerator()
         {
             for (var i = 0; i < _topDocs.ScoreDocs.Length; i++)
             {
                 var sd = _topDocs.ScoreDocs[i];
-                var doc = _searcherAndTaxonomyInstance.Searcher.Doc(sd.Doc);
-                if (doc == null)
-                    continue;
+                var dictionary = _docValuesFieldReader.GetDocValuesDictionary(sd.Doc);
+                if (dictionary == null)
+                    continue;                
 
-                var idField = doc.GetField(Schema.MetadataField.ID);
-                var guid = Guid.Parse(idField.StringValue());
-
-                yield return guid;
+                yield return dictionary;
             }
         }
 

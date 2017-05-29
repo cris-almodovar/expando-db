@@ -337,12 +337,12 @@ namespace ExpandoDB.Search
         /// </summary>
         /// <param name="criteria">The search criteria.</param>
         /// <returns></returns>
-        public DocumentIdCursor OpenCursor(CursorSearchCriteria criteria)
+        public DocValuesCursor OpenCursor(CursorSearchCriteria criteria)
         {
             if (criteria == null)
                 throw new ArgumentNullException(nameof(criteria));
 
-            var docIdCursor = new DocumentIdCursor(criteria, this);
+            var docIdCursor = new DocValuesCursor(criteria, this);
             return docIdCursor;
         }
 

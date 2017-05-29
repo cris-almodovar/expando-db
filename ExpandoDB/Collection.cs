@@ -159,8 +159,8 @@ namespace ExpandoDB
             if (criteria == null)
                 throw new ArgumentNullException(nameof(criteria));
 
-            var docIdCursor = _luceneIndex.OpenCursor(criteria);
-            return new DocumentCursor(docIdCursor, this);
+            var docValuesCursor = _luceneIndex.OpenCursor(criteria);
+            return new DocumentCursor(docValuesCursor);
         }
 
         /// <summary>

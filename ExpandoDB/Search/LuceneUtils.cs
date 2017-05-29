@@ -469,17 +469,27 @@ namespace ExpandoDB.Search
             }
 
             return buffer.ToString();
-        }        
+        }
 
         /// <summary>
-        /// Converts the given Lucene field name to a special field name for use in sorting, grouping.
+        /// Converts the given Lucene field name to a special field name for use in grouping/aggregation.
         /// </summary>
         /// <param name="fieldName">Name of the field.</param>
         /// <returns></returns>
-        public static string ToDocValueFieldName(this string fieldName)
+        public static string ToDocValuesFieldName(this string fieldName)
         {
-            return $"__{fieldName}_docval__";
+            return $"__{fieldName}_docvalues__";
 
+        }
+
+        /// <summary>
+        /// Converts the given Lucene field name to a special field name for use in sorting.
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <returns></returns>
+        public static string ToSortFieldName(this string fieldName)
+        {
+            return $"__{fieldName}_sort__";
         }
 
         /// <summary>
@@ -501,23 +511,33 @@ namespace ExpandoDB.Search
         /// <param name="value">The value.</param>
         private static void AddNumberField(this List<Field> luceneFields, Schema.Field schemaField, object value)
         {
+            // We will save numeric values as longs.
             var doubleValue = Convert.ToDouble(value);
-            var fieldName = schemaField.Name.Trim();
+            var longValue = JavaDouble.doubleToRawLongBits(doubleValue);
 
+            // We will create 3 Lucene fields for the numeric value, one each for:
+            // 1. Search
+            // 2. Sorting
+            // 3. Grouping/aggregation
+
+            // Create the search field
+            var fieldName = schemaField.Name.Trim();
             luceneFields.Add(new DoublePoint(fieldName, doubleValue));
 
-            // Only top-level and non-array fields are sortable
+            // Create the sort field; only top-level and non-array fields are sortable.         
             if (schemaField.IsSortable)
             {
-                var sortFieldName = fieldName.ToDocValueFieldName(); 
-                luceneFields.Add(new DoubleDocValuesField(sortFieldName, doubleValue)); 
+                var sortFieldName = fieldName.ToSortFieldName(); 
+                luceneFields.Add(new NumericDocValuesField(sortFieldName, longValue));
             }
-            //else if (schemaField.IsArrayElement)
-            //{
-            //    var stringValue = doubleValue.ToString();
-            //    var docValueFieldName = fieldName.ToDocValueFieldName();
-            //    luceneFields.Add(new SortedSetDocValuesField(docValueFieldName, new BytesRef(stringValue)));
-            //}
+
+            // Create the grouping field.
+            var groupingFieldName = fieldName.ToDocValuesFieldName();
+
+            //if (!schemaField.IsArrayElement)            
+            //    luceneFields.Add(new NumericDocValuesField(groupingFieldName, longValue));            
+            //else
+                luceneFields.Add(new SortedNumericDocValuesField(groupingFieldName, longValue));
         }
 
 
@@ -529,24 +549,33 @@ namespace ExpandoDB.Search
         /// <param name="value">The value.</param>        
         private static void AddBooleanField(this List<Field> luceneFields, Schema.Field schemaField, object value)
         {
+            // We will save boolean values as integers.
             var intValue = (bool)value ? 1 : 0;
+
+            // We will create 3 Lucene fields for the boolean value, one each for:
+            // 1. Search
+            // 2. Sorting
+            // 3. Grouping/aggregation
+
+            // Create the search field
             var fieldName = schemaField.Name.Trim();
+            
+            luceneFields.Add(new IntPoint(fieldName, intValue));
 
-            luceneFields.Add(new IntPoint(fieldName, intValue)); 
-
-            // Only top-level and non-array fields are sortable
+            // Create the sort field; only top-level and non-array fields are sortable.            
             if (schemaField.IsSortable)
             {
-                var sortFieldName = fieldName.ToDocValueFieldName();
-                luceneFields.Add(new NumericDocValuesField(sortFieldName, intValue)); 
-                
+                var sortFieldName = fieldName.ToSortFieldName();
+                luceneFields.Add(new NumericDocValuesField(sortFieldName, intValue));
             }
-            //else if (schemaField.IsArrayElement)
-            //{
-            //    var stringValue = ((bool)value).ToString();
-            //    var docValueFieldName = fieldName.ToDocValueFieldName();
-            //    luceneFields.Add(new SortedSetDocValuesField(docValueFieldName, new BytesRef(stringValue)));
-            //}
+
+            // Create the grouping field.
+            var groupingFieldName = fieldName.ToDocValuesFieldName();
+            
+            //if (!schemaField.IsArrayElement)            
+            //    luceneFields.Add(new NumericDocValuesField(groupingFieldName, intValue));                            
+            //else
+                luceneFields.Add(new SortedNumericDocValuesField(groupingFieldName, intValue));
         }
 
         /// <summary>
@@ -557,7 +586,15 @@ namespace ExpandoDB.Search
         /// <param name="value">The value.</param>
         private static void AddTextField(this List<Field> luceneFields, Schema.Field schemaField, object value)
         {
+            // We will save Text values as strings.
             var stringValue = (string)value;
+
+            // We will create 3 Lucene fields for the text value, one each for:
+            // 1. Search
+            // 2. Sorting
+            // 3. Grouping/aggregation
+
+            // Create the search field
             var fieldName = schemaField.Name.Trim();
 
             if (schemaField.IsTokenized)
@@ -565,19 +602,24 @@ namespace ExpandoDB.Search
             else
                 luceneFields.Add(new StringField(fieldName, stringValue, FieldStore.NO));
 
-            // Only top-level and non-array fields are sortable
+            // Create the sort field; only top-level and non-array fields are sortable.    
+            // For sorting, we only take the first DOCVALUE_FIELD_MAX_TEXT_LENGTH of the text, converted to lowercase.        
             if (schemaField.IsSortable)
             {
                 var stringValueForSorting = (stringValue.Length > DOCVALUE_FIELD_MAX_TEXT_LENGTH ? stringValue.Substring(0, DOCVALUE_FIELD_MAX_TEXT_LENGTH) : stringValue).Trim().ToLowerInvariant();
-                var sortFieldName = fieldName.ToDocValueFieldName();
+                var sortFieldName = fieldName.ToSortFieldName();
                 luceneFields.Add(new SortedDocValuesField(sortFieldName, new BytesRef(stringValueForSorting)));
             }
-            //else if (schemaField.IsArrayElement)
-            //{
-            //    var stringValueForGrouping = (stringValue.Length > DOCVALUE_FIELD_MAX_TEXT_LENGTH ? stringValue.Substring(0, DOCVALUE_FIELD_MAX_TEXT_LENGTH) : stringValue).Trim().ToLowerInvariant();
-            //    var docValueFieldName = fieldName.ToDocValueFieldName();
-            //    luceneFields.Add(new SortedSetDocValuesField(docValueFieldName, new BytesRef(stringValueForGrouping)));
-            //}
+
+            // Create the grouping field.
+            // For grouping, we only take the first DOCVALUE_FIELD_MAX_TEXT_LENGTH of the text; we save the text value as is (not converted to lowercase).   
+            var groupingFieldName = fieldName.ToDocValuesFieldName();
+            var stringValueForGrouping = (stringValue.Length > DOCVALUE_FIELD_MAX_TEXT_LENGTH ? stringValue.Substring(0, DOCVALUE_FIELD_MAX_TEXT_LENGTH) : stringValue).Trim();
+
+            //if (!schemaField.IsArrayElement)
+            //    luceneFields.Add(new SortedDocValuesField(groupingFieldName, new BytesRef(stringValueForGrouping)));
+            //else            
+                luceneFields.Add(new SortedSetDocValuesField(groupingFieldName, new BytesRef(stringValueForGrouping)));            
         }
 
         /// <summary>
@@ -588,24 +630,32 @@ namespace ExpandoDB.Search
         /// <param name="value">The value.</param>        
         private static void AddDateTimeField(this List<Field> luceneFields, Schema.Field schemaField, object value)
         {
+            // We will save DateTime values as long.
             var dateTimeValue = (DateTime)value;
             var dateTimeTicks = dateTimeValue.ToUniversalTime().Ticks;
-            var fieldName = schemaField.Name.Trim();
 
+            // We will create 3 Lucene fields for the DateTime value, one each for:
+            // 1. Search
+            // 2. Sorting
+            // 3. Grouping/aggregation
+
+            // Create the search field
+            var fieldName = schemaField.Name.Trim();
             luceneFields.Add(new LongPoint(fieldName, dateTimeTicks));
 
-            // Only top-level and non-array fields are sortable
+            // Create the sort field; only top-level and non-array fields are sortable.   
             if (schemaField.IsSortable)
             {
-                var sortFieldName = fieldName.ToDocValueFieldName();
+                var sortFieldName = fieldName.ToSortFieldName();
                 luceneFields.Add(new NumericDocValuesField(sortFieldName, dateTimeTicks));
             }
-            //else if (schemaField.IsArrayElement)
-            //{
-            //    var stringValue = dateTimeValue.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ");
-            //    var docValueFieldName = fieldName.ToDocValueFieldName();
-            //    luceneFields.Add(new SortedSetDocValuesField(docValueFieldName, new BytesRef(stringValue)));
-            //}
+
+            // Create the grouping field.
+            var groupingFieldName = fieldName.ToDocValuesFieldName();
+            //if (!schemaField.IsArrayElement)            
+            //    luceneFields.Add(new NumericDocValuesField(groupingFieldName, dateTimeTicks));
+            //else            
+                luceneFields.Add(new SortedNumericDocValuesField(groupingFieldName, dateTimeTicks));
         }
 
 
@@ -617,23 +667,33 @@ namespace ExpandoDB.Search
         /// <param name="value">The value.</param>
         private static void AddGuidField(this List<Field> luceneFields, Schema.Field schemaField, object value)
         {
+            // We will save Guid values as strings.
             var guidStringValue = ((Guid)value).ToString().ToLower();
             var isStored = (schemaField.Name == Schema.MetadataField.ID ? FieldStore.YES : FieldStore.NO);
-            var fieldName = schemaField.Name.Trim();
 
+            // We will create 3 Lucene fields for the DateTime value, one each for:
+            // 1. Search
+            // 2. Sorting
+            // 3. Grouping/aggregation
+
+            // Create the search field
+            var fieldName = schemaField.Name.Trim();
             luceneFields.Add(new StringField(fieldName, guidStringValue, isStored));
 
-            // Only top-level and non-array fields are sortable
+            // Create the sort field; only top-level and non-array fields are sortable.   
             if (schemaField.IsSortable)
             {
-                var sortFieldName = fieldName.ToDocValueFieldName();
-                luceneFields.Add(new SortedDocValuesField(sortFieldName, new BytesRef(guidStringValue)));
+                var sortFieldName = fieldName.ToSortFieldName();                
+                luceneFields.Add(new SortedDocValuesField(sortFieldName, new BytesRef(guidStringValue))); 
             }
-            //else if (schemaField.IsArrayElement)
-            //{                
-            //    var docValueFieldName = fieldName.ToDocValueFieldName();
-            //    luceneFields.Add(new SortedSetDocValuesField(docValueFieldName, new BytesRef(guidStringValue)));
-            //}
+
+            // Create the grouping field.
+            var groupingFieldName = fieldName.ToDocValuesFieldName();
+
+            //if (!schemaField.IsArrayElement)            
+            //    luceneFields.Add(new SortedDocValuesField(groupingFieldName, new BytesRef(guidStringValue)));                
+            //else            
+                luceneFields.Add(new SortedSetDocValuesField(groupingFieldName, new BytesRef(guidStringValue)));            
         }
 
         /// <summary>

@@ -23,6 +23,14 @@
         public string SortByFields { get; set; }
 
         /// <summary>
+        /// Gets or sets a comma separated list of Document fields to be returned in the cursor
+        /// </summary>
+        /// <value>
+        /// A comma separated list of fields
+        /// </value>
+        public string SelectFields { get; set; }
+
+        /// <summary>
         /// Gets or sets the number of items to return; default is 100.
         /// </summary>
         /// <value>

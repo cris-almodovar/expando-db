@@ -214,7 +214,7 @@
     <Compile Include="Document.cs" />
     <Compile Include="DocumentCursor.cs" />
     <Compile Include="IEnumerableUtils.cs" />
-    <Compile Include="Search\DocumentIdCursor.cs" />
+    <Compile Include="Search\DocValuesCursor.cs" />
     <Compile Include="DocumentUtils.cs" />
     <Compile Include="Database.cs" />
     <Compile Include="GlobalSuppressions.cs" />
@@ -222,6 +222,7 @@
     <Compile Include="Search\CursorSearchCriteria.cs" />
     <Compile Include="Search\FacetValue.cs" />
     <Compile Include="Search\CompositeAnalyzer.cs" />
+    <Compile Include="Search\DocValuesFieldReader.cs" />
     <Compile Include="Search\LuceneFacetBuilder.cs" />
     <Compile Include="Search\LuceneFacetUtils.cs" />
     <Compile Include="Search\LuceneQueryParserUtils.cs" />

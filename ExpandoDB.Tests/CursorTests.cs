@@ -10,13 +10,16 @@ namespace ExpandoDB.Tests
     [TestClass]
     public class CursorTests
     {
-        const string DATA_PATH = @"D:\Users\cris\GitHub\expando-db\ExpandoDB.Service\bin\Debug\data";
+        const string DATA_PATH = @"D:\Users\Crispin\Github\expando-db\ExpandoDB.Service\bin\Debug\data";
         private Database _db;
         private Collection _docs;
 
         [TestInitialize]
         public void Initialize()
         {
+            //_db = new Database(DATA_PATH);
+            //_db.Dispose();
+
             _db = new Database(DATA_PATH);
             _docs = _db["documents"];
         }
@@ -24,9 +27,17 @@ namespace ExpandoDB.Tests
         [TestMethod]
         public void Can_create_cursor()
         {
-            using (var cursor = _docs.OpenCursor(new Search.CursorSearchCriteria { Query = "singapore", TopN = 1000 }))
+            try
             {
-                var total = cursor.AsParallel().GroupBy(doc => doc["Author"]).LongCount();
+                using (var cursor = _docs.OpenCursor(new Search.CursorSearchCriteria { Query = "singapore", SelectFields = "Author", TopN = 1000000 }))
+                {
+                    var groups = cursor.AsParallel().GroupBy(doc => doc["Author"] as string).ToList();
+                    
+                }
+            }
+            catch (Exception ex)
+            {
+                var error = ex.ToString();
             }
         }
 

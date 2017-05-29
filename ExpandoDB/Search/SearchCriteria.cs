@@ -10,7 +10,7 @@ namespace ExpandoDB.Search
         /// <summary>
         /// The defaul value for the TopN property.
         /// </summary>
-        internal const int DEFAULT_TOP_N = 100;
+        internal const int DEFAULT_TOP_N = 1000;
 
         /// <summary>
         /// The defaul value for the TopNFacets property.

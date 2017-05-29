@@ -87,7 +87,7 @@ namespace ExpandoDB.Search
                 // 2. If a document does not have a value for the sort field, a default 'missing value' is assigned
                 //    so that the document always appears last in the resultset.
 
-                var sortFieldName = fieldName.ToDocValueFieldName();
+                var sortFieldName = fieldName.ToSortFieldName();
                 SortField sortField = null;
 
                 switch (sortBySchemaField.DataType)

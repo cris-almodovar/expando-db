@@ -14,8 +14,7 @@ namespace ExpandoDB
     /// </summary>   
     public class DocumentCursor : IDisposable, IEnumerable<Document>
     {
-        private readonly DocumentIdCursor _docIdCursor;
-        private readonly Collection _collection;
+        private readonly DocValuesCursor _docValuesCursor;        
 
         /// <summary>
         /// Gets or sets the total hits.
@@ -36,15 +35,13 @@ namespace ExpandoDB
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentCursor" /> class.
         /// </summary>
-        /// <param name="docIdCursor">The document identifier cursor.</param>
-        /// <param name="collection">The storage.</param>
-        internal DocumentCursor(DocumentIdCursor docIdCursor, Collection collection)
+        /// <param name="docValuesCursor">The document identifier cursor.</param>        
+        internal DocumentCursor(DocValuesCursor docValuesCursor)
         {
-            _docIdCursor = docIdCursor;
-            _collection = collection;
+            _docValuesCursor = docValuesCursor;            
 
-            TotalHits = _docIdCursor.TotalHits;
-            Count = _docIdCursor.Count;
+            TotalHits = _docValuesCursor.TotalHits;
+            Count = _docValuesCursor.Count;
         }
 
         #region IEnumerable
@@ -57,9 +54,9 @@ namespace ExpandoDB
         /// <exception cref="System.NotImplementedException"></exception>
         public IEnumerator<Document> GetEnumerator()
         {
-            foreach (var guid in _docIdCursor)
+            foreach (var dictionary in _docValuesCursor)
             {
-                var document = _collection.GetAsync(guid).Result;
+                var document = new Document(dictionary);
                 yield return document;
             }
         }
@@ -89,7 +86,7 @@ namespace ExpandoDB
             {
                 if (disposing)
                 {
-                    _docIdCursor.Dispose();
+                    _docValuesCursor.Dispose();
                 }              
 
                 _isDisposed = true;
