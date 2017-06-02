@@ -12,11 +12,13 @@ namespace ExpandoDB.Search
     /// <summary>
     /// 
     /// </summary>    
-    public class DocValuesCursor : IDisposable, IEnumerable<Dictionary<string, object>>
-    {       
+    internal class DocValuesCursor : IDisposable, IEnumerable<Dictionary<string, object>>
+    {
+        private readonly CursorSearchCriteria _criteria;
+        private readonly LuceneIndex _index;
         private readonly SearcherTaxonomyManager _manager;
         private readonly SearcherTaxonomyManagerSearcherAndTaxonomy _searcherAndTaxonomyInstance;
-        private readonly TopDocs _topDocs;
+        private TopDocs _topDocs;
 
         private readonly DocValuesFieldReader _docValuesFieldReader;
         private readonly IList<string> _docValueFields;
@@ -42,34 +44,44 @@ namespace ExpandoDB.Search
         /// </summary>
         /// <param name="criteria">The criteria.</param>
         /// <param name="index">The index.</param>
-        internal DocValuesCursor(CursorSearchCriteria criteria, LuceneIndex index)
+        public DocValuesCursor(CursorSearchCriteria criteria, LuceneIndex index)
         {
-            var fields = new HashSet<string>(new[] { "_id" });
-            if (!String.IsNullOrWhiteSpace(criteria.SelectFields))
+            _criteria = criteria;
+            _index = index;
+            
+            if (!String.IsNullOrWhiteSpace(_criteria.SelectFields))
             {
-                criteria.SelectFields.Trim().Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries)
-                        .Select(v => v.Trim())
-                        .ToList()
-                        .ForEach(v => fields.Add(v));
-
-                _docValueFields = fields.ToList();
+                _docValueFields = _criteria.SelectFields.Trim().Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries)
+                                           .Select(v => v.Trim())
+                                           .Union(new[] { "_id" })
+                                           .Distinct()
+                                           .ToList();                
             }
 
-            _manager = index.SearcherTaxonomyManager;
-            _searcherAndTaxonomyInstance = _manager.Acquire() as SearcherTaxonomyManagerSearcherAndTaxonomy;           
+            _manager = _index.SearcherTaxonomyManager;
+            _searcherAndTaxonomyInstance = _manager.Acquire() as SearcherTaxonomyManagerSearcherAndTaxonomy;
+            _docValuesFieldReader = new DocValuesFieldReader(_searcherAndTaxonomyInstance.Searcher.GetIndexReader(), _index.Schema, _docValueFields);
+        }
 
-            var topN = criteria.TopN ?? SearchCriteria.DEFAULT_TOP_N; 
-            var queryParser = new LuceneQueryParser(Schema.MetadataField.FULL_TEXT, index.Analyzer, index.Schema);
-            var queryString = String.IsNullOrWhiteSpace(criteria.Query) ? LuceneQueryParser.ALL_DOCS_QUERY : criteria.Query;
+        /// <summary>
+        /// Runs the Lucene query to return the topDocs sequence.
+        /// </summary>
+        /// <returns></returns>
+        private TopDocs GetTopDocs()
+        {
+            var topN = _criteria.TopN ?? SearchCriteria.DEFAULT_TOP_N;
+            var queryParser = new LuceneQueryParser(Schema.MetadataField.FULL_TEXT, _index.Analyzer, _index.Schema);
+            var queryString = String.IsNullOrWhiteSpace(_criteria.Query) ? LuceneQueryParser.ALL_DOCS_QUERY : _criteria.Query;
             var query = queryParser.Parse(queryString);
-            var sort = queryParser.GetSortCriteria(criteria.SortByFields, index.Schema);
+            var sort = queryParser.GetSortCriteria(_criteria.SortByFields, _index.Schema);
 
             var searcher = _searcherAndTaxonomyInstance.Searcher;
-            _topDocs = searcher.Search(query, topN, sort);
-            _docValuesFieldReader = new DocValuesFieldReader(searcher.GetIndexReader(), index.Schema, _docValueFields);
+            var topDocs = searcher.Search(query, topN, sort);
 
-            TotalHits = _topDocs.TotalHits;
-            Count = _topDocs.ScoreDocs.Length;
+            TotalHits = topDocs.TotalHits;
+            Count = topDocs.ScoreDocs.Length;
+
+            return topDocs;
         }
 
         #region IEnumerable
@@ -83,6 +95,9 @@ namespace ExpandoDB.Search
         /// <exception cref="System.NotImplementedException"></exception>
         public IEnumerator<Dictionary<string, object>> GetEnumerator()
         {
+            if (_topDocs == null)
+                _topDocs = GetTopDocs();
+
             for (var i = 0; i < _topDocs.ScoreDocs.Length; i++)
             {
                 var sd = _topDocs.ScoreDocs[i];

@@ -388,7 +388,7 @@ namespace ExpandoDB
                 return false;
 
             if (_id != other._id)
-                return false;
+                return false;            
 
             var thisJson = DynamicJsonSerializer.Serialize(this);
             var otherJson = DynamicJsonSerializer.Serialize(other);

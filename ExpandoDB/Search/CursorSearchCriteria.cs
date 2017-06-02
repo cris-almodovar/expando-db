@@ -31,7 +31,7 @@
         public string SelectFields { get; set; }
 
         /// <summary>
-        /// Gets or sets the number of items to return; default is 100.
+        /// Gets or sets the number of items to return; default is 1000.
         /// </summary>
         /// <value>
         /// The number of items to return.

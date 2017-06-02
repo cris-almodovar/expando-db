@@ -305,7 +305,7 @@ namespace ExpandoDB.Rest.DTO
             dynamic dynamicDto = new ExpandoObject();
 
             dynamicDto.from = collectionName;
-            dynamicDto.field = schemaField.ToDictionary().ToExpando();
+            dynamicDto.field = new Document(schemaField.ToDictionary()).AsExpando();
             dynamicDto.timestamp = DateTime.UtcNow;
             dynamicDto.elapsed = elapsed.ToString();
 

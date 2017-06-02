@@ -2,6 +2,7 @@
 using ExpandoDB.Serialization;
 using ExpandoDB.Storage;
 using FlexLucene.Facet;
+using Mapster;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -236,6 +237,137 @@ namespace ExpandoDB
 
             // Return the hexadecimal string.
             return buffer.ToString();            
+        }
+
+
+        /// <summary>
+        /// To the dictionary.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns></returns>
+        /// <exception cref="System.ArgumentNullException">value</exception>
+        public static IDictionary<string, object> ToCompatibleDictionary<T>(this T value)
+        {
+            if ((value as object) == null)
+                throw new ArgumentNullException(nameof(value));
+
+            var dictionary = (value is IDictionary<string, object>) ?
+                             (value as IDictionary<string, object>) :
+                             TypeAdapter.Adapt<Dictionary<string, object>>(value);
+
+            var keyList = dictionary.Keys.ToList();
+            foreach (var key in keyList)
+            {
+                var item = dictionary[key];
+                if (item == null)
+                    continue;
+
+                var type = item.GetType();
+                var typeCode = Type.GetTypeCode(type);
+
+                switch (typeCode)
+                {
+                    case TypeCode.UInt16:
+                    case TypeCode.UInt32:
+                    case TypeCode.UInt64:
+                    case TypeCode.Int16:
+                    case TypeCode.Int32:
+                    case TypeCode.Int64:
+                    case TypeCode.Decimal:
+                    case TypeCode.Double:
+                    case TypeCode.Single:
+                    case TypeCode.Boolean:
+                    case TypeCode.String:
+                    case TypeCode.DateTime:
+                    case TypeCode.Empty:
+                        continue;
+
+                    case TypeCode.Object:
+                        if (type == typeof(Guid) || type == typeof(Guid?))
+                            continue;
+                        else if (item is IDictionary<string, object>)
+                            dictionary[key] = (item as IDictionary<string, object>).ToCompatibleDictionary();
+                        else if (item is IList)
+                            dictionary[key] = (item as IList).ToCompatibleList();
+                        else if (item is IEnumerable)
+                            dictionary[key] = (item as IEnumerable).ToCompatibleList();
+                        else
+                            dictionary[key] = item.ToCompatibleDictionary(); 
+                        break;
+                }
+            }
+
+            return dictionary;
+        }
+
+        /// <summary>
+        /// To the compatible list.
+        /// </summary>
+        /// <param name="list">The list.</param>
+        /// <returns></returns>
+        public static IList ToCompatibleList(this IList list)
+        {
+            return (list as IEnumerable).ToCompatibleList();
+        }
+
+        /// <summary>
+        /// To the compatible list.
+        /// </summary>
+        /// <param name="list">The list.</param>
+        /// <returns></returns>
+        public static IList ToCompatibleList(this IEnumerable list)
+        {
+            var newList = new List<object>();
+            var enumerator = list.GetEnumerator();
+
+            while (enumerator.MoveNext())
+            {
+                var item = enumerator.Current;
+                if (item == null)
+                {
+                    newList.Add(null);
+                }
+                else
+                {
+                    var type = item.GetType();
+                    var typeCode = Type.GetTypeCode(type);
+
+                    switch (typeCode)
+                    {
+                        case TypeCode.UInt16:
+                        case TypeCode.UInt32:
+                        case TypeCode.UInt64:
+                        case TypeCode.Int16:
+                        case TypeCode.Int32:
+                        case TypeCode.Int64:
+                        case TypeCode.Decimal:
+                        case TypeCode.Double:
+                        case TypeCode.Single:
+                        case TypeCode.Boolean:
+                        case TypeCode.String:
+                        case TypeCode.DateTime:
+                        case TypeCode.Empty:
+                            newList.Add(item);
+                            break;
+
+                        case TypeCode.Object:
+                            if (type == typeof(Guid) || type == typeof(Guid?))                            
+                                newList.Add(item);
+                            else if (item is IDictionary<string, object>)
+                                newList.Add((item as IDictionary<string, object>).ToCompatibleDictionary());
+                            else if (item is IList)                            
+                                continue; // Skip - array of array is NOT supported
+                            else if (item is IEnumerable)
+                                continue; // Skip - array of array is NOT supported                            
+                            else
+                                newList.Add(item.ToCompatibleDictionary());
+                            break;
+                    }
+                }
+
+            }            
+
+            return newList;
         }
     }
 }

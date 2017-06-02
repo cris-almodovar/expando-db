@@ -71,7 +71,7 @@ namespace ExpandoDB.Search
         /// <value>
         /// The searcher taxonomy manager.
         /// </value>
-        public SearcherTaxonomyManager SearcherTaxonomyManager {  get { return _searcherTaxonomyManager;  } }
+        internal SearcherTaxonomyManager SearcherTaxonomyManager {  get { return _searcherTaxonomyManager;  } }
 
 
         /// <summary>
@@ -337,7 +337,7 @@ namespace ExpandoDB.Search
         /// </summary>
         /// <param name="criteria">The search criteria.</param>
         /// <returns></returns>
-        public DocValuesCursor OpenCursor(CursorSearchCriteria criteria)
+        internal DocValuesCursor OpenCursor(CursorSearchCriteria criteria)
         {
             if (criteria == null)
                 throw new ArgumentNullException(nameof(criteria));

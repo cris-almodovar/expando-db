@@ -46,7 +46,7 @@ namespace ExpandoDB.Search
 
         private void RefreshAnalyzer(Schema schema)
         {            
-            foreach (var schemaField in schema.Fields.Values)  
+            foreach (var schemaField in schema.Fields)  
                 if (!_knownDataTypes.ContainsKey(schemaField.Name))         
                      RefreshAnalyzer(schemaField);            
         }

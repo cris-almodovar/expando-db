@@ -29,7 +29,7 @@ namespace ExpandoDB.Tests
         {
             try
             {
-                using (var cursor = _docs.OpenCursor(new Search.CursorSearchCriteria { Query = "singapore", SelectFields = "Author", TopN = 1000000 }))
+                using (var cursor = _docs.OpenCursor(new Search.CursorSearchCriteria { Query = "singapore", SelectFields = "Author,DocumentSentiment,PublishDate", TopN = 100000}))
                 {
                     var groups = cursor.AsParallel().GroupBy(doc => doc["Author"] as string).ToList();
                     

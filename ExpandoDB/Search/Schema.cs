@@ -38,7 +38,7 @@ namespace ExpandoDB
         /// <value>
         /// The fields.
         /// </value>
-        public ConcurrentDictionary<string, Field> Fields { get; set; } = new ConcurrentDictionary<string, Field>();
+        public FieldsCollection Fields { get; set; } = new FieldsCollection();
 
         /// <summary>
         /// Gets or sets the creation date/time of the <see cref="Schema"/> object.
@@ -75,7 +75,217 @@ namespace ExpandoDB
 
             return defaultSchema;
         }
-                
+
+        /// <summary>
+        /// 
+        /// </summary>        
+        public class FieldsCollection : ICollection<Field> 
+        {
+            private readonly ConcurrentDictionary<string, Field> _fieldsDictionary = new ConcurrentDictionary<string, Field>(); 
+
+            /// <summary>
+            /// Gets the number of elements contained in the <see cref="T:System.Collections.Generic.ICollection`1" />.
+            /// </summary>
+            public int Count { get { return _fieldsDictionary.Count; } }
+
+            /// <summary>
+            /// Gets a value indicating whether the <see cref="T:System.Collections.Generic.ICollection`1" /> is read-only.
+            /// </summary>
+            public bool IsReadOnly { get { return false; } }
+
+            /// <summary>
+            /// Adds an item to the <see cref="T:System.Collections.Generic.ICollection`1" />.
+            /// </summary>
+            /// <param name="item">The object to add to the <see cref="T:System.Collections.Generic.ICollection`1" />.</param>
+            public void Add(Field item)
+            {
+                TryAdd(item.Name, item);
+            }
+
+            /// <summary>
+            /// Tries the add.
+            /// </summary>
+            /// <param name="key">The key.</param>
+            /// <param name="item">The item.</param>
+            /// <returns></returns>
+            public bool TryAdd(string key, Field item)
+            {
+                return _fieldsDictionary.TryAdd(key, item);
+            }
+
+            /// <summary>
+            /// Gets or sets the <see cref="Field"/> with the specified key.
+            /// </summary>
+            /// <value>
+            /// The <see cref="Field"/>.
+            /// </value>
+            /// <param name="key">The key.</param>
+            /// <returns></returns>
+            public Field this[string key]
+            {
+                get { return _fieldsDictionary[key]; }
+                set { _fieldsDictionary[key] = value; }
+            }
+
+            /// <summary>
+            /// Tries the get value.
+            /// </summary>
+            /// <param name="key">The key.</param>
+            /// <param name="value">The value.</param>
+            /// <returns></returns>
+            public bool TryGetValue(string key, out Field value)
+            {
+                return _fieldsDictionary.TryGetValue(key, out value);
+            }
+
+            /// <summary>
+            /// Removes all items from the <see cref="T:System.Collections.Generic.ICollection`1" />.
+            /// </summary>
+            /// <exception cref="System.NotImplementedException"></exception>
+            public void Clear()
+            {
+                _fieldsDictionary.Clear();
+            }
+
+            /// <summary>
+            /// Determines whether the <see cref="T:System.Collections.Generic.ICollection`1" /> contains a specific value.
+            /// </summary>
+            /// <param name="item">The object to locate in the <see cref="T:System.Collections.Generic.ICollection`1" />.</param>
+            /// <returns>
+            /// true if <paramref name="item" /> is found in the <see cref="T:System.Collections.Generic.ICollection`1" />; otherwise, false.
+            /// </returns>
+            /// <exception cref="System.NotImplementedException"></exception>
+            public bool Contains(Field item)
+            {
+                return ContainsKey(item.Name);
+            }
+
+            /// <summary>
+            /// Determines whether the specified key contains key.
+            /// </summary>
+            /// <param name="key">The key.</param>
+            /// <returns>
+            ///   <c>true</c> if the specified key contains key; otherwise, <c>false</c>.
+            /// </returns>
+            public bool ContainsKey(string key)
+            {
+                return _fieldsDictionary.ContainsKey(key);
+            }
+
+            /// <summary>
+            /// Copies the elements of the <see cref="T:System.Collections.Generic.ICollection`1" /> to an <see cref="T:System.Array" />, starting at a particular <see cref="T:System.Array" /> index.
+            /// </summary>
+            /// <param name="array">The one-dimensional <see cref="T:System.Array" /> that is the destination of the elements copied from <see cref="T:System.Collections.Generic.ICollection`1" />. The <see cref="T:System.Array" /> must have zero-based indexing.</param>
+            /// <param name="arrayIndex">The zero-based index in <paramref name="array" /> at which copying begins.</param>
+            public void CopyTo(Field[] array, int arrayIndex)
+            {
+                _fieldsDictionary.Values.CopyTo(array, arrayIndex);
+            }
+
+            /// <summary>
+            /// Returns an enumerator that iterates through the collection.
+            /// </summary>
+            /// <returns>
+            /// An enumerator that can be used to iterate through the collection.
+            /// </returns>
+            /// <exception cref="System.NotImplementedException"></exception>
+            public IEnumerator<Field> GetEnumerator()
+            {
+                return _fieldsDictionary.Values.GetEnumerator();
+            }           
+
+            /// <summary>
+            /// Returns an enumerator that iterates through a collection.
+            /// </summary>
+            /// <returns>
+            /// An <see cref="T:System.Collections.IEnumerator" /> object that can be used to iterate through the collection.
+            /// </returns>            
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return this.GetEnumerator();
+            }
+
+            /// <summary>
+            /// Removes the first occurrence of a specific object from the <see cref="T:System.Collections.Generic.ICollection`1" />.
+            /// </summary>
+            /// <param name="item">The object to remove from the <see cref="T:System.Collections.Generic.ICollection`1" />.</param>
+            /// <returns>
+            /// true if <paramref name="item" /> was successfully removed from the <see cref="T:System.Collections.Generic.ICollection`1" />; otherwise, false. This method also returns false if <paramref name="item" /> is not found in the original <see cref="T:System.Collections.Generic.ICollection`1" />.
+            /// </returns>            
+            public bool Remove(Field item)
+            {
+                Field value = null;
+                return TryRemove(item.Name, out value);
+            }
+
+            /// <summary>
+            /// Removes the specified key.
+            /// </summary>
+            /// <param name="key">The key.</param>
+            /// <returns></returns>
+            public bool Remove(string key)
+            {
+                Field value = null;
+                return TryRemove(key, out value);
+            }
+
+            /// <summary>
+            /// Tries the remove.
+            /// </summary>
+            /// <param name="key">The key.</param>
+            /// <param name="value">The value.</param>
+            /// <returns></returns>
+            public bool TryRemove(string key, out Field value)
+            {
+                return _fieldsDictionary.TryRemove(key, out value);
+            }
+
+            /// <summary>
+            /// Gets or sets the <see cref="Field"/> at the specified index.
+            /// </summary>
+            /// <value>
+            /// The <see cref="Field"/>.
+            /// </value>
+            /// <param name="index">The index.</param>
+            /// <returns></returns>
+            /// <exception cref="System.NotImplementedException">
+            /// </exception>
+            public Field this[int index]
+            {
+                get
+                {
+                    var enumerator = _fieldsDictionary.GetEnumerator();
+                    for (var i = 0; i < index+1; i++)
+                        enumerator.MoveNext();
+
+                    return enumerator.Current.Value;
+                }
+                set
+                {
+                    var enumerator = _fieldsDictionary.GetEnumerator();
+                    for (var i = 0; i < index + 1; i++)
+                        enumerator.MoveNext();
+
+                    _fieldsDictionary[enumerator.Current.Key] = value;
+                }
+            }
+
+            public int IndexOf(Field item)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void Insert(int index, Field item)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void RemoveAt(int index)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
 
         /// <summary>
         /// Defines the standard metadata fields that all Documents must have.

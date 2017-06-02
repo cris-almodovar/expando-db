@@ -37,8 +37,7 @@ namespace ExpandoDB.Search
             _guidValues = new Dictionary<string, SortedSetDocValues>();
             _booleanValues = new Dictionary<string, SortedNumericDocValues>();
             _dateTimeValues = new Dictionary<string, SortedNumericDocValues>();
-            _numberValues = new Dictionary<string, SortedNumericDocValues>();           
-
+            _numberValues = new Dictionary<string, SortedNumericDocValues>();
 
             // Load the docValues from the index.
             foreach (var fieldName in fieldNames.Distinct())
@@ -49,46 +48,46 @@ namespace ExpandoDB.Search
                     switch (schemaField.DataType)
                     {
                         case Schema.DataType.Text:
-                            _textValues[fieldName] = MultiDocValues.GetSortedSetValues(indexReader, fieldName.ToDocValuesFieldName());
+                            _textValues[fieldName] = MultiDocValues.GetSortedSetValues(indexReader, fieldName.ToGroupingFieldName());
                             break;
 
                         case Schema.DataType.Guid:
-                            _guidValues[fieldName] = MultiDocValues.GetSortedSetValues(indexReader, fieldName.ToDocValuesFieldName());
+                            _guidValues[fieldName] = MultiDocValues.GetSortedSetValues(indexReader, fieldName.ToGroupingFieldName());
                             break;
 
                         case Schema.DataType.Boolean:
-                            _booleanValues[fieldName] = MultiDocValues.GetSortedNumericValues(indexReader, fieldName.ToDocValuesFieldName());
+                            _booleanValues[fieldName] = MultiDocValues.GetSortedNumericValues(indexReader, fieldName.ToGroupingFieldName());
                             break;
 
                         case Schema.DataType.DateTime:
-                            _dateTimeValues[fieldName] = MultiDocValues.GetSortedNumericValues(indexReader, fieldName.ToDocValuesFieldName());
+                            _dateTimeValues[fieldName] = MultiDocValues.GetSortedNumericValues(indexReader, fieldName.ToGroupingFieldName());
                             break;
 
                         case Schema.DataType.Number:
-                            _numberValues[fieldName] = MultiDocValues.GetSortedNumericValues(indexReader, fieldName.ToDocValuesFieldName());
+                            _numberValues[fieldName] = MultiDocValues.GetSortedNumericValues(indexReader, fieldName.ToGroupingFieldName());
                             break;
 
                         case Schema.DataType.Array:
                             switch (schemaField.ArrayElementDataType)
                             {
                                 case Schema.DataType.Text:
-                                    _textValues[fieldName] = MultiDocValues.GetSortedSetValues(indexReader, fieldName.ToDocValuesFieldName());
+                                    _textValues[fieldName] = MultiDocValues.GetSortedSetValues(indexReader, fieldName.ToGroupingFieldName());
                                     break;
 
                                 case Schema.DataType.Guid:
-                                    _guidValues[fieldName] = MultiDocValues.GetSortedSetValues(indexReader, fieldName.ToDocValuesFieldName());
+                                    _guidValues[fieldName] = MultiDocValues.GetSortedSetValues(indexReader, fieldName.ToGroupingFieldName());
                                     break;
 
                                 case Schema.DataType.Boolean:
-                                    _booleanValues[fieldName] = MultiDocValues.GetSortedNumericValues(indexReader, fieldName.ToDocValuesFieldName());
+                                    _booleanValues[fieldName] = MultiDocValues.GetSortedNumericValues(indexReader, fieldName.ToGroupingFieldName());
                                     break;
 
                                 case Schema.DataType.DateTime:
-                                    _dateTimeValues[fieldName] = MultiDocValues.GetSortedNumericValues(indexReader, fieldName.ToDocValuesFieldName());
+                                    _dateTimeValues[fieldName] = MultiDocValues.GetSortedNumericValues(indexReader, fieldName.ToGroupingFieldName());
                                     break;
 
                                 case Schema.DataType.Number:
-                                    _numberValues[fieldName] = MultiDocValues.GetSortedNumericValues(indexReader, fieldName.ToDocValuesFieldName());
+                                    _numberValues[fieldName] = MultiDocValues.GetSortedNumericValues(indexReader, fieldName.ToGroupingFieldName());
                                     break;
 
                                 case Schema.DataType.Array:
@@ -162,13 +161,15 @@ namespace ExpandoDB.Search
                         if (_booleanValues.ContainsKey(fieldName))
                         {
                             var sortedDocValues = _booleanValues[fieldName];
-                            if (sortedDocValues != null && sortedDocValues.Count() > 0)
+                            if (sortedDocValues != null)
                             {
                                 sortedDocValues.SetDocument(sdDocId);
-                                var first = 0;
-
-                                var longValue = sortedDocValues.ValueAt(first);
-                                dictionary[fieldName] = (longValue == 1);
+                                if (sortedDocValues.Count() > 0)
+                                {
+                                    var first = 0;
+                                    var longValue = sortedDocValues.ValueAt(first);
+                                    dictionary[fieldName] = (longValue == 1);
+                                }
                             }
                         }
                         break;
@@ -177,13 +178,15 @@ namespace ExpandoDB.Search
                         if (_dateTimeValues.ContainsKey(fieldName))
                         {
                             var sortedDocValues = _dateTimeValues[fieldName];
-                            if (sortedDocValues != null && sortedDocValues.Count() > 0)
+                            if (sortedDocValues != null)
                             {
                                 sortedDocValues.SetDocument(sdDocId);
-                                var first = 0;
-
-                                var longValue = sortedDocValues.ValueAt(first);
-                                dictionary[fieldName] = new DateTime(longValue, DateTimeKind.Utc);
+                                if (sortedDocValues.Count() > 0)
+                                {
+                                    var first = 0;
+                                    var longValue = sortedDocValues.ValueAt(first);
+                                    dictionary[fieldName] = new DateTime(longValue, DateTimeKind.Utc);
+                                }
                             }
                         }                        
                         break;
@@ -192,13 +195,15 @@ namespace ExpandoDB.Search
                         if (_numberValues.ContainsKey(fieldName))
                         {
                             var sortedDocValues = _numberValues[fieldName];
-                            if (sortedDocValues != null && sortedDocValues.Count() > 0)
+                            if (sortedDocValues != null)
                             {
                                 sortedDocValues.SetDocument(sdDocId);
-                                var first = 0;
-
-                                var longValue = sortedDocValues.ValueAt(first);
-                                dictionary[fieldName] = JavaDouble.longBitsToDouble(longValue);
+                                if (sortedDocValues.Count() > 0)
+                                {
+                                    var first = 0;
+                                    var longValue = sortedDocValues.ValueAt(first);
+                                    dictionary[fieldName] = JavaDouble.longBitsToDouble(longValue);
+                                }
                             }
                         }                       
                         break;

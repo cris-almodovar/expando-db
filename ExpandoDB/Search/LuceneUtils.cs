@@ -61,27 +61,34 @@ namespace ExpandoDB.Search
 
             foreach (var fieldName in keys)
             {
-                // Validate fieldName - must not contain space or Lucene QueryParser illegal characters.
-                if (_queryParserIllegalCharsRegex.IsMatch(fieldName))
+                try
                 {
-                    _log.Warn($"The fieldName '{fieldName}' contains illegal characters. This field will NOT be indexed.");
-                    continue;
-                }
-
-                Schema.Field schemaField = null;
-                if (!schema.Fields.TryGetValue(fieldName, out schemaField))
-                {
-                    schemaField = new Schema.Field
+                    // Validate fieldName - must not contain space or Lucene QueryParser illegal characters.
+                    if (_queryParserIllegalCharsRegex.IsMatch(fieldName))
                     {
-                        Name = fieldName                               
-                    };
-                    schema.Fields.TryAdd(fieldName, schemaField);
-                }
+                        _log.Warn($"The fieldName '{fieldName}' contains illegal characters. This field will NOT be indexed.");
+                        continue;
+                    }
 
-                var fieldValue = documentDictionary[fieldName];
-                var luceneFields = fieldValue.ToLuceneFields(schemaField);
-                foreach (var luceneField in luceneFields)
-                    luceneDocument.Add(luceneField);
+                    Schema.Field schemaField = null;
+                    if (!schema.Fields.TryGetValue(fieldName, out schemaField))
+                    {
+                        schemaField = new Schema.Field
+                        {
+                            Name = fieldName
+                        };
+                        schema.Fields.TryAdd(fieldName, schemaField);
+                    }
+
+                    var fieldValue = documentDictionary[fieldName];
+                    var luceneFields = fieldValue.ToLuceneFields(schemaField);
+                    foreach (var luceneField in luceneFields)
+                        luceneDocument.Add(luceneField);
+                }
+                catch (Exception ex)
+                {
+                    _log.Warn($"Cannot index the field '{fieldName}', for document: {document._id}. {ex}");
+                }
             }
 
             // The full-text field is always auto-generated and added to the Lucene document.
@@ -91,7 +98,7 @@ namespace ExpandoDB.Search
 
             // Check if the Document has any Fields that are configured as Facets.
             // If there are then we need to create Facets for them.
-            if (schema.Fields.Any(item => item.Value.IsFacet))
+            if (schema.Fields.Any(item => item.IsFacet))
             {
                 try
                 {
@@ -104,7 +111,7 @@ namespace ExpandoDB.Search
             }
 
             return luceneDocument;
-        }        
+        }
 
         /// <summary>
         /// Generates Lucene fields for the given value.
@@ -112,6 +119,7 @@ namespace ExpandoDB.Search
         /// <param name="value">The value.</param>
         /// <param name="schemaField">The schema field.</param>
         /// <returns></returns>
+        /// <exception cref="System.ArgumentNullException">schemaField</exception>
         public static IList<Field> ToLuceneFields(this object value, Schema.Field schemaField)
         {
             if (schemaField == null)
@@ -122,10 +130,10 @@ namespace ExpandoDB.Search
             var fieldName = schemaField.Name.Trim();            
             var fieldDataType = GetFieldDataType(value);
 
-            var isValid = schemaField.ValidateDataType(fieldDataType);
+            var isValid = schemaField.ValidateAndUpdateDataType(fieldDataType);
             if (isValid)
             {
-                switch (fieldDataType)
+                switch (schemaField.DataType)
                 {
                     case Schema.DataType.Number:
                         luceneFields.AddNumberField(schemaField, value);
@@ -154,6 +162,8 @@ namespace ExpandoDB.Search
 
                     case Schema.DataType.Object:
                         var dictionary = value as IDictionary<string, object>;
+                        if (schemaField.ObjectSchema == null)
+                            schemaField.ObjectSchema = new Schema { Name = schemaField.Name };
                         luceneFields.AddRange(dictionary.ToLuceneFields(schemaField));
                         break;
 
@@ -165,12 +175,19 @@ namespace ExpandoDB.Search
 
             return luceneFields;
         }
-        
 
-        private static bool ValidateDataType(this Schema.Field schemaField, Schema.DataType newDataType)
+
+        /// <summary>
+        /// Validates the type of the data.
+        /// </summary>
+        /// <param name="schemaField">The schema field.</param>
+        /// <param name="newDataType">New type of the data.</param>
+        /// <returns></returns>
+        private static bool ValidateAndUpdateDataType(this Schema.Field schemaField, Schema.DataType newDataType)
         { 
             if (schemaField.DataType == Schema.DataType.Null)
             {
+                // The field data type is not yet known; use the data type of the new data.
                 schemaField.DataType = newDataType;
                 schemaField.IsTokenized = (newDataType == Schema.DataType.Text);
             }
@@ -178,7 +195,7 @@ namespace ExpandoDB.Search
             {
                 if (schemaField.DataType != newDataType && newDataType != Schema.DataType.Null)
                 {
-                    var message = $"Cannot change the data type of the field '{schemaField.Name}' from {schemaField.DataType} to {newDataType}.";
+                    var message = $"Cannot change the data type of the field '{schemaField.Name}' from {schemaField.DataType} to {newDataType}. The current value will not be indexed.";
                     _log.Warn(message);
                     return false;
                 }
@@ -238,53 +255,52 @@ namespace ExpandoDB.Search
             var luceneFields = new List<Field>();
             if (list.Count > 0)
             {
-                Schema.Field arrayElementSchemaField = null;
+                var arrayElementSchemaField = new Schema.Field()
+                {
+                    Name = schemaField.Name,
+                    DataType = schemaField.ArrayElementDataType,
+                    IsArrayElement = true,
+                    ParentField = schemaField
+                };
 
                 foreach (var element in list)
                 {
                     if (element == null)
                         continue;
 
-                    if (schemaField.ArrayElementDataType == Schema.DataType.Null)
+                    var arrayElementDataType = GetFieldDataType(element);
+                    var isValid = arrayElementSchemaField.ValidateAndUpdateDataType(arrayElementDataType);
+
+                    if (isValid)
                     {
-                        schemaField.ArrayElementDataType = GetFieldDataType(element);
-                        schemaField.IsTokenized = (schemaField.ArrayElementDataType == Schema.DataType.Text);
-                    }
-                    else if (schemaField.ArrayElementDataType != GetFieldDataType(element))
-                    {                       
-                        _log.Warn($"All the elements of the '{schemaField.Name}' array must be of type '{schemaField.ArrayElementDataType}'. The current array element will NOT be indexed.");
-                        continue;
-                    }
+                        if (schemaField.ArrayElementDataType == Schema.DataType.Null)
+                            schemaField.ArrayElementDataType = arrayElementSchemaField.DataType;
 
-                    switch (schemaField.ArrayElementDataType)
-                    {
-                        case Schema.DataType.Guid:
-                        case Schema.DataType.Text:
-                        case Schema.DataType.Number:
-                        case Schema.DataType.DateTime:
-                        case Schema.DataType.Boolean:
-                            if (arrayElementSchemaField == null && schemaField.ArrayElementDataType != Schema.DataType.Null)
-                            {
-                                arrayElementSchemaField = new Schema.Field()
-                                {
-                                    Name = schemaField.Name,
-                                    DataType = schemaField.ArrayElementDataType,
-                                    IsArrayElement = true,
-                                    ParentField = schemaField
-                                };
-                            }
-                            luceneFields.AddRange(element.ToLuceneFields(arrayElementSchemaField ?? schemaField));
-                            break;
+                        switch (arrayElementSchemaField.DataType)
+                        {
+                            case Schema.DataType.Guid:
+                            case Schema.DataType.Text:
+                            case Schema.DataType.Number:
+                            case Schema.DataType.DateTime:
+                            case Schema.DataType.Boolean:
+                                luceneFields.AddRange(element.ToLuceneFields(arrayElementSchemaField));
+                                break;
 
-                        case Schema.DataType.Array:
-                            _log.Warn("JSON with nested arrays are currently not supported. The current array element will NOT be indexed.");
-                            break;
+                            case Schema.DataType.Array:
+                                _log.Warn("JSON with nested arrays are currently not supported. The current array element will NOT be indexed.");
+                                break;
 
-                        case Schema.DataType.Object:
-                            var dictionary = element as IDictionary<string, object>;
-                            if (dictionary != null)
-                                luceneFields.AddRange(dictionary.ToLuceneFields(schemaField));
-                            break;
+                            case Schema.DataType.Object:
+                                var dictionary = element as IDictionary<string, object>;
+                                if (dictionary != null)
+                                {                                    
+                                    if (schemaField.ObjectSchema == null)
+                                        schemaField.ObjectSchema = new Schema { Name = schemaField.Name };
+
+                                    luceneFields.AddRange(dictionary.ToLuceneFields(schemaField));
+                                }
+                                break;
+                        }
                     }
                 }                
             }
@@ -292,52 +308,60 @@ namespace ExpandoDB.Search
             return luceneFields;
         }       
 
-        private static List<Field> ToLuceneFields(this IDictionary<string, object> dictionary, Schema.Field parentSchemaField)
+        private static List<Field> ToLuceneFields(this IDictionary<string, object> dictionary, Schema.Field schemaField)
         {
-            var luceneFields = new List<Field>();
-
-            var childSchema = parentSchemaField.ObjectSchema ?? new Schema { Name = parentSchemaField.Name };
-
-            if (parentSchemaField.DataType == Schema.DataType.Array)
-                parentSchemaField.ArrayElementDataType = Schema.DataType.Object;
-
-            parentSchemaField.ObjectSchema = childSchema;
+            var luceneFields = new List<Field>();                     
 
             foreach (var fieldName in dictionary.Keys)
             {
                 var childField = dictionary[fieldName];
                 var childFieldDataType = GetFieldDataType(childField);
 
-                var childSchemaField = new Schema.Field
+                Schema.Field childSchemaField = null;
+                schemaField.ObjectSchema.Fields.TryGetValue($"{schemaField.Name}.{fieldName}", out childSchemaField);
+
+                if (childSchemaField == null)
                 {
-                    Name = $"{parentSchemaField.Name}.{fieldName}",
-                    DataType = childFieldDataType,
-                    IsTokenized = (childFieldDataType == Schema.DataType.Text)
-                };
-                childSchema.Fields.TryAdd(childSchemaField.Name, childSchemaField);
-
-                switch (childFieldDataType)
+                    childSchemaField = new Schema.Field
+                    {
+                        Name = $"{schemaField.Name}.{fieldName}",
+                        DataType = childFieldDataType,
+                        IsTokenized = (childFieldDataType == Schema.DataType.Text)
+                    };
+                    schemaField.ObjectSchema.Fields.TryAdd(childSchemaField.Name, childSchemaField);
+                }                
+                               
+                var isValid = childSchemaField.ValidateAndUpdateDataType(childFieldDataType);
+                if (isValid)
                 {
-                    case Schema.DataType.Null:
-                    case Schema.DataType.Guid:
-                    case Schema.DataType.Text:
-                    case Schema.DataType.Number:
-                    case Schema.DataType.DateTime:
-                    case Schema.DataType.Boolean:
-                        luceneFields.AddRange(childField.ToLuceneFields(childSchemaField));
-                        break;
+                    switch (childSchemaField.DataType)
+                    {
+                        case Schema.DataType.Null:
+                        case Schema.DataType.Guid:
+                        case Schema.DataType.Text:
+                        case Schema.DataType.Number:
+                        case Schema.DataType.DateTime:
+                        case Schema.DataType.Boolean:
+                            luceneFields.AddRange(childField.ToLuceneFields(childSchemaField));
+                            break;
 
-                    case Schema.DataType.Array:
-                        var array = childField as IList;
-                        if (array != null)
-                            luceneFields.AddRange(array.ToLuceneFields(childSchemaField));
-                        break;
+                        case Schema.DataType.Array:
+                            var array = childField as IList;
+                            if (array != null)
+                                luceneFields.AddRange(array.ToLuceneFields(childSchemaField));
+                            break;
 
-                    case Schema.DataType.Object:
-                        var nestedDictionary = childField as IDictionary<string, object>;
-                        if (nestedDictionary != null)
-                            luceneFields.AddRange(nestedDictionary.ToLuceneFields(childSchemaField));
-                        break;
+                        case Schema.DataType.Object:
+                            var nestedDictionary = childField as IDictionary<string, object>;
+                            if (nestedDictionary != null)
+                            {
+                                if (childSchemaField.ObjectSchema == null)
+                                    childSchemaField.ObjectSchema = new Schema { Name = childSchemaField.Name };
+
+                                luceneFields.AddRange(nestedDictionary.ToLuceneFields(childSchemaField));
+                            }
+                            break;
+                    }
                 }
             }
 
@@ -444,7 +468,6 @@ namespace ExpandoDB.Search
                         buffer.Append($"{dictionary2.ToLuceneFullTextString()}{Environment.NewLine}");
                     }
                     break;
-
             }
 
             return buffer.ToString();
@@ -476,9 +499,9 @@ namespace ExpandoDB.Search
         /// </summary>
         /// <param name="fieldName">Name of the field.</param>
         /// <returns></returns>
-        public static string ToDocValuesFieldName(this string fieldName)
+        public static string ToGroupingFieldName(this string fieldName)
         {
-            return $"__{fieldName}_docvalues__";
+            return $"__{fieldName}_grouping__";
 
         }
 
@@ -511,7 +534,7 @@ namespace ExpandoDB.Search
         /// <param name="value">The value.</param>
         private static void AddNumberField(this List<Field> luceneFields, Schema.Field schemaField, object value)
         {
-            // We will save numeric values as longs.
+            // We will save numeric values as doubles converted to longs.
             var doubleValue = Convert.ToDouble(value);
             var longValue = JavaDouble.doubleToRawLongBits(doubleValue);
 
@@ -532,12 +555,8 @@ namespace ExpandoDB.Search
             }
 
             // Create the grouping field.
-            var groupingFieldName = fieldName.ToDocValuesFieldName();
-
-            //if (!schemaField.IsArrayElement)            
-            //    luceneFields.Add(new NumericDocValuesField(groupingFieldName, longValue));            
-            //else
-                luceneFields.Add(new SortedNumericDocValuesField(groupingFieldName, longValue));
+            var groupingFieldName = fieldName.ToGroupingFieldName();            
+            luceneFields.Add(new SortedNumericDocValuesField(groupingFieldName, longValue));
         }
 
 
@@ -549,8 +568,11 @@ namespace ExpandoDB.Search
         /// <param name="value">The value.</param>        
         private static void AddBooleanField(this List<Field> luceneFields, Schema.Field schemaField, object value)
         {
-            // We will save boolean values as integers.
-            var intValue = (bool)value ? 1 : 0;
+            if (!(value is bool))
+                return;
+            
+            // We will save boolean values as integers.            
+            var intValue = Convert.ToBoolean(value) ? 1 : 0;
 
             // We will create 3 Lucene fields for the boolean value, one each for:
             // 1. Search
@@ -570,12 +592,8 @@ namespace ExpandoDB.Search
             }
 
             // Create the grouping field.
-            var groupingFieldName = fieldName.ToDocValuesFieldName();
-            
-            //if (!schemaField.IsArrayElement)            
-            //    luceneFields.Add(new NumericDocValuesField(groupingFieldName, intValue));                            
-            //else
-                luceneFields.Add(new SortedNumericDocValuesField(groupingFieldName, intValue));
+            var groupingFieldName = fieldName.ToGroupingFieldName();
+            luceneFields.Add(new SortedNumericDocValuesField(groupingFieldName, intValue));
         }
 
         /// <summary>
@@ -587,7 +605,9 @@ namespace ExpandoDB.Search
         private static void AddTextField(this List<Field> luceneFields, Schema.Field schemaField, object value)
         {
             // We will save Text values as strings.
-            var stringValue = (string)value;
+            var stringValue = value as string;
+            if (String.IsNullOrWhiteSpace(stringValue))
+                return;
 
             // We will create 3 Lucene fields for the text value, one each for:
             // 1. Search
@@ -613,13 +633,9 @@ namespace ExpandoDB.Search
 
             // Create the grouping field.
             // For grouping, we only take the first DOCVALUE_FIELD_MAX_TEXT_LENGTH of the text; we save the text value as is (not converted to lowercase).   
-            var groupingFieldName = fieldName.ToDocValuesFieldName();
-            var stringValueForGrouping = (stringValue.Length > DOCVALUE_FIELD_MAX_TEXT_LENGTH ? stringValue.Substring(0, DOCVALUE_FIELD_MAX_TEXT_LENGTH) : stringValue).Trim();
-
-            //if (!schemaField.IsArrayElement)
-            //    luceneFields.Add(new SortedDocValuesField(groupingFieldName, new BytesRef(stringValueForGrouping)));
-            //else            
-                luceneFields.Add(new SortedSetDocValuesField(groupingFieldName, new BytesRef(stringValueForGrouping)));            
+            var groupingFieldName = fieldName.ToGroupingFieldName();
+            var stringValueForGrouping = (stringValue.Length > DOCVALUE_FIELD_MAX_TEXT_LENGTH ? stringValue.Substring(0, DOCVALUE_FIELD_MAX_TEXT_LENGTH) : stringValue).Trim();                    
+            luceneFields.Add(new SortedSetDocValuesField(groupingFieldName, new BytesRef(stringValueForGrouping)));            
         }
 
         /// <summary>
@@ -630,6 +646,9 @@ namespace ExpandoDB.Search
         /// <param name="value">The value.</param>        
         private static void AddDateTimeField(this List<Field> luceneFields, Schema.Field schemaField, object value)
         {
+            if (!(value is DateTime))
+                return;
+
             // We will save DateTime values as long.
             var dateTimeValue = (DateTime)value;
             var dateTimeTicks = dateTimeValue.ToUniversalTime().Ticks;
@@ -651,11 +670,8 @@ namespace ExpandoDB.Search
             }
 
             // Create the grouping field.
-            var groupingFieldName = fieldName.ToDocValuesFieldName();
-            //if (!schemaField.IsArrayElement)            
-            //    luceneFields.Add(new NumericDocValuesField(groupingFieldName, dateTimeTicks));
-            //else            
-                luceneFields.Add(new SortedNumericDocValuesField(groupingFieldName, dateTimeTicks));
+            var groupingFieldName = fieldName.ToGroupingFieldName();                       
+            luceneFields.Add(new SortedNumericDocValuesField(groupingFieldName, dateTimeTicks));
         }
 
 
@@ -667,8 +683,12 @@ namespace ExpandoDB.Search
         /// <param name="value">The value.</param>
         private static void AddGuidField(this List<Field> luceneFields, Schema.Field schemaField, object value)
         {
+            if (!(value is Guid))
+                return;
+
             // We will save Guid values as strings.
-            var guidStringValue = ((Guid)value).ToString().ToLower();
+            var guidValue = (Guid)value;
+            var guidStringValue = guidValue.ToString().ToLower();
             var isStored = (schemaField.Name == Schema.MetadataField.ID ? FieldStore.YES : FieldStore.NO);
 
             // We will create 3 Lucene fields for the DateTime value, one each for:
@@ -688,12 +708,8 @@ namespace ExpandoDB.Search
             }
 
             // Create the grouping field.
-            var groupingFieldName = fieldName.ToDocValuesFieldName();
-
-            //if (!schemaField.IsArrayElement)            
-            //    luceneFields.Add(new SortedDocValuesField(groupingFieldName, new BytesRef(guidStringValue)));                
-            //else            
-                luceneFields.Add(new SortedSetDocValuesField(groupingFieldName, new BytesRef(guidStringValue)));            
+            var groupingFieldName = fieldName.ToGroupingFieldName();            
+            luceneFields.Add(new SortedSetDocValuesField(groupingFieldName, new BytesRef(guidStringValue)));            
         }
 
         /// <summary>

@@ -61,7 +61,7 @@ namespace ExpandoDB.Search
 
             var facetFields = new List<FacetField>();
                         
-            var fieldsToCreateFacets = schema.Fields.Values.Where(item => item.IsTopLevel && item.IsFacet)?.ToList();
+            var fieldsToCreateFacets = schema.Fields.Where(item => item.IsTopLevel && item.IsFacet)?.ToList();
             if (fieldsToCreateFacets?.Count > 0)
             {
                 foreach (var schemaField in fieldsToCreateFacets)
