@@ -1,4 +1,5 @@
-﻿using Mapster;
+﻿using ExpandoDB.Serialization;
+using Mapster;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -29,12 +30,13 @@ namespace ExpandoDB.Search
             var fieldsCollection = dictionary["Fields"] as IEnumerable;
             dictionary.Remove("Fields");
 
-            var schema = TypeAdapter.Adapt<Schema>(dictionary);
-            schema.Fields = new Schema.FieldsCollection();
+            var schema = TypeAdapter.Adapt<Schema>(dictionary);            
 
             if (fieldsCollection != null)
             {
                 var enumerator = fieldsCollection.GetEnumerator();
+                var fieldList = new List<Schema.Field>();
+
                 while (enumerator.MoveNext())
                 {
                     var item = enumerator.Current;
@@ -49,11 +51,17 @@ namespace ExpandoDB.Search
                             var field = TypeAdapter.Adapt<Schema.Field>(fieldDictionary);
 
                             if (objectSchemaDictionary != null)                            
-                                field.ObjectSchema = objectSchemaDictionary.ToSchema();                            
+                                field.ObjectSchema = objectSchemaDictionary.ToSchema();
 
-                            schema.Fields.Add(field);
+                            fieldList.Add(field);
                         }
                     }
+                }
+
+                if (fieldList.Count > 0)
+                {
+                    schema.Fields = new Schema.FieldsCollection();
+                    fieldList.ForEach(field => schema.Fields.Add(field));
                 }
             }
 
@@ -66,7 +74,7 @@ namespace ExpandoDB.Search
         /// <param name="schema">The Schema.</param>
         /// <returns></returns>
         public static Document ToDocument(this Schema schema)
-        {
+        {            
             var dictionary = schema.ToCompatibleDictionary();            
             var document = new Document(dictionary);
             return document;
