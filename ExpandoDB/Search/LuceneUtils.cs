@@ -380,7 +380,7 @@ namespace ExpandoDB.Search
 
             var buffer = new StringBuilder();
 
-            var dictionary = document.AsDictionary();
+            var dictionary = document.AsDictionary();            
             var keys = dictionary.Keys.Except(new[] { Schema.MetadataField.ID, Schema.MetadataField.CREATED_TIMESTAMP, Schema.MetadataField.MODIFIED_TIMESTAMP });
 
             foreach (var fieldName in keys)
@@ -444,7 +444,7 @@ namespace ExpandoDB.Search
                     break;
 
                 case TypeCode.DateTime:
-                    buffer.Append($"{((DateTime)value).ToString("yyyy-MM-dd")}{Environment.NewLine}");
+                    buffer.Append($"{((DateTime)value).ToString("yyyy-MMM-dd")}{Environment.NewLine}");
                     break;
 
                 case TypeCode.String:

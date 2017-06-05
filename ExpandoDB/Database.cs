@@ -239,26 +239,26 @@ namespace ExpandoDB
             try
             {                
                 var liveSchemaDocument = collection.Schema.ToDocument();                
-                var savedSchemaDocument = await this[Schema.COLLECTION_NAME].GetAsync(liveSchemaDocument._id.Value);
+                var savedSchemaDocument = await DocumentStorage.GetAsync(Schema.COLLECTION_NAME, liveSchemaDocument._id.Value);
 
                 var isSchemaUpdated = false;
                 if (savedSchemaDocument == null)
                 {
-                    await this[Schema.COLLECTION_NAME].InsertAsync(liveSchemaDocument);
+                    await DocumentStorage.InsertAsync(Schema.COLLECTION_NAME, liveSchemaDocument);
                     isSchemaUpdated = true;         
                 }
                 else
                 {
                     if (liveSchemaDocument != savedSchemaDocument)
                     {
-                        await this[Schema.COLLECTION_NAME].UpdateAsync(liveSchemaDocument);
+                        await DocumentStorage.UpdateAsync(Schema.COLLECTION_NAME, liveSchemaDocument);
                         isSchemaUpdated = true;
                     }
                 }
 
                 if (isSchemaUpdated)
                 {
-                    savedSchemaDocument = await this[Schema.COLLECTION_NAME].GetAsync(liveSchemaDocument._id.Value);
+                    savedSchemaDocument = await DocumentStorage.GetAsync(Schema.COLLECTION_NAME, liveSchemaDocument._id.Value);
                     collection.Schema._id = savedSchemaDocument._id;
                     collection.Schema._createdTimestamp = savedSchemaDocument._createdTimestamp;
                     collection.Schema._modifiedTimestamp = savedSchemaDocument._modifiedTimestamp;

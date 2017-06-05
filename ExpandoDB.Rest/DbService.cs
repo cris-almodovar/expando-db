@@ -392,21 +392,11 @@ namespace ExpandoDB.Rest
 
             var excludedFields = new[] { "collection" };
             var dictionary = this.Bind<DynamicDictionary>(excludedFields).ToDictionary();
+            var updatedSchema = dictionary.ToSchema();
 
-            // We can only populate the Fields collection.            
-            var fields = dictionary["Fields"] as IList;
-            if (fields != null)
-            {
-                foreach (var field in fields)
-                {
-                    var fieldDictionary = field as IDictionary<string, object>;
-                    if (fieldDictionary != null)
-                    {
-                        var schemaField = new Schema.Field().PopulateWith(fieldDictionary);
-                        schema.Fields.TryAdd(schemaField.Name, schemaField);
-                    }
-                }
-            }
+            // We can only populate the Fields collection. 
+            foreach (var field in updatedSchema.Fields)
+                schema.Fields.TryAdd(field.Name, field);
 
             stopwatch.Stop();
 

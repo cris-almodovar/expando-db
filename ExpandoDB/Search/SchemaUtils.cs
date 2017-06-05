@@ -25,7 +25,12 @@ namespace ExpandoDB.Search
             return dictionary.ToSchema();
         }
 
-        private static Schema ToSchema (this IDictionary<string, object> dictionary)
+        /// <summary>
+        /// To the schema.
+        /// </summary>
+        /// <param name="dictionary">The dictionary.</param>
+        /// <returns></returns>
+        public static Schema ToSchema (this IDictionary<string, object> dictionary)
         {            
             var fieldsCollection = dictionary["Fields"] as IEnumerable;
             dictionary.Remove("Fields");
@@ -45,14 +50,7 @@ namespace ExpandoDB.Search
                         var fieldDictionary = item as IDictionary<string, object>;
                         if (fieldDictionary != null)
                         {
-                            var objectSchemaDictionary = fieldDictionary["ObjectSchema"] as IDictionary<string, object>;
-                            fieldDictionary.Remove("ObjectSchema");
-
-                            var field = TypeAdapter.Adapt<Schema.Field>(fieldDictionary);
-
-                            if (objectSchemaDictionary != null)                            
-                                field.ObjectSchema = objectSchemaDictionary.ToSchema();
-
+                            var field = new Schema.Field().PopulateWith(fieldDictionary);
                             fieldList.Add(field);
                         }
                     }
@@ -131,7 +129,36 @@ namespace ExpandoDB.Search
             if (!dictionary.ContainsKey("DataType"))
                 throw new SchemaException("Schema.Field.DataType is mandatory.");
 
-            field = dictionary.Adapt(field);     
+            var objectSchemaDictionary = dictionary.ContainsKey("ObjectSchema") ?
+                                         dictionary["ObjectSchema"] as IDictionary<string, object> :
+                                         null;            
+
+            var facetSettingsDictionary = dictionary.ContainsKey("FacetSettings") ?
+                                          dictionary["FacetSettings"] as IDictionary<string, object> :
+                                          null;
+
+            dictionary.Remove("ObjectSchema");
+            dictionary.Remove("FacetSettings");
+
+            var dataType = dictionary.ContainsKey("DataType") ?
+                           (Schema.DataType)Enum.Parse(typeof(Schema.DataType), dictionary["DataType"].ToString()) :
+                           Schema.DataType.Null;
+
+            var arrayElementDataType = dictionary.ContainsKey("ArrayElementDataType") ?
+                           (Schema.DataType)Enum.Parse(typeof(Schema.DataType), dictionary["ArrayElementDataType"].ToString()) :
+                           Schema.DataType.Null;
+
+            dictionary["DataType"] = dataType;
+            dictionary["ArrayElementDataType"] = arrayElementDataType;
+
+            dictionary.Adapt(field);
+
+            if (objectSchemaDictionary != null)
+                field.ObjectSchema = objectSchemaDictionary.ToSchema();
+            if (facetSettingsDictionary != null)
+                field.FacetSettings = new Schema.FacetSettings().PopulateWith(facetSettingsDictionary);
+            
+               
             return field;
         }
 
@@ -151,7 +178,7 @@ namespace ExpandoDB.Search
             if (!dictionary.ContainsKey("FacetName"))
                 throw new SchemaException("Schema.FacetSettings.FacetName is mandatory.");
 
-            facetSettings = dictionary.Adapt(facetSettings);
+            dictionary.Adapt(facetSettings);
             return facetSettings;
         }
 
