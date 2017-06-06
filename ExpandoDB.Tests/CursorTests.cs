@@ -24,22 +24,22 @@ namespace ExpandoDB.Tests
             _docs = _db["documents"];
         }
 
-        [TestMethod]
-        public void Can_create_cursor()
-        {
-            try
-            {
-                using (var cursor = _docs.OpenCursor(new Search.CursorSearchCriteria { Query = "singapore", SelectFields = "Author,DocumentSentiment,PublishDate", TopN = 100000}))
-                {
-                    var groups = cursor.AsParallel().GroupBy(doc => doc["Author"] as string).ToList();
+        //[TestMethod]
+        //public void Can_create_cursor()
+        //{
+        //    try
+        //    {
+        //        using (var cursor = _docs.OpenCursor(new Search.CursorSearchCriteria { Query = "singapore", SelectFields = "Author,DocumentSentiment,PublishDate", TopN = 100000}))
+        //        {
+        //            var groups = cursor.AsParallel().GroupBy(doc => doc["Author"] as string).ToList();
                     
-                }
-            }
-            catch (Exception ex)
-            {
-                var error = ex.ToString();
-            }
-        }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        var error = ex.ToString();
+        //    }
+        //}
 
         [TestCleanup]
         public void Cleanup()

@@ -133,7 +133,7 @@ namespace ExpandoDB.Search
             var isValid = schemaField.ValidateAndUpdateDataType(fieldDataType);
             if (isValid)
             {
-                switch (schemaField.DataType)
+                switch (fieldDataType)
                 {
                     case Schema.DataType.Number:
                         luceneFields.AddNumberField(schemaField, value);
