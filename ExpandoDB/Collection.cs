@@ -148,18 +148,20 @@ namespace ExpandoDB
         }
 
         /// <summary>
-        /// Opens the cursor.
+        /// Creates a cursor
         /// </summary>
         /// <param name="criteria">The criteria.</param>
+        /// <param name="autoOpen">if set to <c>true</c>, the cursor is automatically opened.</param>
         /// <returns></returns>
-        public DocumentCursor OpenCursor(CursorSearchCriteria criteria)
+        /// <exception cref="System.ArgumentNullException">criteria</exception>
+        public DocumentCursor CreateCursor(CursorSearchCriteria criteria, bool autoOpen = false)
         {
             EnsureCollectionIsNotDropped();
 
             if (criteria == null)
                 throw new ArgumentNullException(nameof(criteria));
 
-            var docValuesCursor = _luceneIndex.OpenCursor(criteria);
+            var docValuesCursor = _luceneIndex.CreateCursor(criteria, autoOpen);
             return new DocumentCursor(docValuesCursor);
         }
 

@@ -19,32 +19,40 @@ namespace ExpandoDB.Search
         private readonly SearcherTaxonomyManager _manager;
         private readonly SearcherTaxonomyManagerSearcherAndTaxonomy _searcherAndTaxonomyInstance;
         private TopDocs _topDocs;
-
         private readonly DocValuesFieldReader _docValuesFieldReader;
         private readonly IList<string> _docValueFields;
 
         /// <summary>
-        /// Gets or sets the total hits.
+        /// Gets the total hits; this value is only available when the cursor is open.
         /// </summary>
         /// <value>
         /// The total hits.
         /// </value>
-        public int TotalHits { get; private set; }
+        public int? TotalHits { get; private set; }
 
         /// <summary>
-        /// Gets or sets the count of DocumentIds.
+        /// Gets the count of items in the cursor; this value is only available when the cursor is open.
         /// </summary>
         /// <value>
         /// The document ID count.
         /// </value>
-        public int Count { get; private set; }
+        public int? Count { get; private set; }
+
+        /// <summary>
+        /// Gets a value indicating whether this cursor is open.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this instance is open; otherwise, <c>false</c>.
+        /// </value>
+        public bool IsOpen { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DocValuesCursor" /> class.
         /// </summary>
         /// <param name="criteria">The criteria.</param>
         /// <param name="index">The index.</param>
-        public DocValuesCursor(CursorSearchCriteria criteria, LuceneIndex index)
+        /// <param name="autoOpen">if set to <c>true</c> the cursor is automatically opened after creation.</param>
+        public DocValuesCursor(CursorSearchCriteria criteria, LuceneIndex index, bool autoOpen = false)
         {
             _criteria = criteria;
             _index = index;
@@ -61,28 +69,33 @@ namespace ExpandoDB.Search
             _manager = _index.SearcherTaxonomyManager;
             _searcherAndTaxonomyInstance = _manager.Acquire() as SearcherTaxonomyManagerSearcherAndTaxonomy;
             _docValuesFieldReader = new DocValuesFieldReader(_searcherAndTaxonomyInstance.Searcher.GetIndexReader(), _index.Schema, _docValueFields);
+
+            if (autoOpen)
+                Open();
         }
 
         /// <summary>
-        /// Runs the Lucene query to return the topDocs sequence.
+        /// Opens the cursor by running the underlying Lucene query.
         /// </summary>
-        /// <returns></returns>
-        private TopDocs GetTopDocs()
+        public void Open()
         {
-            var topN = _criteria.TopN ?? SearchCriteria.DEFAULT_TOP_N;
-            var queryParser = new LuceneQueryParser(Schema.MetadataField.FULL_TEXT, _index.Analyzer, _index.Schema);
-            var queryString = String.IsNullOrWhiteSpace(_criteria.Query) ? LuceneQueryParser.ALL_DOCS_QUERY : _criteria.Query;
-            var query = queryParser.Parse(queryString);
-            var sort = queryParser.GetSortCriteria(_criteria.SortByFields, _index.Schema);
+            if (!IsOpen)
+            {
+                var topN = _criteria.TopN ?? SearchCriteria.DEFAULT_TOP_N;
+                var queryParser = new LuceneQueryParser(Schema.MetadataField.FULL_TEXT, _index.Analyzer, _index.Schema);
+                var queryString = String.IsNullOrWhiteSpace(_criteria.Query) ? LuceneQueryParser.ALL_DOCS_QUERY : _criteria.Query;
+                var query = queryParser.Parse(queryString);
+                var sort = queryParser.GetSortCriteria(_criteria.SortByFields, _index.Schema);
 
-            var searcher = _searcherAndTaxonomyInstance.Searcher;
-            var topDocs = searcher.Search(query, topN, sort);
+                var searcher = _searcherAndTaxonomyInstance.Searcher;
+                _topDocs = searcher.Search(query, topN, sort);
 
-            TotalHits = topDocs.TotalHits;
-            Count = topDocs.ScoreDocs.Length;
+                TotalHits = _topDocs.TotalHits;
+                Count = _topDocs.ScoreDocs.Length;
 
-            return topDocs;
-        }
+                IsOpen = true;
+            }
+        }        
 
         #region IEnumerable
 
@@ -95,8 +108,8 @@ namespace ExpandoDB.Search
         /// <exception cref="System.NotImplementedException"></exception>
         public IEnumerator<Dictionary<string, object>> GetEnumerator()
         {
-            if (_topDocs == null)
-                _topDocs = GetTopDocs();
+            if (!IsOpen)
+                Open();
 
             for (var i = 0; i < _topDocs.ScoreDocs.Length; i++)
             {

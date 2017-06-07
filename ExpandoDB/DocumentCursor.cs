@@ -14,23 +14,31 @@ namespace ExpandoDB
     /// </summary>   
     public class DocumentCursor : IDisposable, IEnumerable<Document>
     {
-        private readonly DocValuesCursor _docValuesCursor;        
+        private readonly DocValuesCursor _docValuesCursor;
 
         /// <summary>
-        /// Gets or sets the total hits.
+        /// Gets the total hits; this value is only available when the cursor is open.
         /// </summary>
         /// <value>
         /// The total hits.
         /// </value>
-        public int TotalHits { get; private set; }
+        public int? TotalHits { get { return _docValuesCursor.TotalHits; } }
 
         /// <summary>
-        /// Gets or sets the count of Documents.
+        /// Gets the count of items in the cursor; this value is only available when the cursor is open.
         /// </summary>
         /// <value>
         /// The document count.
         /// </value>
-        public int Count { get; private set; }
+        public int? Count { get { return _docValuesCursor.Count; } }
+
+        /// <summary>
+        /// Gets a value indicating whether this cursor is open.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this instance is open; otherwise, <c>false</c>.
+        /// </value>
+        public bool IsOpen { get { return _docValuesCursor.IsOpen; } }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentCursor" /> class.
@@ -38,10 +46,16 @@ namespace ExpandoDB
         /// <param name="docValuesCursor">The document identifier cursor.</param>        
         internal DocumentCursor(DocValuesCursor docValuesCursor)
         {
-            _docValuesCursor = docValuesCursor;            
+            _docValuesCursor = docValuesCursor;
+        }
 
-            TotalHits = _docValuesCursor.TotalHits;
-            Count = _docValuesCursor.Count;
+        /// <summary>
+        /// Opens the cursor by running the underlying Lucene query.
+        /// </summary>
+        public void Open()
+        {
+            if (!_docValuesCursor.IsOpen)
+                _docValuesCursor.Open();
         }
 
         #region IEnumerable

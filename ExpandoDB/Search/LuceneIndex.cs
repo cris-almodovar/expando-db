@@ -336,13 +336,15 @@ namespace ExpandoDB.Search
         /// Opens the cursor.
         /// </summary>
         /// <param name="criteria">The search criteria.</param>
+        /// <param name="autoOpen">if set to <c>true</c>, the cursor is automatically opened.</param>
         /// <returns></returns>
-        internal DocValuesCursor OpenCursor(CursorSearchCriteria criteria)
+        /// <exception cref="System.ArgumentNullException">criteria</exception>
+        internal DocValuesCursor CreateCursor(CursorSearchCriteria criteria, bool autoOpen = false)
         {
             if (criteria == null)
                 throw new ArgumentNullException(nameof(criteria));
 
-            var docIdCursor = new DocValuesCursor(criteria, this);
+            var docIdCursor = new DocValuesCursor(criteria, this, autoOpen);
             return docIdCursor;
         }
 
