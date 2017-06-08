@@ -274,7 +274,10 @@ namespace ExpandoDB.Search
                     if (isValid)
                     {
                         if (schemaField.ArrayElementDataType == Schema.DataType.Null)
+                        {
                             schemaField.ArrayElementDataType = arrayElementSchemaField.DataType;
+                            schemaField.IsTokenized = (schemaField.ArrayElementDataType == Schema.DataType.Text);
+                        }
 
                         switch (arrayElementSchemaField.DataType)
                         {

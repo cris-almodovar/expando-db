@@ -68,6 +68,9 @@ namespace ExpandoDB
         /// <exception cref="System.NotImplementedException"></exception>
         public IEnumerator<Document> GetEnumerator()
         {
+            if (!IsOpen)
+                Open();
+                        
             foreach (var dictionary in _docValuesCursor)
             {
                 var document = new Document(dictionary);
