@@ -226,7 +226,7 @@
     <Compile Include="Search\CursorSearchCriteria.cs" />
     <Compile Include="Search\FacetValue.cs" />
     <Compile Include="Search\CompositeAnalyzer.cs" />
-    <Compile Include="Search\DocValuesFieldReader.cs" />
+    <Compile Include="Search\DocValuesReader.cs" />
     <Compile Include="Search\LuceneFacetBuilder.cs" />
     <Compile Include="Search\LuceneFacetUtils.cs" />
     <Compile Include="Search\LuceneQueryParserUtils.cs" />

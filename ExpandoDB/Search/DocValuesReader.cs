@@ -1,4 +1,5 @@
 ﻿using FlexLucene.Index;
+using FlexLucene.Search;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,9 +10,10 @@ using JavaDouble = java.lang.Double;
 namespace ExpandoDB.Search
 {
     /// <summary>
-    /// 
+    /// Encapsulates loading and reading of DocValues fields from the Lucene index,
+    /// using a live IndexSearcher object.
     /// </summary>
-    internal class DocValuesFieldReader
+    internal class DocValuesReader
     {
         private readonly Schema _schema;
         private readonly IEnumerable<string> _fieldNames;        
@@ -23,13 +25,22 @@ namespace ExpandoDB.Search
         private readonly Dictionary<string, SortedNumericDocValues> _numberValues;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DocValuesFieldReader" /> class.
+        /// Initializes a new instance of the <see cref="DocValuesReader" /> class.
         /// </summary>
-        /// <param name="indexReader">The index reader.</param>
+        /// <param name="indexSearcher">The IndexSearcher object.</param>
         /// <param name="schema">The schema.</param>
         /// <param name="fieldNames">The document value fields.</param>
-        public DocValuesFieldReader(IndexReader indexReader, Schema schema, IEnumerable<string> fieldNames)
+        public DocValuesReader(IndexSearcher indexSearcher, Schema schema, IEnumerable<string> fieldNames)
         {
+            if (indexSearcher == null)
+                throw new ArgumentNullException(nameof(indexSearcher));
+            if (schema == null)
+                throw new ArgumentNullException(nameof(schema));
+            if (fieldNames == null || fieldNames.Count() == 0)
+                throw new ArgumentException($"'{nameof(fieldNames)}' cannot be null or empty.");
+
+            var indexReader = indexSearcher.GetIndexReader();
+
             _schema = schema;
             _fieldNames = fieldNames;
 
@@ -92,12 +103,12 @@ namespace ExpandoDB.Search
 
                                 case Schema.DataType.Array:
                                 case Schema.DataType.Object:
-                                    throw new InvalidOperationException($"Array element data type: '{schemaField.ArrayElementDataType}' is not supported.");
+                                    throw new InvalidOperationException($"Array element data type: '{schemaField.ArrayElementDataType}' is not supported at this time.");
                             }
                             break;
 
                         case Schema.DataType.Object:
-                            throw new InvalidOperationException($"Data type: '{schemaField.DataType}' is not supported.");
+                            throw new InvalidOperationException($"Data type: '{schemaField.DataType}' is not supported at this time.");
                     }
                 }
             }
@@ -105,9 +116,10 @@ namespace ExpandoDB.Search
 
 
         /// <summary>
-        /// Gets the document values dictionary.
+        /// Gets the values of DocValue fields as a dictionary object wherein the keys are the field names 
+        /// and the values are the DocValue values.
         /// </summary>
-        /// <param name="sdDocId">The sd document identifier.</param>
+        /// <param name="sdDocId">The <see cref="ScoreDoc"/> document identifier.</param>
         /// <returns></returns>
         public Dictionary<string, object> GetDocValuesDictionary(int sdDocId)
         {
@@ -327,12 +339,12 @@ namespace ExpandoDB.Search
 
                             case Schema.DataType.Array:
                             case Schema.DataType.Object:
-                                throw new InvalidOperationException($"Array element data type: '{schemaField.ArrayElementDataType}' is not supported.");
+                                throw new InvalidOperationException($"Array element data type: '{schemaField.ArrayElementDataType}' is not supported at this time.");
                         }
                         break;
 
                     case Schema.DataType.Object:
-                        throw new InvalidOperationException($"Data type: '{schemaField.DataType}' is not supported.");
+                        throw new InvalidOperationException($"Data type: '{schemaField.DataType}' is not supported at this time.");
                 }
             }
 

@@ -20,17 +20,14 @@ namespace ExpandoDB.Search
     /// </summary>
     public static class LuceneUtils
     {        
-        internal const string DEFAULT_NULL_TOKEN = "_null_";
-        internal const string QUERY_PARSER_ILLEGAL_CHARS = @"[\+&|!\(\)\{\}\[\]^""~\*\?:\\/ ]";
+        internal const string DEFAULT_NULL_TOKEN = "_null_";        
         internal const int INDEX_NULL_VALUE = 1; // This is a marker value for NULL in the Lucene index.
         internal const int DOCVALUE_FIELD_MAX_TEXT_LENGTH = 256;
         internal static readonly JavaDouble DOUBLE_MIN_VALUE = new JavaDouble(Double.MinValue);
         internal static readonly JavaDouble DOUBLE_MAX_VALUE = new JavaDouble(Double.MaxValue);
         internal static readonly JavaLong LONG_MIN_VALUE = new JavaLong(Int64.MinValue);
         internal static readonly JavaLong LONG_MAX_VALUE = new JavaLong(Int64.MaxValue);
-        private static readonly System.Text.RegularExpressions.Regex _queryParserIllegalCharsRegex = new System.Text.RegularExpressions.Regex(QUERY_PARSER_ILLEGAL_CHARS);
         private static readonly ILog _log = LogManager.GetLogger(nameof(LuceneUtils));
-
 
         /// <summary>
         /// Converts a <see cref="Document" /> object to a <see cref="LuceneDocument" /> object.
@@ -63,27 +60,20 @@ namespace ExpandoDB.Search
             {
                 try
                 {
-                    // Validate fieldName - must not contain space or Lucene QueryParser illegal characters.
-                    if (_queryParserIllegalCharsRegex.IsMatch(fieldName))
+                    if (fieldName.ContainsIllegalChars())
                     {
                         _log.Warn($"The fieldName '{fieldName}' contains illegal characters. This field will NOT be indexed.");
                         continue;
                     }
 
-                    Schema.Field schemaField = null;
-                    if (!schema.Fields.TryGetValue(fieldName, out schemaField))
-                    {
-                        schemaField = new Schema.Field
-                        {
-                            Name = fieldName
-                        };
-                        schema.Fields.TryAdd(fieldName, schemaField);
-                    }
-
+                    var schemaField = schema.GetOrCreateField(fieldName);
                     var fieldValue = documentDictionary[fieldName];
+
                     var luceneFields = fieldValue.ToLuceneFields(schemaField);
                     foreach (var luceneField in luceneFields)
                         luceneDocument.Add(luceneField);
+
+                    schemaField.RefreshFacetSettings();
                 }
                 catch (Exception ex)
                 {
@@ -95,6 +85,7 @@ namespace ExpandoDB.Search
             var fullText = document.ToLuceneFullTextString();
             luceneDocument.Add(new TextField(Schema.MetadataField.FULL_TEXT, fullText, FieldStore.NO));
 
+            // TODO: Add AutoFacet - add to Schema (?). note: only top level fields can have facets
 
             // Check if the Document has any Fields that are configured as Facets.
             // If there are then we need to create Facets for them.
@@ -111,7 +102,9 @@ namespace ExpandoDB.Search
             }
 
             return luceneDocument;
-        }
+        }        
+
+        
 
         /// <summary>
         /// Generates Lucene fields for the given value.

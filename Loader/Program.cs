@@ -45,43 +45,7 @@ namespace Loader
             Console.WriteLine(String.Format("Importing {0} sgml files from folder: '{1}'.", sgmlFiles.Length, Path.GetFullPath(datasetFolder)));
 
             var stopwatch = new Stopwatch();
-            stopwatch.Start();            
-
-            var schemaRequest = new RestRequest("db/reuters/_schema", Method.PUT);
-            var schema = new
-            {
-                Name = "reuters",
-                Fields = new List<object>
-                {
-                    new
-                    {
-                        Name = "date",
-                        DataType = "DateTime",                        
-                        FacetSettings = new
-                        {
-                            FacetName = "Publish Date",
-                            IsHierarchical = true,
-                            HierarchySeparator = "/",
-                            FormatString = "yyyy/MMM/dd"
-                        }
-                    },
-                    new
-                    {
-                        Name = "keywords",
-                        DataType = "Array",
-                        ArrayElementDataType = "Text",
-                        IsTokenized = true,
-                        FacetSettings = new
-                        {
-                            FacetName = "Keywords",
-                            IsHierarchical = false
-                        }
-                    },
-                }
-            };
-
-            schemaRequest.AddJsonBody(schema);
-            var response = restClient.Execute(schemaRequest);
+            stopwatch.Start(); 
 
             var options = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
             Parallel.ForEach(sgmlFiles, options, filePath =>

@@ -56,6 +56,48 @@ namespace ExpandoDB
         /// </value>
         public DateTime? _modifiedTimestamp { get; set; }
 
+
+        /// <summary>
+        /// Gets the or create field.
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <returns></returns>
+        public Field GetOrCreateField(string fieldName)
+        {
+            Field field = null;
+            Fields.TryGetValue(fieldName, out field);
+
+            if (field == null)
+            {
+                field = new Field
+                {
+                    Name = fieldName
+                };
+                Fields.TryAdd(fieldName, field);
+            }
+
+            if (Config.IsAutoFacetEnabled)
+            {
+                if (field.Name != MetadataField.ID && 
+                    field.Name != MetadataField.CREATED_TIMESTAMP &&
+                    field.Name != MetadataField.MODIFIED_TIMESTAMP &&
+                    field.Name != MetadataField.FULL_TEXT)
+                {
+                    if (field.FacetSettings == null)
+                        field.FacetSettings = new FacetSettings { FacetName = field.Name };
+
+                    if (field.DataType == DataType.DateTime)
+                    {
+                        field.FacetSettings.FormatString = @"yyyy/MMM/dd";
+                        field.FacetSettings.IsHierarchical = true;
+                        field.FacetSettings.HierarchySeparator = @"/";
+                    }
+                }
+            }
+
+            return field;
+        }
+
         /// <summary>
         /// Creates a default <see cref="Schema"/>, which contains the _id, _createdTimestamp, _modifiedTimestamp, and _full_text_ fields.
         /// </summary>
@@ -405,6 +447,29 @@ namespace ExpandoDB
             /// The Facet settings for this Field.
             /// </value>
             public FacetSettings FacetSettings { get; set; }
+
+            /// <summary>
+            /// Refreshes the facet settings.
+            /// </summary>
+            /// <exception cref="System.NotImplementedException"></exception>
+            internal void RefreshFacetSettings()
+            {
+                if (Name != MetadataField.ID &&
+                    Name != MetadataField.CREATED_TIMESTAMP &&
+                    Name != MetadataField.MODIFIED_TIMESTAMP &&
+                    Name != MetadataField.FULL_TEXT)
+                {
+                    if (FacetSettings == null)
+                        FacetSettings = new FacetSettings { FacetName = Name };
+
+                    if (DataType == DataType.DateTime)
+                    {
+                        FacetSettings.FormatString = @"yyyy/MMM/dd";
+                        FacetSettings.IsHierarchical = true;
+                        FacetSettings.HierarchySeparator = @"/";
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -474,7 +539,7 @@ namespace ExpandoDB
             /// <value>
             /// The separator char.
             /// </value>
-            public string HierarchySeparator { get; set; } = @"/";
+            public string HierarchySeparator { get; set; } 
 
             /// <summary>
             /// Gets or sets the format string to be applied when converting non-string Facet fields to string.
@@ -485,7 +550,7 @@ namespace ExpandoDB
             /// <value>
             /// The format.
             /// </value>
-            public string FormatString { get; set; } = "";
+            public string FormatString { get; set; }
         }
 
     }
