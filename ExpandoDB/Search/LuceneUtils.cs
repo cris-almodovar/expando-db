@@ -253,8 +253,7 @@ namespace ExpandoDB.Search
                 {
                     Name = schemaField.Name,
                     DataType = schemaField.ArrayElementDataType,
-                    IsArrayElement = true,
-                    ParentField = schemaField
+                    IsArrayElement = true
                 };
 
                 foreach (var element in list)
@@ -270,7 +269,7 @@ namespace ExpandoDB.Search
                         if (schemaField.ArrayElementDataType == Schema.DataType.Null)
                         {
                             schemaField.ArrayElementDataType = arrayElementSchemaField.DataType;
-                            schemaField.IsTokenized = (schemaField.ArrayElementDataType == Schema.DataType.Text);
+                            schemaField.IsTokenized = arrayElementSchemaField.IsTokenized;
                         }
 
                         switch (arrayElementSchemaField.DataType)

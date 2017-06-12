@@ -15,8 +15,7 @@ namespace ExpandoDB.Search
     {
         internal const string QUERY_PARSER_ILLEGAL_CHARS = @"[\+&|!\(\)\{\}\[\]^""~\*\?:\\/ ]";
         private static readonly System.Text.RegularExpressions.Regex _queryParserIllegalCharsRegex = new System.Text.RegularExpressions.Regex(QUERY_PARSER_ILLEGAL_CHARS);
-        private static readonly ILog _log = LogManager.GetLogger(nameof(LuceneQueryParserUtils));
-
+        
         /// <summary>
         /// Determines whether the given field name contains illegal characters.
         /// </summary>

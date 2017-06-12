@@ -385,14 +385,6 @@ namespace ExpandoDB
             internal bool IsArrayElement { get; set; }
 
             /// <summary>
-            /// Gets or sets the parent field.
-            /// </summary>
-            /// <value>
-            /// The parent field.
-            /// </value>
-            internal Schema.Field ParentField { get; set; }
-
-            /// <summary>
             /// Gets or sets a value indicating whether a Text field is tokenized and analyzed by Lucene. 
             /// </summary>
             /// <value>
