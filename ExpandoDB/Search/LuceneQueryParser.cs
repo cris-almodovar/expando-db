@@ -21,8 +21,20 @@ namespace ExpandoDB.Search
         /// All docs query
         /// </summary>
         public const string ALL_DOCS_QUERY = "*:*";
+        /// <summary>
+        /// The maximum number of OR and AND clauses in a Lucene query.
+        /// </summary>
+        public const int BOOLEAN_QUERY_MAX_CLAUSE_COUNT = 1000000;
 
         private readonly Schema _schema;
+
+        /// <summary>
+        /// Initializes the <see cref="LuceneQueryParser"/> class.
+        /// </summary>
+        static LuceneQueryParser()
+        {
+            BooleanQuery.SetMaxClauseCount(BOOLEAN_QUERY_MAX_CLAUSE_COUNT);
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LuceneQueryParser"/> class.

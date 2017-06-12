@@ -76,24 +76,8 @@ namespace ExpandoDB
                 Fields.TryAdd(fieldName, field);
             }
 
-            if (Config.IsAutoFacetEnabled)
-            {
-                if (field.Name != MetadataField.ID && 
-                    field.Name != MetadataField.CREATED_TIMESTAMP &&
-                    field.Name != MetadataField.MODIFIED_TIMESTAMP &&
-                    field.Name != MetadataField.FULL_TEXT)
-                {
-                    if (field.FacetSettings == null)
-                        field.FacetSettings = new FacetSettings { FacetName = field.Name };
-
-                    if (field.DataType == DataType.DateTime)
-                    {
-                        field.FacetSettings.FormatString = @"yyyy/MMM/dd";
-                        field.FacetSettings.IsHierarchical = true;
-                        field.FacetSettings.HierarchySeparator = @"/";
-                    }
-                }
-            }
+            if (Config.IsAutoFacetEnabled)            
+                field.RefreshFacetSettings();            
 
             return field;
         }
@@ -310,22 +294,7 @@ namespace ExpandoDB
 
                     _fieldsDictionary[enumerator.Current.Key] = value;
                 }
-            }
-
-            public int IndexOf(Field item)
-            {
-                throw new NotImplementedException();
-            }
-
-            public void Insert(int index, Field item)
-            {
-                throw new NotImplementedException();
-            }
-
-            public void RemoveAt(int index)
-            {
-                throw new NotImplementedException();
-            }
+            }            
         }
 
 
@@ -437,7 +406,7 @@ namespace ExpandoDB
             /// <value>
             ///   <c>true</c> if this Field is a Facet; otherwise, <c>false</c>.
             /// </value>
-            internal bool IsFacet { get { return FacetSettings != null; } }
+            internal bool IsFacet { get { return FacetSettings?.IsEnabled ?? false; } }
 
 
             /// <summary>
@@ -454,21 +423,36 @@ namespace ExpandoDB
             /// <exception cref="System.NotImplementedException"></exception>
             internal void RefreshFacetSettings()
             {
-                if (Name != MetadataField.ID &&
-                    Name != MetadataField.CREATED_TIMESTAMP &&
-                    Name != MetadataField.MODIFIED_TIMESTAMP &&
-                    Name != MetadataField.FULL_TEXT)
-                {
-                    if (FacetSettings == null)
-                        FacetSettings = new FacetSettings { FacetName = Name };
+                if (Name == MetadataField.ID ||
+                    Name == MetadataField.CREATED_TIMESTAMP ||
+                    Name == MetadataField.MODIFIED_TIMESTAMP ||
+                    Name == MetadataField.FULL_TEXT)
+                    return;
 
-                    if (DataType == DataType.DateTime)
-                    {
+                if (!IsTopLevel)
+                    return;
+
+                if (DataType == DataType.Null ||
+                    DataType == DataType.Object ||
+                    (DataType == DataType.Array && 
+                     (ArrayElementDataType == DataType.Array || 
+                      ArrayElementDataType == DataType.Object || 
+                      ArrayElementDataType == DataType.Null)))
+                    return;
+                
+                if (FacetSettings == null)
+                    FacetSettings = new FacetSettings { FacetName = Name, IsEnabled = true };
+
+                if (DataType == DataType.DateTime)
+                {
+                    if (FacetSettings.FormatString == null)
                         FacetSettings.FormatString = @"yyyy/MMM/dd";
-                        FacetSettings.IsHierarchical = true;
+
+                    FacetSettings.IsHierarchical = true;
+
+                    if (FacetSettings.HierarchySeparator == null)
                         FacetSettings.HierarchySeparator = @"/";
-                    }
-                }
+                }                
             }
         }
 
@@ -524,6 +508,15 @@ namespace ExpandoDB
             /// The name of the Facet.
             /// </value>
             public string FacetName { get; set; }
+
+
+            /// <summary>
+            /// Gets or sets a value indicating whether Facets is enabled.
+            /// </summary>
+            /// <value>
+            ///   <c>true</c> if Facets is enabled; otherwise, <c>false</c>.
+            /// </value>
+            public bool IsEnabled { get; set; }
 
             /// <summary>
             /// Gets or sets a value indicating whether the Facet is hierarchical, e.g. "Topic:Education/Primary/Teacher Training"

@@ -83,9 +83,7 @@ namespace ExpandoDB.Search
 
             // The full-text field is always auto-generated and added to the Lucene document.
             var fullText = document.ToLuceneFullTextString();
-            luceneDocument.Add(new TextField(Schema.MetadataField.FULL_TEXT, fullText, FieldStore.NO));
-
-            // TODO: Add AutoFacet - add to Schema (?). note: only top level fields can have facets
+            luceneDocument.Add(new TextField(Schema.MetadataField.FULL_TEXT, fullText, FieldStore.NO));            
 
             // Check if the Document has any Fields that are configured as Facets.
             // If there are then we need to create Facets for them.
@@ -102,23 +100,26 @@ namespace ExpandoDB.Search
             }
 
             return luceneDocument;
-        }        
+        }
 
-        
+
 
         /// <summary>
-        /// Generates Lucene fields for the given value.
+        /// Generates one or more Lucene fields based on the specified value.
         /// </summary>
         /// <param name="value">The value.</param>
         /// <param name="schemaField">The schema field.</param>
-        /// <returns></returns>
-        /// <exception cref="System.ArgumentNullException">schemaField</exception>
+        /// <returns>A list of Lucene Field objects generated from the passed in value.</returns>        
         public static IList<Field> ToLuceneFields(this object value, Schema.Field schemaField)
         {
             if (schemaField == null)
                 throw new ArgumentNullException(nameof(schemaField));
 
-            var luceneFields = new List<Field>();  // This will contain the generated Lucene fields for the passed in value.
+            // Let's initialize a List - this will contain the generated Lucene Field objects 
+            // for the value passed to the method; if the value is a list or an object, 
+            // then ToLuceneFields() is called recursively on the list or object.
+
+            var luceneFields = new List<Field>();  
 
             var fieldName = schemaField.Name.Trim();            
             var fieldDataType = GetFieldDataType(value);
