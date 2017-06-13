@@ -16,7 +16,7 @@ namespace ExpandoDB.Search
         const string COLON = ":";
         const string ESCAPED_COLON = @"\:";
         const string ESCAPED_COLON_TEMP_REPLACEMENT_TOKEN = @"<<€€€€€€>>";
-        const string SLASH = @"/";
+        const string DEFAULT_HIERARCHY_SEPARATOR = @"/";
 
         /// <summary>
         /// Converts a single Facet filter string (e.g. Author:Crispin) to a Lucene <see cref="FacetField" /> object.
@@ -29,7 +29,7 @@ namespace ExpandoDB.Search
         /// </exception>
         public static FacetField ToLuceneFacetField(this string facetFilter, Schema.FacetSettings facetSettings)
         {            
-            var hierarchySeparator = facetSettings?.HierarchySeparator ?? SLASH;
+            var hierarchySeparator = facetSettings?.HierarchySeparator ?? DEFAULT_HIERARCHY_SEPARATOR;
             var escapedHierarchySeparator = $"\\{hierarchySeparator}";
             var escapedHierarchySeparatorTempToken = @"<<$$$$$$>>";
 

@@ -40,6 +40,7 @@ namespace ExpandoDB.Search
         private readonly double _refreshIntervalSeconds;
         private readonly double _commitIntervalSeconds;        
         private readonly double _ramBufferSizeMB;
+        private const string TAXONOMY_INDEX_NAME = "facets";
 
         /// <summary>
         /// Gets the schema of the Documents in the Lucene index.
@@ -102,7 +103,7 @@ namespace ExpandoDB.Search
 
             _indexDirectory = new MMapDirectory(Paths.get(IndexPath));
 
-            var taxonomyIndexPath = System.IO.Path.Combine(IndexPath, "taxonomy");
+            var taxonomyIndexPath = System.IO.Path.Combine(IndexPath, TAXONOMY_INDEX_NAME);
             if (!System.IO.Directory.Exists(taxonomyIndexPath))            
                 System.IO.Directory.CreateDirectory(taxonomyIndexPath);
 

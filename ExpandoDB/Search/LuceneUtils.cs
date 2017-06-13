@@ -73,7 +73,7 @@ namespace ExpandoDB.Search
                     foreach (var luceneField in luceneFields)
                         luceneDocument.Add(luceneField);
 
-                    schemaField.RefreshFacetSettings();
+                    schemaField.RefreshAutoFacets();
                 }
                 catch (Exception ex)
                 {
@@ -249,11 +249,11 @@ namespace ExpandoDB.Search
             var luceneFields = new List<Field>();
             if (list.Count > 0)
             {
-                var arrayElementSchemaField = new Schema.Field()
+                var arrayElementSchemaField = new Schema.Field()  // dummy field
                 {
                     Name = schemaField.Name,
-                    DataType = schemaField.ArrayElementDataType,
-                    IsArrayElement = true
+                    DataType = schemaField.ArrayElementDataType,                    
+                    ParentField = schemaField
                 };
 
                 foreach (var element in list)
@@ -314,7 +314,7 @@ namespace ExpandoDB.Search
                 var childFieldDataType = GetFieldDataType(childField);
 
                 Schema.Field childSchemaField = null;
-                schemaField.ObjectSchema.Fields.TryGetValue($"{schemaField.Name}.{fieldName}", out childSchemaField);
+                schemaField.ObjectSchema.Fields.TryGetValue($"{schemaField.Name}.{fieldName}", out childSchemaField); // Assumption: ObjectSchema must already be created.
 
                 if (childSchemaField == null)
                 {
@@ -322,6 +322,7 @@ namespace ExpandoDB.Search
                     {
                         Name = $"{schemaField.Name}.{fieldName}",
                         DataType = childFieldDataType,
+                        ParentField = schemaField,
                         IsTokenized = (childFieldDataType == Schema.DataType.Text)
                     };
                     schemaField.ObjectSchema.Fields.TryAdd(childSchemaField.Name, childSchemaField);
@@ -587,9 +588,12 @@ namespace ExpandoDB.Search
                 luceneFields.Add(new NumericDocValuesField(sortFieldName, intValue));
             }
 
-            // Create the grouping field.
-            var groupingFieldName = fieldName.ToGroupingFieldName();
-            luceneFields.Add(new SortedNumericDocValuesField(groupingFieldName, intValue));
+            // Create the grouping fields; for top-level fields only.
+            if (schemaField.IsTopLevel)
+            {
+                var groupingFieldName = fieldName.ToGroupingFieldName();
+                luceneFields.Add(new SortedNumericDocValuesField(groupingFieldName, intValue));
+            }
         }
 
         /// <summary>
@@ -627,11 +631,14 @@ namespace ExpandoDB.Search
                 luceneFields.Add(new SortedDocValuesField(sortFieldName, new BytesRef(stringValueForSorting)));
             }
 
-            // Create the grouping field.
-            // For grouping, we only take the first DOCVALUE_FIELD_MAX_TEXT_LENGTH of the text; we save the text value as is (not converted to lowercase).   
-            var groupingFieldName = fieldName.ToGroupingFieldName();
-            var stringValueForGrouping = (stringValue.Length > DOCVALUE_FIELD_MAX_TEXT_LENGTH ? stringValue.Substring(0, DOCVALUE_FIELD_MAX_TEXT_LENGTH) : stringValue).Trim();                    
-            luceneFields.Add(new SortedSetDocValuesField(groupingFieldName, new BytesRef(stringValueForGrouping)));            
+            // Create the grouping fields; for top-level fields only.
+            if (schemaField.IsTopLevel)
+            {
+                // For grouping, we only take the first DOCVALUE_FIELD_MAX_TEXT_LENGTH of the text; we save the text value as is (not converted to lowercase).   
+                var groupingFieldName = fieldName.ToGroupingFieldName();
+                var stringValueForGrouping = (stringValue.Length > DOCVALUE_FIELD_MAX_TEXT_LENGTH ? stringValue.Substring(0, DOCVALUE_FIELD_MAX_TEXT_LENGTH) : stringValue).Trim();
+                luceneFields.Add(new SortedSetDocValuesField(groupingFieldName, new BytesRef(stringValueForGrouping)));
+            }
         }
 
         /// <summary>
@@ -665,9 +672,12 @@ namespace ExpandoDB.Search
                 luceneFields.Add(new NumericDocValuesField(sortFieldName, dateTimeTicks));
             }
 
-            // Create the grouping field.
-            var groupingFieldName = fieldName.ToGroupingFieldName();                       
-            luceneFields.Add(new SortedNumericDocValuesField(groupingFieldName, dateTimeTicks));
+            // Create the grouping fields; for top-level fields only.
+            if (schemaField.IsTopLevel)
+            {
+                var groupingFieldName = fieldName.ToGroupingFieldName();
+                luceneFields.Add(new SortedNumericDocValuesField(groupingFieldName, dateTimeTicks));
+            }
         }
 
 
@@ -703,9 +713,12 @@ namespace ExpandoDB.Search
                 luceneFields.Add(new SortedDocValuesField(sortFieldName, new BytesRef(guidStringValue))); 
             }
 
-            // Create the grouping field.
-            var groupingFieldName = fieldName.ToGroupingFieldName();            
-            luceneFields.Add(new SortedSetDocValuesField(groupingFieldName, new BytesRef(guidStringValue)));            
+            // Create the grouping fields; for top-level fields only.
+            if (schemaField.IsTopLevel)
+            {
+                var groupingFieldName = fieldName.ToGroupingFieldName();
+                luceneFields.Add(new SortedSetDocValuesField(groupingFieldName, new BytesRef(guidStringValue)));
+            }
         }
 
         /// <summary>

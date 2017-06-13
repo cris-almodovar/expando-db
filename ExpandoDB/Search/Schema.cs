@@ -1,5 +1,6 @@
 ﻿using ExpandoDB.Search;
 using System;
+using System.Linq;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -77,7 +78,7 @@ namespace ExpandoDB
             }
 
             if (Config.IsAutoFacetEnabled)            
-                field.RefreshFacetSettings();            
+                field.RefreshAutoFacets();            
 
             return field;
         }
@@ -366,7 +367,16 @@ namespace ExpandoDB
             /// <value>
             /// <c>true</c> if this instance is top level; otherwise, <c>false</c>.
             /// </value>
-            public bool IsTopLevel { get { return !(Name ?? String.Empty).Contains(".") && !IsArrayElement; } }
+            public bool IsTopLevel
+            {
+                get
+                {
+                    var countOfDots = Name?.Count(c => c == '.') ?? 0;
+
+                    return ((countOfDots == 0 && ParentField == null) ||                            
+                            (countOfDots == 1 && ParentField?.DataType == DataType.Object && DataType != DataType.Array  && DataType != DataType.Object));
+                }
+            }
 
             /// <summary>
             /// Gets a value indicating whether this Field is sortable.
@@ -377,12 +387,13 @@ namespace ExpandoDB
             public bool IsSortable { get { return IsTopLevel && DataType != DataType.Array && DataType != DataType.Object; } }
 
             /// <summary>
-            /// Gets or sets a value indicating whether this Field is an array element.
+            /// Gets or sets the parent field.
             /// </summary>
             /// <value>
-            /// <c>true</c> if this Field is an array element; otherwise, <c>false</c>.
+            /// The parent field.
             /// </value>
-            internal bool IsArrayElement { get; set; }
+            internal Field ParentField { get; set; }
+                        
 
             /// <summary>
             /// Gets or sets a value indicating whether a Text field is tokenized and analyzed by Lucene. 
@@ -398,7 +409,7 @@ namespace ExpandoDB
             /// <value>
             ///   <c>true</c> if this Field is a Facet; otherwise, <c>false</c>.
             /// </value>
-            internal bool IsFacet { get { return FacetSettings?.IsEnabled ?? false; } }
+            internal bool IsFacet { get { return FacetSettings?.IsEnabled ?? false; } }           
 
 
             /// <summary>
@@ -410,41 +421,49 @@ namespace ExpandoDB
             public FacetSettings FacetSettings { get; set; }
 
             /// <summary>
-            /// Refreshes the facet settings.
+            /// Refreshes the auto-created facets.
             /// </summary>
             /// <exception cref="System.NotImplementedException"></exception>
-            internal void RefreshFacetSettings()
+            internal void RefreshAutoFacets()
             {
-                if (Name == MetadataField.ID ||
-                    Name == MetadataField.CREATED_TIMESTAMP ||
-                    Name == MetadataField.MODIFIED_TIMESTAMP ||
-                    Name == MetadataField.FULL_TEXT)
-                    return;
-
+                // Auto Facet creation is only valid for top-level Fields
                 if (!IsTopLevel)
                     return;
 
-                if (DataType == DataType.Null ||
-                    DataType == DataType.Object ||
+                // Auto Facet creation is only valid for Fields whose Name starts with a letter.
+                var firstCharOfName = Name?.FirstOrDefault() ?? ' ';
+                if (Char.IsLetter(firstCharOfName) == false)
+                    return;                
+                
+                if (DataType == DataType.Null ||                    
                     (DataType == DataType.Array && 
                      (ArrayElementDataType == DataType.Array || 
                       ArrayElementDataType == DataType.Object || 
                       ArrayElementDataType == DataType.Null)))
                     return;
-                
-                if (FacetSettings == null)
-                    FacetSettings = new FacetSettings { FacetName = Name, IsEnabled = true };
 
-                if (DataType == DataType.DateTime)
+                if (DataType == DataType.Object && ObjectSchema?.Fields?.Count > 0)
                 {
-                    if (FacetSettings.FormatString == null)
-                        FacetSettings.FormatString = @"yyyy/MMM/dd";
+                    foreach (var childField in ObjectSchema.Fields)
+                        childField.RefreshAutoFacets();
+                }
+                else
+                {
+                    // Scalar values, or array of scalar values.
+                    if (FacetSettings == null)
+                        FacetSettings = new FacetSettings { FacetName = Name, IsEnabled = true };
 
-                    FacetSettings.IsHierarchical = true;
+                    if (DataType == DataType.DateTime)
+                    {
+                        if (FacetSettings.FormatString == null)
+                            FacetSettings.FormatString = @"yyyy/MMM/dd";
 
-                    if (FacetSettings.HierarchySeparator == null)
-                        FacetSettings.HierarchySeparator = @"/";
-                }                
+                        FacetSettings.IsHierarchical = true;
+
+                        if (FacetSettings.HierarchySeparator == null)
+                            FacetSettings.HierarchySeparator = @"/";
+                    }
+                }                   
             }
         }
 

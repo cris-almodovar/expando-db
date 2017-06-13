@@ -127,7 +127,7 @@ namespace ExpandoDB.Search
                         var textValue = fieldValue as string;
                         if (textValue?.Length > MAX_FACET_TEXT_LENGTH)
                         {
-                            _log.Warn($"The length of the value of Facet '{facetName}' is too long. Max length is {MAX_FACET_TEXT_LENGTH}");
+                            _log.Warn($"The value of '{facetName}' is too long. The max length is {MAX_FACET_TEXT_LENGTH}. A Facet field will not be created for this value.");
                         }
                         else
                         {
