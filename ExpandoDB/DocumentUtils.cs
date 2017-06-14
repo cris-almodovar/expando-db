@@ -110,6 +110,19 @@ namespace ExpandoDB
         }
 
         /// <summary>
+        /// Converts the specified object to a Document object.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="value">The value.</param>
+        /// <returns></returns>
+        public static Document ToDocument<T>(this T value)
+        {
+            var dictionary = value.ToDictionary();
+            var document = new Document(dictionary);
+            return document;
+        }
+
+        /// <summary>
         /// Converts a IDictionary instance to an ExpandoObject.
         /// </summary>
         /// <param name="dictionary">The dictionary.</param>
@@ -246,7 +259,7 @@ namespace ExpandoDB
         /// <param name="value">The value.</param>
         /// <returns></returns>
         /// <exception cref="System.ArgumentNullException">value</exception>
-        public static IDictionary<string, object> ToCompatibleDictionary<T>(this T value)
+        public static IDictionary<string, object> ToDictionary<T>(this T value)
         {
             if ((value as object) == null)
                 throw new ArgumentNullException(nameof(value));
@@ -286,13 +299,13 @@ namespace ExpandoDB
                         if (type == typeof(Guid) || type == typeof(Guid?))
                             continue;
                         else if (item is IDictionary<string, object>)
-                            dictionary[key] = (item as IDictionary<string, object>).ToCompatibleDictionary();
+                            dictionary[key] = (item as IDictionary<string, object>).ToDictionary();
                         else if (item is IList)
-                            dictionary[key] = (item as IList).ToCompatibleList();
+                            dictionary[key] = (item as IList).ToExpandoList();
                         else if (item is IEnumerable)
-                            dictionary[key] = (item as IEnumerable).ToCompatibleList();
+                            dictionary[key] = (item as IEnumerable).ToExpandoList();
                         else
-                            dictionary[key] = item.ToCompatibleDictionary(); 
+                            dictionary[key] = item.ToDictionary(); 
                         break;
                 }
             }
@@ -305,9 +318,9 @@ namespace ExpandoDB
         /// </summary>
         /// <param name="list">The list.</param>
         /// <returns></returns>
-        public static IList ToCompatibleList(this IList list)
+        public static IList ToExpandoList(this IList list)
         {
-            return (list as IEnumerable).ToCompatibleList();
+            return (list as IEnumerable).ToExpandoList();
         }
 
         /// <summary>
@@ -315,7 +328,7 @@ namespace ExpandoDB
         /// </summary>
         /// <param name="list">The list.</param>
         /// <returns></returns>
-        public static IList ToCompatibleList(this IEnumerable list)
+        public static IList ToExpandoList(this IEnumerable list)
         {
             var newList = new List<object>();
             var enumerator = list.GetEnumerator();
@@ -354,13 +367,13 @@ namespace ExpandoDB
                             if (type == typeof(Guid) || type == typeof(Guid?))                            
                                 newList.Add(item);
                             else if (item is IDictionary<string, object>)
-                                newList.Add((item as IDictionary<string, object>).ToCompatibleDictionary());
+                                newList.Add((item as IDictionary<string, object>).ToDictionary());
                             else if (item is IList)                            
                                 continue; // Skip - array of array is NOT supported
                             else if (item is IEnumerable)
                                 continue; // Skip - array of array is NOT supported                            
                             else
-                                newList.Add(item.ToCompatibleDictionary());
+                                newList.Add(item.ToDictionary());
                             break;
                     }
                 }

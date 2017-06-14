@@ -64,53 +64,8 @@ namespace ExpandoDB.Search
             }
 
             return schema;
-        }
-
-        /// <summary>
-        /// Converts the Schema object to a Document object.
-        /// </summary>
-        /// <param name="schema">The Schema.</param>
-        /// <returns></returns>
-        public static Document ToDocument(this Schema schema)
-        {            
-            var dictionary = schema.ToCompatibleDictionary();            
-            var document = new Document(dictionary);
-            return document;
-        }
-
-
-        /// <summary>
-        /// Converts the Schema object to a dictionary.
-        /// </summary>
-        /// <param name="schema">The schema.</param>
-        /// <returns></returns>
-        internal static IDictionary<string, object> ToDictionary(this Schema schema)
-        {
-            var dictionary = schema.ToCompatibleDictionary();
-            return dictionary;
-        }
-
-        /// <summary>
-        /// Converts the Schema Field object to a dictionary.
-        /// </summary>
-        /// <param name="field">The field.</param>
-        /// <returns></returns>
-        internal static IDictionary<string, object> ToDictionary(this Schema.Field field)
-        {
-            var dictionary = field.ToCompatibleDictionary();            
-            return dictionary;
-        }
-
-        /// <summary>
-        /// Converts the Schema FacetSettings object to a dictionary.
-        /// </summary>
-        /// <param name="facetSettings">The facet settings.</param>
-        /// <returns></returns>
-        internal static IDictionary<string, object> ToDictionary(this Schema.FacetSettings facetSettings)
-        {
-            var dictionary = facetSettings.ToCompatibleDictionary();
-            return dictionary;
-        }        
+        }            
+               
 
         /// <summary>
         /// Populates the Schema.Field object with values from the given dictionary.
