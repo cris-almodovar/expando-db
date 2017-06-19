@@ -275,11 +275,11 @@ namespace ExpandoDB.Search
                     var query = queryParser.Parse(queryString);
 
                     var sort = queryParser.GetSortCriteria(criteria.SortByFields, Schema);
-                    var selectedFacets = criteria.SelectFacets.ToLuceneFacetFields(Schema);
+                    var facetFilters = criteria.FacetFilters.ToLuceneFacetFields(Schema);
                     var topDocs = (TopDocs)null;
                     var facets = (IEnumerable<FacetValue>)null; 
 
-                    if (selectedFacets.Count() == 0)
+                    if (facetFilters.Count() == 0)
                     {
                         // We are NOT going to do a drill-down on specific Facets.
                         // Instead we will take the top N Facet values from all Facets.
@@ -300,7 +300,7 @@ namespace ExpandoDB.Search
                     {
                         // Perform a drill-down / drill-sideways query
                         var drillDownQuery = new DrillDownQuery(_facetBuilder.FacetsConfig, query);
-                        foreach (var facetField in selectedFacets)
+                        foreach (var facetField in facetFilters)
                             drillDownQuery.Add(facetField.Dim, facetField.Path);                        
 
                         var drillSideways = new DrillSideways(searcher, _facetBuilder.FacetsConfig, taxonomyReader);
@@ -312,7 +312,7 @@ namespace ExpandoDB.Search
                         if (topNFacets > 0)
                         {
                             // Get the Facet counts from the matching Documents
-                            facets = drillSidewaysResult.Facets.ToFacetValues(topNFacets, selectedFacets);
+                            facets = drillSidewaysResult.Facets.ToFacetValues(topNFacets, facetFilters);
                         }
                     }
 

@@ -40,12 +40,12 @@
         public string orderBy { get; set; }
 
         /// <summary>
-        /// Gets or sets the number of documents returned per page of the resultset; default is 10.
+        /// Gets or sets the number of items (documents or groups) returned per page of the resultset; default is 10.
         /// </summary>
         /// <value>
-        /// The number of documents per page.
+        /// The number of items (documents or groups) per page.
         /// </value>
-        public int? documentsPerPage { get; set; }
+        public int? itemsPerPage { get; set; }
 
         /// <summary>
         /// Gets or sets the page to return, from a multi-page resultset; default is 1.
@@ -63,13 +63,22 @@
         /// </value>
         public bool? highlight { get; set; }
 
+
         /// <summary>
-        /// Gets or sets a comma separated list of Facet values (e.g. Author:Crispin) that will be used to drill-sideways thru the Document Facets.
+        /// Gets or sets a comma separated list of Facets to be returned in the resultset.
+        /// </summary>
+        /// <value>
+        /// A comma separated list of Facets
+        /// </value>
+        public string selectFacets { get; set; }
+
+        /// <summary>
+        /// Gets or sets a comma separated list of Facet values (e.g. Author:Crispin) that will be used to filter the resultset.
         /// </summary>
         /// <value>
         /// A comma separated list of Facet values
         /// </value>
-        public string selectFacets { get; set; }
+        public string whereFacets { get; set; }
 
         /// <summary>
         /// Gets or sets the number of Facet values to return; default is 0.

@@ -71,16 +71,22 @@ namespace ExpandoDB.Search
         /// </value>
         public bool? IncludeHighlight { get; set; }
 
+        /// <summary>
+        /// Gets or sets a comma separated list of Facets to be included in the resultset; optional.
+        /// </summary>
+        /// <value>
+        /// A comma separated list of Facets
+        /// </value>
+        public string FacetsToReturn { get; set; }
 
         /// <summary>
-        /// Gets or sets a comma separated list of Facet values (e.g. Author:Crispin) that will be used to drill-sideways 
-        /// into the resultset.
+        /// Gets or sets a comma separated list of Facet values (e.g. Author:Crispin) that will be used to filter 
+        /// the resultset.
         /// </summary>
         /// <value>
         /// A comma separated list of Facet values
         /// </value>
-        public string SelectFacets { get; set; }
-
+        public string FacetFilters { get; set; }
 
         /// <summary>
         /// Gets or sets the number of Facet values to return; default is 0.

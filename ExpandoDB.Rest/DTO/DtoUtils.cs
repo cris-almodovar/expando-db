@@ -24,10 +24,10 @@ namespace ExpandoDB.Rest.DTO
                 Query = dto.where,
                 SortByFields = dto.orderBy,
                 TopN = dto.topN,
-                ItemsPerPage = dto.documentsPerPage,
+                ItemsPerPage = dto.itemsPerPage,
                 PageNumber = dto.pageNumber, 
                 IncludeHighlight = dto.highlight,
-                SelectFacets = dto.selectFacets,
+                FacetFilters = dto.whereFacets,
                 TopNFacets = dto.topNFacets               
             };
 
@@ -115,14 +115,14 @@ namespace ExpandoDB.Rest.DTO
         /// <returns></returns>
         public static ExpandoObject BuildInsertResponseDto(this DbService dbService, string collectionName, Guid docId, TimeSpan elapsed)
         {
-            dynamic dynamicDto = new ExpandoObject();
+            dynamic responseDto = new ExpandoObject();
 
-            dynamicDto.from = collectionName;
-            dynamicDto._id = docId;
-            dynamicDto.timestamp = DateTime.UtcNow;
-            dynamicDto.elapsed = elapsed.ToString();
+            responseDto.from = collectionName;
+            responseDto._id = docId;
+            responseDto.timestamp = DateTime.UtcNow;
+            responseDto.elapsed = elapsed.ToString();
 
-            return dynamicDto;
+            return responseDto;
         }
 
         /// <summary>
@@ -134,14 +134,14 @@ namespace ExpandoDB.Rest.DTO
         /// <returns></returns>
         public static ExpandoObject BuildSchemaResponseDto(this DbService dbService, Schema schema, TimeSpan elapsed)
         {
-            dynamic dynamicDto = new ExpandoObject();
+            dynamic responseDto = new ExpandoObject();
 
-            dynamicDto.from = schema.Name;
-            dynamicDto.schema = schema.ToDocument().AsExpando();
-            dynamicDto.timestamp = DateTime.UtcNow;
-            dynamicDto.elapsed = elapsed.ToString();
+            responseDto.from = schema.Name;
+            responseDto.schema = schema.ToDocument().AsExpando();
+            responseDto.timestamp = DateTime.UtcNow;
+            responseDto.elapsed = elapsed.ToString();
 
-            return dynamicDto;
+            return responseDto;
         }
 
         /// <summary>
@@ -153,13 +153,13 @@ namespace ExpandoDB.Rest.DTO
         /// <returns></returns>
         public static ExpandoObject BuildSchemaResponseDto(this DbService dbService, IEnumerable<Schema> schemas, TimeSpan elapsed)
         {
-            dynamic dynamicDto = new ExpandoObject();
+            dynamic responseDto = new ExpandoObject();
 
-            dynamicDto.schemas = schemas.Select(s => s.ToDocument().AsExpando());
-            dynamicDto.timestamp = DateTime.UtcNow;
-            dynamicDto.elapsed = elapsed.ToString();
+            responseDto.schemas = schemas.Select(s => s.ToDocument().AsExpando());
+            responseDto.timestamp = DateTime.UtcNow;
+            responseDto.elapsed = elapsed.ToString();
 
-            return dynamicDto;
+            return responseDto;
         }
 
         /// <summary>
@@ -180,34 +180,35 @@ namespace ExpandoDB.Rest.DTO
             if (searchResult == null)
                 throw new ArgumentNullException(nameof(searchResult));
 
-            dynamic dynamicDto = new ExpandoObject();
+            dynamic responseDto = new ExpandoObject();
 
-            dynamicDto.select = searchRequestDto.select;
-            dynamicDto.topN = searchResult.TopN ?? SearchCriteria.DEFAULT_TOP_N;
-            dynamicDto.from = collectionName;
-            dynamicDto.where = searchRequestDto.where;
-            dynamicDto.orderBy = searchRequestDto.orderBy;
+            responseDto.select = searchRequestDto.select;
+            responseDto.topN = searchResult.TopN ?? SearchCriteria.DEFAULT_TOP_N;
+            responseDto.from = collectionName;
+            responseDto.where = searchRequestDto.where;
+            responseDto.orderBy = searchRequestDto.orderBy;
 
-            dynamicDto.documentCount = searchResult.ItemCount;
-            dynamicDto.totalHits = searchResult.TotalHits;
-            dynamicDto.pageCount = searchResult.PageCount;
-            dynamicDto.pageNumber = searchResult.PageNumber ?? 1;
-            dynamicDto.documentsPerPage = searchResult.ItemsPerPage ?? SearchCriteria.DEFAULT_ITEMS_PER_PAGE;
-            dynamicDto.highlight = searchResult.IncludeHighlight;
-            dynamicDto.selectFacets = searchResult.SelectFacets;
-            dynamicDto.topNFacets = searchResult.TopNFacets ?? SearchCriteria.DEFAULT_TOP_N_FACETS;
+            responseDto.itemCount = searchResult.ItemCount;
+            responseDto.totalHits = searchResult.TotalHits;
+            responseDto.pageCount = searchResult.PageCount;
+            responseDto.pageNumber = searchResult.PageNumber ?? 1;
+            responseDto.itemsPerPage = searchResult.ItemsPerPage ?? SearchCriteria.DEFAULT_ITEMS_PER_PAGE;
+            responseDto.highlight = searchResult.IncludeHighlight;
+            responseDto.selectFacets = searchResult.FacetsToReturn;
+            responseDto.whereFacets = searchResult.FacetFilters;
+            responseDto.topNFacets = searchResult.TopNFacets ?? SearchCriteria.DEFAULT_TOP_N_FACETS;
 
             var fieldsToSelect = searchRequestDto.select.ToList();
             if (fieldsToSelect.Count > 0 && searchResult.IncludeHighlight == true)
                 fieldsToSelect.Add(LuceneHighlighter.HIGHLIGHT_FIELD_NAME);
 
-            dynamicDto.documents = searchResult.Items?.Select(c => c.Select(fieldsToSelect).AsExpando());
-            dynamicDto.facets = searchResult.Facets?.Select(c => c.ToExpando());
+            responseDto.items = searchResult.Items?.Select(c => c.Select(fieldsToSelect).AsExpando());
+            responseDto.facets = searchResult.Facets?.Select(c => c.ToExpando());
 
-            dynamicDto.timestamp = DateTime.UtcNow;
-            dynamicDto.elapsed = elapsed.ToString();
+            responseDto.timestamp = DateTime.UtcNow;
+            responseDto.elapsed = elapsed.ToString();
 
-            return dynamicDto;
+            return responseDto;
         }
 
         /// <summary>
@@ -221,15 +222,15 @@ namespace ExpandoDB.Rest.DTO
         /// <returns></returns>
         public static ExpandoObject BuildCountResponseDto(this DbService dbService, string collectionName, string where, int count, TimeSpan elapsed)
         {
-            dynamic dynamicDto = new ExpandoObject();
+            dynamic responseDto = new ExpandoObject();
 
-            dynamicDto.from = collectionName;
-            dynamicDto.where = where;
-            dynamicDto.count = count;
-            dynamicDto.timestamp = DateTime.UtcNow;
-            dynamicDto.elapsed = elapsed.ToString();
+            responseDto.from = collectionName;
+            responseDto.where = where;
+            responseDto.count = count;
+            responseDto.timestamp = DateTime.UtcNow;
+            responseDto.elapsed = elapsed.ToString();
 
-            return dynamicDto;
+            return responseDto;
         }
 
         /// <summary>
@@ -242,14 +243,14 @@ namespace ExpandoDB.Rest.DTO
         /// <returns></returns>
         public static ExpandoObject BuildDocumentResponseDto(this DbService dbService, string collectionName, Document document, TimeSpan elapsed)
         {
-            dynamic dynamicDto = new ExpandoObject();
+            dynamic responseDto = new ExpandoObject();
 
-            dynamicDto.from = collectionName;
-            dynamicDto.document = document.AsExpando();
-            dynamicDto.timestamp = DateTime.UtcNow;
-            dynamicDto.elapsed = elapsed.ToString();
+            responseDto.from = collectionName;
+            responseDto.document = document.AsExpando();
+            responseDto.timestamp = DateTime.UtcNow;
+            responseDto.elapsed = elapsed.ToString();
 
-            return dynamicDto;
+            return responseDto;
         }
 
         /// <summary>
@@ -262,14 +263,14 @@ namespace ExpandoDB.Rest.DTO
         /// <returns></returns>
         public static ExpandoObject BuildUpdateResponseDto(this DbService dbService, string collectionName, int affectedCount, TimeSpan elapsed)
         {
-            dynamic dynamicDto = new ExpandoObject();
+            dynamic responseDto = new ExpandoObject();
 
-            dynamicDto.from = collectionName;
-            dynamicDto.affectedCount = affectedCount;
-            dynamicDto.timestamp = DateTime.UtcNow;
-            dynamicDto.elapsed = elapsed.ToString();
+            responseDto.from = collectionName;
+            responseDto.affectedCount = affectedCount;
+            responseDto.timestamp = DateTime.UtcNow;
+            responseDto.elapsed = elapsed.ToString();
 
-            return dynamicDto;
+            return responseDto;
         }
 
         /// <summary>
@@ -282,14 +283,14 @@ namespace ExpandoDB.Rest.DTO
         /// <returns></returns>
         public static ExpandoObject BuildDeleteCollectionResposeDto(this DbService dbService, string collectionName, bool isDropped, TimeSpan elapsed)
         {
-            dynamic dynamicDto = new ExpandoObject();
+            dynamic responseDto = new ExpandoObject();
 
-            dynamicDto.from = collectionName;
-            dynamicDto.isDropped = isDropped;
-            dynamicDto.timestamp = DateTime.UtcNow;
-            dynamicDto.elapsed = elapsed.ToString();
+            responseDto.from = collectionName;
+            responseDto.isDropped = isDropped;
+            responseDto.timestamp = DateTime.UtcNow;
+            responseDto.elapsed = elapsed.ToString();
 
-            return dynamicDto;
+            return responseDto;
         }
 
         /// <summary>
@@ -302,14 +303,14 @@ namespace ExpandoDB.Rest.DTO
         /// <returns></returns>
         public static ExpandoObject BuildSchemaFieldResponseDto(this DbService dbService, Schema.Field schemaField, string collectionName, TimeSpan elapsed)
         {
-            dynamic dynamicDto = new ExpandoObject();
+            dynamic responseDto = new ExpandoObject();
 
-            dynamicDto.from = collectionName;
-            dynamicDto.field = new Document(schemaField.ToDictionary()).AsExpando();
-            dynamicDto.timestamp = DateTime.UtcNow;
-            dynamicDto.elapsed = elapsed.ToString();
+            responseDto.from = collectionName;
+            responseDto.field = new Document(schemaField.ToDictionary()).AsExpando();
+            responseDto.timestamp = DateTime.UtcNow;
+            responseDto.elapsed = elapsed.ToString();
 
-            return dynamicDto;
+            return responseDto;
         }
     }    
 }

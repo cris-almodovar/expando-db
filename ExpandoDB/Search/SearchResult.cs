@@ -87,12 +87,20 @@ namespace ExpandoDB.Search
         public bool? IncludeHighlight { get; set; }
 
         /// <summary>
+        /// Gets or sets a comma separated list of Facets to be included in the resultset; optional.
+        /// </summary>
+        /// <value>
+        /// A comma separated list of Facet values
+        /// </value>
+        public string FacetsToReturn { get; set; }
+
+        /// <summary>
         /// Gets or sets a comma separated list of Facet values (e.g. Author:Crispin) that will be used to drill-sideways thru the Document Facets.
         /// </summary>
         /// <value>
         /// A comma separated list of Facet values
         /// </value>
-        public string SelectFacets { get; set; }
+        public string FacetFilters { get; set; }
 
         /// <summary>
         /// Gets or sets the requested number of Facet values to return; default is 10.
@@ -138,7 +146,7 @@ namespace ExpandoDB.Search
             IncludeHighlight = criteria.IncludeHighlight;
             PageNumber = criteria.PageNumber ?? 1;
 
-            SelectFacets = criteria.SelectFacets;
+            FacetFilters = criteria.FacetFilters;
             TopNFacets = criteria.TopNFacets ?? SearchCriteria.DEFAULT_TOP_N_FACETS;            
 
             ItemCount = itemCount;
