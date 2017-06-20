@@ -35,12 +35,7 @@ namespace Loader
             if (Directory.EnumerateFiles(datasetFolder, "*.sgm").Count() == 0)
                 ZipFile.ExtractToDirectory(dataset, datasetFolder);
             
-            var sgmlFiles = Directory.GetFiles(datasetFolder, "*.sgm");
-
-            //var dropRequest = new RestRequest("/db/reuters?drop=true", Method.DELETE);
-            //restClient.Execute(dropRequest);
-
-            //Thread.Sleep(TimeSpan.FromSeconds(5));
+            var sgmlFiles = Directory.GetFiles(datasetFolder, "*.sgm");            
 
             Console.WriteLine(String.Format("Importing {0} sgml files from folder: '{1}'.", sgmlFiles.Length, Path.GetFullPath(datasetFolder)));
 
@@ -82,10 +77,7 @@ namespace Loader
                                 var body = text["BODY"]?.InnerText;                                                             
 
                                 DateTime dateTime;
-                                DateTime.TryParse(date, out dateTime);
-                                var yearMonth = dateTime > DateTime.MinValue ?
-                                                $"{dateTime.ToString("yyyy/MM")}" :
-                                                String.Empty;
+                                DateTime.TryParse(date, out dateTime);                                
 
                                 var keywords = new List<string>();
                                 var topicsNode = reuters["TOPICS"];                                
@@ -101,8 +93,7 @@ namespace Loader
 
                                 var document = new
                                 {
-                                    date = dateTime > DateTime.MinValue ? (DateTime?)dateTime : null,
-                                    yearMonth = yearMonth,
+                                    date = dateTime > DateTime.MinValue ? (DateTime?)dateTime : null,                                    
                                     title = title,
                                     text = body,
                                     keywords = keywords

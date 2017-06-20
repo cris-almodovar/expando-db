@@ -275,9 +275,10 @@ namespace ExpandoDB.Search
                     var query = queryParser.Parse(queryString);
 
                     var sort = queryParser.GetSortCriteria(criteria.SortByFields, Schema);
-                    var facetFilters = criteria.FacetFilters.ToLuceneFacetFields(Schema);
-                    var topDocs = (TopDocs)null;
-                    var facets = (IEnumerable<FacetValue>)null; 
+                    var facetFilters = criteria.FacetFilters.ToLuceneFacetFields(Schema);                    
+                    var facets = (IEnumerable<FacetValue>)null;
+                    var facetsToReturn = new HashSet<string>(criteria.FacetsToReturn.ToList());
+                    var docsCursor = (DocsCursor)null;
 
                     if (facetFilters.Count() == 0)
                     {
@@ -287,13 +288,14 @@ namespace ExpandoDB.Search
                         var facetsCollector = new FacetsCollector();
 
                         // Get the matching Documents
-                        topDocs = FacetsCollector.Search(searcher, query, topN, sort, facetsCollector);
+                        var topDocs = FacetsCollector.Search(searcher, query, topN, sort, facetsCollector);
+                        docsCursor = new DocsCursor(topDocs, searcher.Doc);
 
                         if (topNFacets > 0)
                         {
                             // Get the Facet counts from the matching Documents
                             var facetCounts = new FastTaxonomyFacetCounts(taxonomyReader, _facetBuilder.FacetsConfig, facetsCollector);
-                            facets = facetCounts.ToFacetValues(topNFacets);
+                            facets = facetCounts.ToFacetValues(topNFacets, facetsToReturn);
                         }
                     }
                     else
@@ -307,20 +309,20 @@ namespace ExpandoDB.Search
                         var drillSidewaysResult = drillSideways.Search(drillDownQuery, null, null, topN, sort, false, false);
 
                         // Get the matching documents
-                        topDocs = drillSidewaysResult.Hits;
+                        var topDocs = drillSidewaysResult.Hits;
+                        docsCursor = new DocsCursor(topDocs, searcher.Doc);
 
                         if (topNFacets > 0)
                         {
                             // Get the Facet counts from the matching Documents
-                            facets = drillSidewaysResult.Facets.ToFacetValues(topNFacets, facetFilters);
+                            facets = drillSidewaysResult.Facets.ToFacetValues(topNFacets, facetsToReturn, facetFilters);
                         }
                     }
 
                     if (criteria.TopN == 0)
-                        topDocs.ScoreDocs = new ScoreDoc[0];                    
-
-                    // TODO: Don't pass TopDocs; pass an IEnumerable<Guid>
-                    result.PopulateWith(topDocs, facets, id => searcher.Doc(id));                    
+                        docsCursor.Count = 0;  
+                    
+                    result.PopulateWith(docsCursor, facets);                    
                 }
                 finally
                 {

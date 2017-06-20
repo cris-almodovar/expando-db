@@ -164,21 +164,6 @@ namespace FileIndexer
                 else if (file.Length >= FORTY_MB && file.Length <= FIFTY_MB)
                     sizeCategory = "Between 40 MB to 50 MB";
 
-                // We need to escape any forward slash because '/' is used as a separator in category strings.
-                var contentTypeCategory = contentType.Replace(@"/", @"\/");
-                var dateFormat = "yyyy/MMM/dd";
-
-                var categories = new List<string>
-                        {
-                        $"File Size:{sizeCategory}",
-
-                        // The Last Modified Date category is a hierarchical one -> e.g. "Last Modified Date:2013/Apr/26"
-                        // Users can 'drill-down' ('drill-sideways') to this category.
-                        $"Last Modified Date:{file.LastWriteTimeUtc.ToString(dateFormat)}",
-
-                        $"Content Type:{contentTypeCategory}"
-                        };
-
                 foreach (var key in metadata.Keys.Where(k => !String.IsNullOrWhiteSpace(k)))
                 {
                     var fieldName = key.ToLowerInvariant().Trim();
@@ -203,8 +188,7 @@ namespace FileIndexer
                     {
                         case "author":
                         case "authors":
-                            document.Author = authorOrTitle;
-                            categories.Add($"Author:{authorOrTitle.Replace(@"/", @"\/")}");
+                            document.Author = authorOrTitle;                            
                             break;
 
                         case "title":
@@ -215,10 +199,10 @@ namespace FileIndexer
 
                 document.Text = text;
                 document.ContentType = contentType;
-                document._categories = categories;
+                document.SizeCategory = sizeCategory;                
 
                 // Now lets submit the document to ExpandoDB via the REST API
-                var request = new RestRequest("/documents", Method.POST) { DateFormat = DateFormat.ISO_8601 };
+                var request = new RestRequest("/my-documents", Method.POST) { DateFormat = DateFormat.ISO_8601 };
                 request.AddJsonBody(document);
 
                 var restClient = new RestClient(EXPANDO_DB_URL);

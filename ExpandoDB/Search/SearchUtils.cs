@@ -23,10 +23,10 @@ namespace ExpandoDB.Search
             var list = new List<string>();
             if (!String.IsNullOrWhiteSpace(csvString))
             {
-                var fields = csvString.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                                      .Select(fieldName => fieldName.Trim());
+                var items = csvString.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                      .Select(value => value.Trim());
 
-                list.AddRange(fields);
+                list.AddRange(items);
             }
             return list;
         }
@@ -49,22 +49,17 @@ namespace ExpandoDB.Search
         /// Populates the SearchResult object with data from the specified TopFieldDocs object.
         /// </summary>
         /// <param name="result">The SearchResult to be populated.</param>
-        /// <param name="topDocs">The TopDocs object returned by Lucene.</param>
-        /// <param name="facets">The categories.</param>
-        /// <param name="getDoc">A lambda that returns the Lucene document given the doc id.</param>
-        /// <exception cref="ArgumentNullException">
-        /// </exception>
-        public static void PopulateWith(this SearchResult<Guid> result, TopDocs topDocs, IEnumerable<FacetValue> facets, Func<int, LuceneDocument> getDoc)
+        /// <param name="docsCursor">The docs cursor.</param>
+        /// <param name="facets">The categories.</param>        
+        internal static void PopulateWith(this SearchResult<Guid> result, DocsCursor docsCursor, IEnumerable<FacetValue> facets)
         {
             if (result == null)
                 throw new ArgumentNullException(nameof(result));
-            if (topDocs == null)
-                throw new ArgumentNullException(nameof(topDocs));
-            if (getDoc == null)
-                throw new ArgumentNullException(nameof(getDoc));
+            if (docsCursor == null)
+                throw new ArgumentNullException(nameof(docsCursor));
 
-            result.ItemCount = topDocs.ScoreDocs.Length;
-            result.TotalHits = topDocs.TotalHits;
+            result.ItemCount = docsCursor.Count;
+            result.TotalHits = docsCursor.TotalHits;
 
             var itemsPerPage = result.ItemsPerPage ?? SearchCriteria.DEFAULT_ITEMS_PER_PAGE;
             var pageNumber = result.PageNumber ?? 1;
@@ -76,15 +71,13 @@ namespace ExpandoDB.Search
                 var itemsToSkip = (pageNumber - 1) * itemsPerPage;
                 var itemsToTake = itemsPerPage;
 
-                var scoreDocs = topDocs.ScoreDocs
-                                            .Skip(itemsToSkip)
-                                            .Take(itemsToTake)
-                                            .ToList();
-                                
-                for (var i = 0; i < scoreDocs.Count; i++)
+                var docs = docsCursor.Skip(itemsToSkip)
+                                     .Take(itemsToTake)
+                                     .ToList();
+
+                for (var i = 0; i < docs.Count; i++)
                 {
-                    var sd = scoreDocs[i];
-                    var doc = getDoc(sd.Doc);
+                    var doc = docs[i];
                     if (doc == null)
                         continue;
 

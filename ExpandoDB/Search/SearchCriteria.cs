@@ -40,7 +40,7 @@ namespace ExpandoDB.Search
         public string SortByFields { get; set; }
 
         /// <summary>
-        /// Gets or sets the number of items to return; default is 100.
+        /// Gets or sets the number of items to return; default is 1000. 
         /// </summary>
         /// <value>
         /// The number of items to return.
@@ -80,8 +80,7 @@ namespace ExpandoDB.Search
         public string FacetsToReturn { get; set; }
 
         /// <summary>
-        /// Gets or sets a comma separated list of Facet values (e.g. Author:Crispin) that will be used to filter 
-        /// the resultset.
+        /// Gets or sets a comma separated list of Facet values (e.g. Author:Crispin) that will be used to filter the resultset.
         /// </summary>
         /// <value>
         /// A comma separated list of Facet values

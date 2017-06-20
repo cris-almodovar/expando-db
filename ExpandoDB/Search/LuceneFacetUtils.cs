@@ -226,12 +226,13 @@ namespace ExpandoDB.Search
         }
 
         /// <summary>
-        /// Converts the <see cref="FastTaxonomyFacetCounts"/> object to a sequence of <see cref="FacetValue"/> objects.
+        /// Converts the <see cref="FastTaxonomyFacetCounts" /> object to a sequence of <see cref="FacetValue" /> objects.
         /// </summary>
-        /// <param name="facetCounts">The <see cref="FastTaxonomyFacetCounts"/> object to convert.</param>
+        /// <param name="facetCounts">The <see cref="FastTaxonomyFacetCounts" /> object to convert.</param>
         /// <param name="topNFacets">Specifies the number of Facet values to return.</param>
-        /// <returns></returns>
-        public static IEnumerable<FacetValue> ToFacetValues(this FastTaxonomyFacetCounts facetCounts, int topNFacets)
+        /// <param name="facetsToReturn">The facets to return.</param>
+        /// <returns></returns>        
+        public static IEnumerable<FacetValue> ToFacetValues(this FastTaxonomyFacetCounts facetCounts, int topNFacets, IEnumerable<string> facetsToReturn)
         {
             if (facetCounts == null)
                 throw new ArgumentNullException(nameof(facetCounts));
@@ -243,9 +244,15 @@ namespace ExpandoDB.Search
 
             for (var i = 0; i < allDims.size(); i++)
             {
-                var fc = allDims.get(i) as FacetResult;
-                if (fc != null)
-                    facetValues.Add(fc.ToFacetValue());
+                var facetResult = allDims.get(i) as FacetResult;
+                if (facetResult != null)
+                {
+                    // Check if we're supposed to return this Facet
+                    if (facetsToReturn?.Count() > 0 && !facetsToReturn.Contains(facetResult.Dim))
+                        continue;
+
+                    facetValues.Add(facetResult.ToFacetValue());
+                }
             }
 
             return facetValues;
@@ -283,20 +290,21 @@ namespace ExpandoDB.Search
         }
 
         /// <summary>
-        /// Converts the <see cref="Facets"/> object to a sequence of <see cref="FacetValue"/> objects.
+        /// Converts the <see cref="Facets" /> object to a sequence of <see cref="FacetValue" /> objects.
         /// </summary>
         /// <param name="facets">The Facets object.</param>
         /// <param name="topNFacets">Specifies the number of Facets to return.</param>
-        /// <param name="selectedFacets">The selected Facets.</param>
-        /// <returns></returns>        
-        public static IEnumerable<FacetValue> ToFacetValues(this Facets facets, int topNFacets, IEnumerable<FacetField> selectedFacets)
+        /// <param name="facetsToReturn">The facets to return.</param>
+        /// <param name="facetFilters">The selected Facets.</param>
+        /// <returns></returns>       
+        public static IEnumerable<FacetValue> ToFacetValues(this Facets facets, int topNFacets, IEnumerable<string> facetsToReturn, IEnumerable<FacetField> facetFilters)
         {
             if (facets == null)
                 throw new ArgumentException(nameof(facets));
             if (topNFacets <= 0)
                 throw new ArgumentException($"{nameof(topNFacets)} cannot be zero or less.");
-            if (selectedFacets == null)
-                throw new ArgumentException(nameof(selectedFacets));
+            if (facetFilters == null)
+                throw new ArgumentException(nameof(facetFilters));
 
             var facetValues = new List<FacetValue>();
             var allDimensions = facets.GetAllDims(topNFacets);
@@ -307,12 +315,16 @@ namespace ExpandoDB.Search
                 var facetResult = allDimensions.get(i) as FacetResult;
                 if (facetResult != null)
                 {
+                    // Check if we're supposed to return this Facet
+                    if (facetsToReturn?.Count() > 0 && !facetsToReturn.Contains(facetResult.Dim))
+                        continue;
+
                     var facetValue = facetResult.ToFacetValue();
 
                     // Check if the current Facet is one of the Facets 
                     // that the user wants to drill-down to.                    
 
-                    var facetToDrillDownTo = selectedFacets.FirstOrDefault(f => f.Dim == facetValue.Name);
+                    var facetToDrillDownTo = facetFilters.FirstOrDefault(f => f.Dim == facetValue.Name);
                     if (facetToDrillDownTo != null &&
                         (facetToDrillDownTo.Path?.Length ?? 0) > 0)
                     {

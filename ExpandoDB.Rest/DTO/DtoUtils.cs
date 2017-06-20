@@ -27,6 +27,7 @@ namespace ExpandoDB.Rest.DTO
                 ItemsPerPage = dto.itemsPerPage,
                 PageNumber = dto.pageNumber, 
                 IncludeHighlight = dto.highlight,
+                FacetsToReturn = dto.selectFacets,
                 FacetFilters = dto.whereFacets,
                 TopNFacets = dto.topNFacets               
             };

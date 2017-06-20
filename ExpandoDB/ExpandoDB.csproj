@@ -218,6 +218,7 @@
     <Compile Include="Document.cs" />
     <Compile Include="DocumentCursor.cs" />
     <Compile Include="IEnumerableUtils.cs" />
+    <Compile Include="Search\DocsCursor.cs" />
     <Compile Include="Search\DocValuesCursor.cs" />
     <Compile Include="DocumentUtils.cs" />
     <Compile Include="Database.cs" />

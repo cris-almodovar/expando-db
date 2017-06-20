@@ -146,6 +146,7 @@ namespace ExpandoDB.Search
             IncludeHighlight = criteria.IncludeHighlight;
             PageNumber = criteria.PageNumber ?? 1;
 
+            FacetsToReturn = criteria.FacetsToReturn;
             FacetFilters = criteria.FacetFilters;
             TopNFacets = criteria.TopNFacets ?? SearchCriteria.DEFAULT_TOP_N_FACETS;            
 
