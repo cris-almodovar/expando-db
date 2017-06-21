@@ -52,8 +52,8 @@ namespace ExpandoDB.Search
         {
             for (var i = 0; i < _topDocs.ScoreDocs.Length; i++)
             {
-                var scoreDoc = _topDocs.ScoreDocs[i];
-                var luceneDoc = _getDoc(scoreDoc.Doc);
+                var docNumber = _topDocs.ScoreDocs[i].Doc;
+                var luceneDoc = _getDoc(docNumber);
 
                 if (luceneDoc == null)
                     continue;                

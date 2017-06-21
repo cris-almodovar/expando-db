@@ -14,8 +14,8 @@ namespace ExpandoDB.Search
     /// The CompositeAnalyzer class is used by the <see cref="LuceneIndex"/> class
     /// to determine what Lucene Analyzer to use for each field."/>.
     /// </remarks>
-    /// <seealso cref="FlexLucene.Analysis.AnalyzerWrapper" />
-    public class CompositeAnalyzer : AnalyzerWrapper
+    /// <seealso cref="FlexLucene.Analysis.DelegatingAnalyzerWrapper" />
+    public class CompositeAnalyzer : DelegatingAnalyzerWrapper
     {
         private readonly ConcurrentDictionary<string, Analyzer> _perFieldAnalyzers;
         private readonly Analyzer _fullTextAnalyzer;

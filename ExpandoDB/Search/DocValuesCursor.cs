@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace ExpandoDB.Search
 {
     /// <summary>
-    /// Represents a "live" cursor that can be used to quickly iterate over a Lucene search resultset.
+    /// Represents a "live" cursor that can be used to iterate over a Lucene search resultset.
     /// </summary>    
     internal class DocValuesCursor : IDisposable, IEnumerable<Dictionary<string, object>>
     {
@@ -19,8 +19,7 @@ namespace ExpandoDB.Search
         private readonly SearcherTaxonomyManager _manager;
         private readonly SearcherTaxonomyManagerSearcherAndTaxonomy _searcherAndTaxonomyInstance;
         private TopDocs _topDocs;
-        private readonly DocValuesReader _docValuesReader;
-        private readonly IList<string> _docValueFields;
+        private readonly DocValuesReader _docValuesReader;        
 
         /// <summary>
         /// Gets the total hits; this value is only available when the cursor is open.
@@ -61,19 +60,20 @@ namespace ExpandoDB.Search
 
             _criteria = criteria;
             _index = index;
-            
+
+            IList<string> fieldNames = null;
             if (!String.IsNullOrWhiteSpace(_criteria.SelectFields))
             {
-                _docValueFields = _criteria.SelectFields.Trim().Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries)
-                                           .Select(v => v.Trim())
-                                           .Union(new[] { "_id" })
-                                           .Distinct()
-                                           .ToList();                
+                fieldNames = _criteria.SelectFields.Trim().Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries)
+                                       .Select(v => v.Trim())
+                                       .Union(new[] { "_id" })
+                                       .Distinct()
+                                       .ToList();                
             }
 
             _manager = _index.SearcherTaxonomyManager;
             _searcherAndTaxonomyInstance = _manager.Acquire() as SearcherTaxonomyManagerSearcherAndTaxonomy;
-            _docValuesReader = new DocValuesReader(_searcherAndTaxonomyInstance.Searcher, _index.Schema, _docValueFields);
+            _docValuesReader = new DocValuesReader(_searcherAndTaxonomyInstance.Searcher, _index.Schema, fieldNames);
 
             if (autoOpen)
                 Open();
@@ -118,8 +118,8 @@ namespace ExpandoDB.Search
 
             for (var i = 0; i < _topDocs.ScoreDocs.Length; i++)
             {
-                var sd = _topDocs.ScoreDocs[i];
-                var dictionary = _docValuesReader.GetDocValuesDictionary(sd.Doc);
+                var docNumber = _topDocs.ScoreDocs[i].Doc;
+                var dictionary = _docValuesReader.GetDocValuesDictionary(docNumber);
                 if (dictionary == null)
                     continue;                
 

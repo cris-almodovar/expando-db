@@ -15,7 +15,7 @@ namespace ExpandoDB.Search
     /// </summary>
     public class FullTextAnalyzer : Analyzer
     {
-        internal const string DEFAULT_SEPARATOR_CHARS = @"[\s,:;.()?!@#%^&*|/\\+÷°±{}\[\]<>\-`~'""$£€¢¥©®™•§†‡–—¶]";
+        internal const string DEFAULT_TOKEN_SEPARATOR_CHARS = @"[-\s,:;.()?!@#%^&*|/\\+÷°±{}\[\]<>`~'""$£€¢¥©®™•§†‡—¶]";
         internal const string DEFAULT_ENGLISH_STOPWORDS = "a,am,an,and,any,are,arent,as,at,be,been,but,by,co,did,do,does,for,if,in,into,is,it,no,not,of,on,or,s,such,t,that,the,their,then,there,these,they,this,to,was,will,with,www,wont,shall,shant";
         private readonly string _separatorChars;
         private readonly bool _enableStemming;
@@ -28,10 +28,10 @@ namespace ExpandoDB.Search
         /// the tokens that make up the texts, using the Porter stemming algorithm.</param>
         /// <param name="ignoreCase">if set to <c>true</c>, character casing is ignored.</param>
         /// <param name="separatorChars">A string whose component characters will be used to split the texts into tokens.</param>   
-        public FullTextAnalyzer(bool enableStemming = true, bool ignoreCase = true, string separatorChars = DEFAULT_SEPARATOR_CHARS)
+        public FullTextAnalyzer(bool enableStemming = true, bool ignoreCase = true, string separatorChars = DEFAULT_TOKEN_SEPARATOR_CHARS)
         {
             if (String.IsNullOrWhiteSpace(separatorChars))
-                separatorChars = DEFAULT_SEPARATOR_CHARS;
+                separatorChars = DEFAULT_TOKEN_SEPARATOR_CHARS;
 
             _enableStemming = enableStemming;
             _ignoreCase = ignoreCase;
@@ -70,12 +70,12 @@ namespace ExpandoDB.Search
         /// <param name="ignoreCase">if set to <c>true</c>, character casing is ignored.</param>
         /// <param name="separatorChars">A string whose component characters will be used to split the texts into tokens.</param> 
         /// <returns></returns>
-        public static IEnumerable<string> Tokenize(string text, bool enableStemming = true, bool ignoreCase = true, string separatorChars = DEFAULT_SEPARATOR_CHARS)
+        public static IEnumerable<string> Tokenize(string text, bool enableStemming = true, bool ignoreCase = true, string separatorChars = DEFAULT_TOKEN_SEPARATOR_CHARS)
         {
             if (String.IsNullOrWhiteSpace(text))
                 throw new ArgumentException("text cannot be null or blank");
             if (String.IsNullOrWhiteSpace(separatorChars))
-                separatorChars = DEFAULT_SEPARATOR_CHARS;
+                separatorChars = DEFAULT_TOKEN_SEPARATOR_CHARS;
 
             using (var analyzer = new FullTextAnalyzer(enableStemming, ignoreCase, separatorChars))
             {

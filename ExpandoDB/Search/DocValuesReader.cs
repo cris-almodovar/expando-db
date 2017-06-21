@@ -10,8 +10,7 @@ using JavaDouble = java.lang.Double;
 namespace ExpandoDB.Search
 {
     /// <summary>
-    /// Encapsulates loading and reading of DocValues fields from the Lucene index,
-    /// using a live IndexSearcher object.
+    /// Encapsulates loading and reading of DocValues fields from the Lucene index, from an open IndexSearcher object.
     /// </summary>
     internal class DocValuesReader
     {
@@ -119,9 +118,9 @@ namespace ExpandoDB.Search
         /// Gets the values of DocValue fields as a dictionary object wherein the keys are the field names 
         /// and the values are the DocValue values.
         /// </summary>
-        /// <param name="sdDocId">The <see cref="ScoreDoc"/> document identifier.</param>
+        /// <param name="docNumber">The <see cref="ScoreDoc"/> document number.</param>
         /// <returns></returns>
-        public Dictionary<string, object> GetDocValuesDictionary(int sdDocId)
+        public Dictionary<string, object> GetDocValuesDictionary(int docNumber)
         {
             var dictionary = new Dictionary<string, object>();
 
@@ -139,7 +138,7 @@ namespace ExpandoDB.Search
                             var sortedDocValues = _textValues[fieldName];
                             if (sortedDocValues != null && sortedDocValues.GetValueCount() > 0)
                             {
-                                sortedDocValues.SetDocument(sdDocId);
+                                sortedDocValues.SetDocument(docNumber);
 
                                 var first = sortedDocValues.NextOrd();
                                 if (first != SortedSetDocValues.NO_MORE_ORDS)
@@ -157,7 +156,7 @@ namespace ExpandoDB.Search
                             var sortedDocValues = _guidValues[fieldName];
                             if (sortedDocValues != null && sortedDocValues.GetValueCount() > 0)
                             {
-                                sortedDocValues.SetDocument(sdDocId);
+                                sortedDocValues.SetDocument(docNumber);
 
                                 var first = sortedDocValues.NextOrd();
                                 if (first != SortedSetDocValues.NO_MORE_ORDS)
@@ -175,7 +174,7 @@ namespace ExpandoDB.Search
                             var sortedDocValues = _booleanValues[fieldName];
                             if (sortedDocValues != null)
                             {
-                                sortedDocValues.SetDocument(sdDocId);
+                                sortedDocValues.SetDocument(docNumber);
                                 if (sortedDocValues.Count() > 0)
                                 {
                                     var first = 0;
@@ -192,7 +191,7 @@ namespace ExpandoDB.Search
                             var sortedDocValues = _dateTimeValues[fieldName];
                             if (sortedDocValues != null)
                             {
-                                sortedDocValues.SetDocument(sdDocId);
+                                sortedDocValues.SetDocument(docNumber);
                                 if (sortedDocValues.Count() > 0)
                                 {
                                     var first = 0;
@@ -209,7 +208,7 @@ namespace ExpandoDB.Search
                             var sortedDocValues = _numberValues[fieldName];
                             if (sortedDocValues != null)
                             {
-                                sortedDocValues.SetDocument(sdDocId);
+                                sortedDocValues.SetDocument(docNumber);
                                 if (sortedDocValues.Count() > 0)
                                 {
                                     var first = 0;
@@ -229,7 +228,7 @@ namespace ExpandoDB.Search
                                     var sortedDocValues = _textValues[fieldName];
                                     if (sortedDocValues != null)
                                     {
-                                        sortedDocValues.SetDocument(sdDocId);
+                                        sortedDocValues.SetDocument(docNumber);
                                         var textList = new List<string>();
 
                                         var ordinal = SortedSetDocValues.NO_MORE_ORDS;
@@ -253,7 +252,7 @@ namespace ExpandoDB.Search
                                     var sortedDocValues = _guidValues[fieldName];
                                     if (sortedDocValues != null)
                                     {
-                                        sortedDocValues.SetDocument(sdDocId);
+                                        sortedDocValues.SetDocument(docNumber);
                                         var guidList = new List<Guid>();
 
                                         var ordinal = SortedSetDocValues.NO_MORE_ORDS;
@@ -281,7 +280,7 @@ namespace ExpandoDB.Search
                                     var sortedDocValues = _booleanValues[fieldName];
                                     if (sortedDocValues != null)
                                     {
-                                        sortedDocValues.SetDocument(sdDocId);                                        
+                                        sortedDocValues.SetDocument(docNumber);                                        
                                         var booleanList = new List<bool>();
 
                                         for (var i = 0; i < sortedDocValues.Count(); i++)
@@ -301,7 +300,7 @@ namespace ExpandoDB.Search
                                     var sortedDocValues = _dateTimeValues[fieldName];
                                     if (sortedDocValues != null)
                                     {
-                                        sortedDocValues.SetDocument(sdDocId);
+                                        sortedDocValues.SetDocument(docNumber);
                                         var dateTimeList = new List<DateTime>();
 
                                         for (var i = 0; i < sortedDocValues.Count(); i++)
@@ -322,7 +321,7 @@ namespace ExpandoDB.Search
                                     var sortedDocValues = _numberValues[fieldName];
                                     if (sortedDocValues != null)
                                     {
-                                        sortedDocValues.SetDocument(sdDocId);
+                                        sortedDocValues.SetDocument(docNumber);
                                         var numberList = new List<double>();
 
                                         for (var i = 0; i < sortedDocValues.Count(); i++)

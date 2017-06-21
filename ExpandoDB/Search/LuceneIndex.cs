@@ -336,7 +336,7 @@ namespace ExpandoDB.Search
         }
 
         /// <summary>
-        /// Opens the cursor.
+        /// Creates an IEnumerable cursor that wraps the result of a Lucene search.
         /// </summary>
         /// <param name="criteria">The search criteria.</param>
         /// <param name="autoOpen">if set to <c>true</c>, the cursor is automatically opened.</param>
@@ -347,11 +347,9 @@ namespace ExpandoDB.Search
             if (criteria == null)
                 throw new ArgumentNullException(nameof(criteria));
 
-            var docIdCursor = new DocValuesCursor(criteria, this, autoOpen);
-            return docIdCursor;
-        }
-
-        
+            var docValuesCursor = new DocValuesCursor(criteria, this, autoOpen);
+            return docValuesCursor;
+        }        
 
         /// <summary>
         /// Gets the current total number of documents in the index.
