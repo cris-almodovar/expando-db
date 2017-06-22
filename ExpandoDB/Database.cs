@@ -74,7 +74,7 @@ namespace ExpandoDB
             DocumentStorage = new LightningDocumentStorage(DataPath);
             _collections = new ConcurrentDictionary<string, Collection>();
 
-            var persistedSchemas = DocumentStorage.GetAllAsync(Schema.COLLECTION_NAME).Result.Select(d => d.ToSchema());
+            var persistedSchemas = DocumentStorage.GetAllAsync(Schema.COLLECTION_NAME).Result.Select(doc => doc.To<Schema>());
             foreach (var schema in persistedSchemas)
             {
                 var collection = new Collection(schema, this);

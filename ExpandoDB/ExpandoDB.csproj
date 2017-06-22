@@ -235,7 +235,6 @@
     <Compile Include="Search\LuceneUtils.cs" />
     <Compile Include="Search\LuceneHighlighter.cs" />
     <Compile Include="Search\LuceneQueryParser.cs" />
-    <Compile Include="Search\SchemaUtils.cs" />
     <Compile Include="Search\SearchUtils.cs" />
     <Compile Include="Search\FullTextAnalyzer.cs" />
     <Compile Include="Search\LuceneIndex.cs" />

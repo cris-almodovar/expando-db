@@ -123,6 +123,30 @@ namespace ExpandoDB
         }
 
         /// <summary>
+        /// To the specified document.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="document">The document.</param>
+        /// <returns></returns>
+        public static T To<T> (this Document document)
+        {            
+            return To<T>(document.AsDictionary());
+        }
+
+        /// <summary>
+        /// To the specified document.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="dictionary">The dictionary.</param>
+        /// <returns></returns>
+        public static T To<T>(this IDictionary<string, object> dictionary)
+        {
+            var json = DynamicJsonSerializer.Serialize(dictionary);
+            var obj = DynamicJsonSerializer.Deserialize<T>(json);
+            return obj;
+        }
+
+        /// <summary>
         /// Converts a IDictionary instance to an ExpandoObject.
         /// </summary>
         /// <param name="dictionary">The dictionary.</param>
@@ -298,8 +322,8 @@ namespace ExpandoDB
                     case TypeCode.Object:
                         if (type == typeof(Guid) || type == typeof(Guid?))
                             continue;
-                        else if (item is IDictionary<string, object>)
-                            dictionary[key] = (item as IDictionary<string, object>).ToDictionary();
+                        else if (item is IDictionary)
+                            dictionary[key] = (item as IDictionary).ToDictionary();                        
                         else if (item is IList)
                             dictionary[key] = (item as IList).ToExpandoList();
                         else if (item is IEnumerable)
@@ -311,6 +335,15 @@ namespace ExpandoDB
             }
 
             return dictionary;
+        }
+
+        internal static IDictionary<string, object> ToDictionary(this IDictionary dictionary)
+        {
+            var stringObjectDictionary = new Dictionary<string, object>();
+            var keys = dictionary.Keys.Cast<string>().ToList();
+            keys.ForEach(key => stringObjectDictionary.Add(key, dictionary[key]));
+
+            return stringObjectDictionary.ToDictionary();
         }
 
         /// <summary>

@@ -87,7 +87,7 @@ namespace ExpandoDB.Search
 
             // Check if the Document has any Fields that are configured as Facets.
             // If there are then we need to create Facets for them.
-            if (schema.Fields.Any(item => item.IsFacet))
+            if (schema.Fields.Values.Any(item => item.IsFacet))
             {
                 try
                 {

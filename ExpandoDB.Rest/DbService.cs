@@ -387,15 +387,15 @@ namespace ExpandoDB.Rest
             var collection = _database[collectionName];
             var schema = collection.Schema;
 
-            if (!schema.IsDefault())
+            if (!schema.IsDefault)
                 throw new InvalidOperationException($"The Schema of Collection '{collectionName}' is not empty, and hence cannot  be changed.");
 
             var excludedFields = new[] { "collection" };
             var dictionary = this.Bind<DynamicDictionary>(excludedFields).ToDictionary();
-            var updatedSchema = dictionary.ToSchema();
+            var updatedSchema = dictionary.To<Schema>();
 
             // We can only populate the Fields collection. 
-            foreach (var field in updatedSchema.Fields)
+            foreach (var field in updatedSchema.Fields.Values)
                 schema.Fields.TryAdd(field.Name, field);
 
             stopwatch.Stop();
@@ -479,7 +479,7 @@ namespace ExpandoDB.Rest
 
             var excludedFields = new[] { "collection" };
             var dictionary = this.Bind<DynamicDictionary>(excludedFields).ToDictionary();
-            var schemaField = new Schema.Field().PopulateWith(dictionary);
+            var schemaField = dictionary.To<Schema.Field>();
 
             if (schema.Fields.ContainsKey(schemaField.Name))
                 throw new InvalidOperationException($"The field '{schemaField.Name}' already exists in Schema '{schema.Name}'");
@@ -562,7 +562,7 @@ namespace ExpandoDB.Rest
 
             var excludedFields = new[] { "collection" };
             var dictionary = this.Bind<DynamicDictionary>(excludedFields).ToDictionary();
-            var newSchemaField = new Schema.Field().PopulateWith(dictionary);
+            var newSchemaField = dictionary.To<Schema.Field>();
 
             // We can only update the Data Type if it is not yet set.
             if (newSchemaField.DataType != schemaField.DataType && schemaField.DataType != Schema.DataType.Null)
@@ -625,7 +625,7 @@ namespace ExpandoDB.Rest
 
             var excludedFields = new[] { "collection" };
             var dictionary = this.Bind<DynamicDictionary>(excludedFields).ToDictionary();
-            var facetSettings = new Schema.FacetSettings().PopulateWith(dictionary);
+            var facetSettings = dictionary.To<Schema.FacetSettings>();
 
             schemaField.FacetSettings = facetSettings;
 

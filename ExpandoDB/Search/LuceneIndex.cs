@@ -93,7 +93,7 @@ namespace ExpandoDB.Search
 
             if (System.IO.Directory.Exists(IndexPath))
             {
-                if (Schema.IsDefault())
+                if (Schema.IsDefault)
                     throw new InvalidOperationException($"There is an existing index on '{IndexPath}'.");
             }                
             else

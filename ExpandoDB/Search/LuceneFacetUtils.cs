@@ -216,7 +216,7 @@ namespace ExpandoDB.Search
 
             if (!String.IsNullOrWhiteSpace(facetName))
             {
-                facetSettings = (from f in schema.Fields
+                facetSettings = (from f in schema.Fields.Values
                                  where f.IsFacet && f.FacetSettings.FacetName == facetName
                                  select f.FacetSettings)
                                 .FirstOrDefault();
