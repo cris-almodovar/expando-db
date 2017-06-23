@@ -325,6 +325,131 @@ namespace ExpandoDB
             }
         }
 
+
+        /// <summary>
+        /// 
+        /// </summary>        
+        public class FieldCollection : List<Field>
+        {
+            private Dictionary<string, int> _fieldNameIndex = new Dictionary<string, int>();
+
+            /// <summary>
+            /// Gets or sets the <see cref="Field"/> at the specified index.
+            /// </summary>
+            /// <value>
+            /// The <see cref="Field"/>.
+            /// </value>
+            /// <param name="index">The index.</param>
+            /// <returns></returns>
+            public new Field this[int index]
+            {
+                get
+                {
+                    return base[index];
+                }
+
+                set
+                {
+                    base[index] = value;
+                    _fieldNameIndex[value.Name] = index;
+                }
+            }
+
+            /// <summary>
+            /// Gets or sets the <see cref="Field"/> with the specified key.
+            /// </summary>
+            /// <value>
+            /// The <see cref="Field"/>.
+            /// </value>
+            /// <param name="key">The key.</param>
+            /// <returns></returns>
+            public Field this[string key]
+            {
+                get
+                {
+                    int index = -1;
+                    if (_fieldNameIndex.TryGetValue(key, out index))
+                        return base[index];
+                    else
+                        return null;
+                }
+
+                set
+                {
+                    var index = _fieldNameIndex.ContainsKey(key) ? _fieldNameIndex[key] : Count;
+                    base[index] = value;
+
+                    _fieldNameIndex.Add(key, index);                     
+                }
+            }
+
+            /// <summary>
+            /// Adds an object to the end of the <see cref="T:System.Collections.Generic.List`1" />.
+            /// </summary>
+            /// <param name="item">The object to be added to the end of the <see cref="T:System.Collections.Generic.List`1" />. The value can be null for reference types.</param>
+            public new void Add(Field item)
+            {
+                base.Add(item);                
+                _fieldNameIndex.Add(item.Name, IndexOf(item));
+            }
+
+            /// <summary>
+            /// Removes all elements from the <see cref="T:System.Collections.Generic.List`1" />.
+            /// </summary>
+            public new void Clear()
+            {
+                base.Clear();
+                _fieldNameIndex.Clear();
+            }
+
+            /// <summary>
+            /// Determines whether the specified key contains key.
+            /// </summary>
+            /// <param name="key">The key.</param>
+            /// <returns>
+            ///   <c>true</c> if the specified key contains key; otherwise, <c>false</c>.
+            /// </returns>
+            public bool ContainsKey(string key)
+            {
+                return _fieldNameIndex.ContainsKey(key);
+            }
+
+            /// <summary>
+            /// Inserts an element into the <see cref="T:System.Collections.Generic.List`1" /> at the specified index.
+            /// </summary>
+            /// <param name="index">The zero-based index at which <paramref name="item" /> should be inserted.</param>
+            /// <param name="item">The object to insert. The value can be null for reference types.</param>
+            public new void Insert(int index, Field item)
+            {
+                base.Insert(index, item);
+                _fieldNameIndex[item.Name] = index;
+            }
+
+            /// <summary>
+            /// Removes the first occurrence of a specific object from the <see cref="T:System.Collections.Generic.List`1" />.
+            /// </summary>
+            /// <param name="item">The object to remove from the <see cref="T:System.Collections.Generic.List`1" />. The value can be null for reference types.</param>
+            /// <returns>
+            /// true if <paramref name="item" /> is successfully removed; otherwise, false.  This method also returns false if <paramref name="item" /> was not found in the <see cref="T:System.Collections.Generic.List`1" />.
+            /// </returns>
+            public new bool Remove(Field item)
+            {
+                base.Remove(item);
+                return _fieldNameIndex.Remove(item.Name);
+            }
+
+            /// <summary>
+            /// Removes the element at the specified index of the <see cref="T:System.Collections.Generic.List`1" />.
+            /// </summary>
+            /// <param name="index">The zero-based index of the element to remove.</param>
+            public new void RemoveAt(int index)
+            {
+                var item = base[index];
+                base.RemoveAt(index);
+                _fieldNameIndex.Remove(item.Name);
+            }            
+        }
+
         /// <summary>
         /// Specifies the data type of a Document field; this maps to the data types supported by JSON.
         /// </summary>

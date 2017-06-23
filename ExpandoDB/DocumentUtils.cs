@@ -325,9 +325,9 @@ namespace ExpandoDB
                         else if (item is IDictionary)
                             dictionary[key] = (item as IDictionary).ToDictionary();                        
                         else if (item is IList)
-                            dictionary[key] = (item as IList).ToExpandoList();
+                            dictionary[key] = (item as IList).ToDictionaryList();
                         else if (item is IEnumerable)
-                            dictionary[key] = (item as IEnumerable).ToExpandoList();
+                            dictionary[key] = (item as IEnumerable).ToDictionaryList();
                         else
                             dictionary[key] = item.ToDictionary(); 
                         break;
@@ -351,9 +351,9 @@ namespace ExpandoDB
         /// </summary>
         /// <param name="list">The list.</param>
         /// <returns></returns>
-        public static IList ToExpandoList(this IList list)
+        public static IList ToDictionaryList(this IList list)
         {
-            return (list as IEnumerable).ToExpandoList();
+            return (list as IEnumerable).ToDictionaryList();
         }
 
         /// <summary>
@@ -361,7 +361,7 @@ namespace ExpandoDB
         /// </summary>
         /// <param name="list">The list.</param>
         /// <returns></returns>
-        public static IList ToExpandoList(this IEnumerable list)
+        public static IList ToDictionaryList(this IEnumerable list)
         {
             var newList = new List<object>();
             var enumerator = list.GetEnumerator();
@@ -399,8 +399,8 @@ namespace ExpandoDB
                         case TypeCode.Object:
                             if (type == typeof(Guid) || type == typeof(Guid?))                            
                                 newList.Add(item);
-                            else if (item is IDictionary<string, object>)
-                                newList.Add((item as IDictionary<string, object>).ToDictionary());
+                            else if (item is IDictionary)
+                                newList.Add((item as IDictionary).ToDictionary());
                             else if (item is IList)                            
                                 continue; // Skip - array of array is NOT supported
                             else if (item is IEnumerable)
