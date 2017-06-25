@@ -289,7 +289,7 @@ namespace ExpandoDB
                 throw new ArgumentNullException(nameof(value));
 
             var dictionary = (value is IDictionary<string, object>) ?
-                             (value as IDictionary<string, object>) :
+                             new Dictionary<string, object>(value as IDictionary<string, object>) :
                              TypeAdapter.Adapt<Dictionary<string, object>>(value);
 
             var keyList = dictionary.Keys.ToList();

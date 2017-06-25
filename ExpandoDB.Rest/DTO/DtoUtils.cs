@@ -138,7 +138,15 @@ namespace ExpandoDB.Rest.DTO
             dynamic responseDto = new ExpandoObject();
 
             responseDto.from = schema.Name;
-            responseDto.schema = schema.ToDocument().AsExpando();
+
+            var dictionary = schema.ToDictionary();
+            dictionary["Fields"] = (dictionary["Fields"] as IDictionary<string, object>)?.Values.ToList();
+            dictionary.Remove(Schema.MetadataField.ID);
+            dictionary.Remove(Schema.MetadataField.CREATED_TIMESTAMP);
+            dictionary.Remove(Schema.MetadataField.MODIFIED_TIMESTAMP);
+            dictionary.Remove(Schema.MetadataField.FULL_TEXT);
+
+            responseDto.schema = dictionary;
             responseDto.timestamp = DateTime.UtcNow;
             responseDto.elapsed = elapsed.ToString();
 
@@ -156,7 +164,21 @@ namespace ExpandoDB.Rest.DTO
         {
             dynamic responseDto = new ExpandoObject();
 
-            responseDto.schemas = schemas.Select(s => s.ToDocument().AsExpando());
+            var dictionaries = schemas.Select(
+                                    s =>
+                                    {
+                                        var dictionary = s.ToDictionary();
+                                        dictionary["Fields"] = (dictionary["Fields"] as IDictionary<string, object>)?.Values.ToList();
+                                        dictionary.Remove(Schema.MetadataField.ID);
+                                        dictionary.Remove(Schema.MetadataField.CREATED_TIMESTAMP);
+                                        dictionary.Remove(Schema.MetadataField.MODIFIED_TIMESTAMP);
+                                        dictionary.Remove(Schema.MetadataField.FULL_TEXT);
+
+                                        return dictionary;
+                                    }
+                                );
+
+            responseDto.schemas = dictionaries;
             responseDto.timestamp = DateTime.UtcNow;
             responseDto.elapsed = elapsed.ToString();
 
