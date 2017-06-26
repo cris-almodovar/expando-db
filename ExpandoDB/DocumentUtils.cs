@@ -142,8 +142,8 @@ namespace ExpandoDB
         public static T To<T>(this IDictionary<string, object> dictionary)
         {
             var json = DynamicJsonSerializer.Serialize(dictionary);
-            var obj = DynamicJsonSerializer.Deserialize<T>(json);
-            return obj;
+            var value = DynamicJsonSerializer.Deserialize<T>(json);
+            return value;
         }
 
         /// <summary>

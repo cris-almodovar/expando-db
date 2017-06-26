@@ -19,6 +19,15 @@ namespace ExpandoDB.Serialization
     {
         private const int GUID_STRING_LENGTH = 36;
 
+
+        /// <summary>
+        /// Initializes the <see cref="DynamicJsonSerializer"/> class.
+        /// </summary>
+        static DynamicJsonSerializer()
+        {
+            JSON.SetDefaultOptions(Options.ISO8601IncludeInheritedUtc);
+        }
+
         /// <summary>
         /// Serializes the specified Document object to JSON.
         /// </summary>
@@ -26,7 +35,7 @@ namespace ExpandoDB.Serialization
         /// <returns></returns>
         public static string Serialize(Document document)
         {
-            return JSON.SerializeDynamic(document.AsExpando(), Options.ISO8601IncludeInherited);
+            return JSON.SerializeDynamic(document.AsExpando());
         }
 
         /// <summary>
@@ -36,27 +45,27 @@ namespace ExpandoDB.Serialization
         /// <param name="writer">The TextWriter object.</param>
         public static void Serialize(Document document, TextWriter writer)
         {
-            JSON.SerializeDynamic(document.AsExpando(), writer, Options.ISO8601IncludeInherited);
+            JSON.SerializeDynamic(document.AsExpando(), writer);
         }
 
         /// <summary>
         /// Serializes the specified data object to JSON.
         /// </summary>
-        /// <param name="data">The data object.</param>
+        /// <param name="value">The data object.</param>
         /// <returns></returns>
-        public static string Serialize(object data)
+        public static string Serialize(object value)
         {
-            return JSON.SerializeDynamic(data, Options.ISO8601IncludeInherited);
+            return JSON.SerializeDynamic(value);
         }
 
         /// <summary>
         /// Serializes the specified data object to JSON and writes to the provided TextWriter.
         /// </summary>
-        /// <param name="data">The data object.</param>
+        /// <param name="value">The data object.</param>
         /// <param name="writer">The TextWriter object.</param>
-        public static void Serialize(object data, TextWriter writer)
+        public static void Serialize(object value, TextWriter writer)
         {
-            JSON.SerializeDynamic(data, writer, Options.ISO8601IncludeInherited);
+            JSON.SerializeDynamic(value, writer);
         }
 
         /// <summary>
@@ -69,7 +78,7 @@ namespace ExpandoDB.Serialization
         {
             if (typeof(T) == typeof(IDictionary<string, object>))
             {
-                var dictionary = JSON.Deserialize<T>(json, Options.ISO8601IncludeInherited) as IDictionary<string, object>;
+                var dictionary = JSON.Deserialize<T>(json) as IDictionary<string, object>;
                 return (T)dictionary.Unwrap();
             }
 
@@ -86,11 +95,11 @@ namespace ExpandoDB.Serialization
         {
             if (typeof(T) == typeof(IDictionary<string, object>))
             {
-                var dictionary = JSON.Deserialize<T>(reader, Options.ISO8601IncludeInherited) as IDictionary<string, object>;
+                var dictionary = JSON.Deserialize<T>(reader) as IDictionary<string, object>;
                 return (T)dictionary.Unwrap();
             }
 
-            return JSON.Deserialize<T>(reader, Options.ISO8601IncludeInherited);
+            return JSON.Deserialize<T>(reader);
         }       
 
         internal static IDictionary<string, object> Unwrap(this IDictionary<string, object> dictionary)
