@@ -18,14 +18,13 @@ using System.Collections;
 namespace ExpandoDB.Rest
 {
     /// <summary>
-    /// Implements ExpandoDB's REST API; an instance of this class in created for each web request
-    /// received by ExpandoDB.
+    /// Implements ExpandoDB's REST API; handles GET, POST, PUT, PATCH requests.
     /// </summary>
     /// <seealso cref="Nancy.NancyModule" />
     public class DbService : NancyModule
     {
         private readonly Database _database;
-        private readonly ILog _log = LogManager.GetLogger(typeof(DbService).Name);        
+        private readonly ILog _log = LogManager.GetLogger(nameof(DbService));        
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DbService"/> class.
