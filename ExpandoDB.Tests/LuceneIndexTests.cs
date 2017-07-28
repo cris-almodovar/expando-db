@@ -1,4 +1,5 @@
 ﻿using ExpandoDB.Search;
+using FlexLucene.Index;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
@@ -116,6 +117,6 @@ namespace ExpandoDB.Tests
 
             Assert.IsTrue(expected.SequenceEqual(actual));           
 
-        }
+        }        
     }
 }

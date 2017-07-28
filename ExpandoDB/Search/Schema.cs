@@ -307,7 +307,7 @@ namespace ExpandoDB
                 }
                 else
                 {
-                    // Scalar values, or array of scalar values.
+                    // Facets are valid only for scalar values, or array of scalar values.
                     if (FacetSettings == null)
                         FacetSettings = new FacetSettings { FacetName = Name, IsEnabled = true };
 
@@ -321,7 +321,7 @@ namespace ExpandoDB
                         if (FacetSettings.HierarchySeparator == null)
                             FacetSettings.HierarchySeparator = @"/";
                     }
-                }                   
+                }   
             }
         }        
 

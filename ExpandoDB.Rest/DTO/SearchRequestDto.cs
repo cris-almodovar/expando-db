@@ -73,7 +73,7 @@
         public string selectFacets { get; set; }
 
         /// <summary>
-        /// Gets or sets a comma separated list of Facet values (e.g. Author:Crispin) that will be used to filter the resultset.
+        /// Gets or sets a comma separated list of Facet filter expressions (e.g. Author:Crispin) that will be used to filter the resultset.
         /// </summary>
         /// <value>
         /// A comma separated list of Facet values

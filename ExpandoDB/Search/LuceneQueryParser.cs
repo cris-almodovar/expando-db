@@ -24,7 +24,7 @@ namespace ExpandoDB.Search
         /// <summary>
         /// The maximum number of OR and AND clauses in a Lucene query.
         /// </summary>
-        public const int BOOLEAN_QUERY_MAX_CLAUSE_COUNT = 1000000;
+        public const int BOOLEAN_QUERY_MAX_CLAUSE_COUNT = Int32.MaxValue;
 
         private readonly Schema _schema;
 
@@ -61,7 +61,7 @@ namespace ExpandoDB.Search
         /// <summary>
         /// Gets the sort criteria.
         /// </summary>
-        /// <param name="sortByFields">The sort by fields.</param>
+        /// <param name="sortByFields">The sort by fields expression; e.g. volume:asc,name:desc </param>
         /// <param name="schema">The schema.</param>
         /// <returns></returns>
         /// <exception cref="LuceneQueryParserException">
@@ -79,7 +79,7 @@ namespace ExpandoDB.Search
             foreach (var sortByField in sortByFieldsList)
             {
                 var fieldName = sortByField;
-                var sortDirection = "asc";
+                var sortDirection = "asc"; // default sort direction is ascending
                 if (sortByField.Contains(":"))
                 {
                     var indexOfColon = sortByField.IndexOf(':');

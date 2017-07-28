@@ -17,7 +17,7 @@ namespace ExpandoDB.Search
     /// </summary>    
     public class LuceneFacetBuilder
     {
-        private const int MAX_FACET_TEXT_LENGTH = 100;
+        private const int DEFAULT_MAX_FACET_TEXT_LENGTH = 50;
         private readonly TaxonomyWriter _taxonomyWriter;
         private readonly ILog _log = LogManager.GetLogger(nameof(LuceneFacetBuilder));  
 
@@ -118,6 +118,10 @@ namespace ExpandoDB.Search
                 return null;
             if (fieldValue == null)
                 return null;
+            if (facetSettings == null)
+                return null;
+            if (!facetSettings.IsEnabled)
+                return null;
 
             try
             {
@@ -125,9 +129,16 @@ namespace ExpandoDB.Search
                 {
                     case Schema.DataType.Text:
                         var textValue = fieldValue as string;
-                        if (textValue?.Length > MAX_FACET_TEXT_LENGTH)
+                        if (textValue?.Length > DEFAULT_MAX_FACET_TEXT_LENGTH)
                         {
-                            _log.Warn($"The value of '{facetName}' is too long. The max length is {MAX_FACET_TEXT_LENGTH}. A Facet field will not be created for this value.");
+                            if (facetSettings.IsHierarchical)
+                            {
+                                var hasPartExceedingLimit = textValue.Split(new[] { facetSettings.HierarchySeparator ?? "/" }, StringSplitOptions.RemoveEmptyEntries).Any(v => v.Length > DEFAULT_MAX_FACET_TEXT_LENGTH);
+                                if (hasPartExceedingLimit)
+                                    _log.Warn($"Cannot create a hierarchical Facet for '{facetName}' because the value contains a segment exceeds {DEFAULT_MAX_FACET_TEXT_LENGTH} characters.");
+                            }
+                            else
+                                _log.Warn($"Cannot create a Facet for '{facetName}' because the value exceeds {DEFAULT_MAX_FACET_TEXT_LENGTH} characters.");
                         }
                         else
                         {

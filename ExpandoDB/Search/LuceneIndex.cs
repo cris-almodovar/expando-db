@@ -17,6 +17,8 @@ using System.Linq;
 using FlexLucene.Codecs.Lucene60;
 using FlexLucene.Document;
 using FlexLucene.Util;
+using FlexLucene.Codecs.Lucene62;
+using FlexLucene.Codecs.Lucene50;
 
 namespace ExpandoDB.Search
 {
@@ -417,19 +419,16 @@ namespace ExpandoDB.Search
                 if (disposing)
                 {
                     _refreshTimer.Dispose();
-                    _commitTimer.Dispose();                                      
-
-                    if (_indexWriter.HasUncommittedChanges())
-                    {
-                        _taxonomyWriter.Commit();
-                        _indexWriter.Commit();
-                    }
+                    _commitTimer.Dispose();                                                          
 
                     _searcherTaxonomyManager.Close();
 
+                    _taxonomyWriter.Commit();
                     _taxonomyWriter.Close();
                     _taxonomyDirectory.Close();
 
+                    _indexWriter.Commit();
+                    _indexWriter.MaybeMerge();
                     _indexWriter.Close();                    
                     _indexDirectory.Close();
 
